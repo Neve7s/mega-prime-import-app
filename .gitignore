@@ -1,0 +1,17 @@
+# Docs internas (no se despliegan)
+docs/
+
+# Excels y datos crudos del negocio
+*.xlsx
+*.xls
+*_xlsx.zip
+_xlsx/
+
+# Assets de diseño / referencia (no sirven al sitio)
+screen.png
+DESIGN.md
+*.zip
+
+# Local / sistema
+.env
+node_modules/

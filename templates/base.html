@@ -28,7 +28,7 @@
         <span class="hidden md:inline text-white/60 text-xs uppercase tracking-widest">{{ site_settings.tagline|default:"Hub Logístico & Distribución Mayorista" }} • {{ site_settings.cities|default:"Ambato, Ecuador" }}</span>
         <a href="{% url 'core:home' %}#catalogo" class="hover:text-[#fe932c]">Catálogo</a>
         <a href="{% url 'core:home' %}#cotizador" class="hover:text-[#fe932c]">Cotizador</a>
-        <span id="cart-badge" class="bg-[#fe932c] text-black px-2 py-1 rounded text-xs font-bold">0</span>
+        <a href="{% url 'cart:carrito' %}" class="hover:text-[#fe932c]">Carrito <span id="cart-badge" class="bg-[#fe932c] text-black px-2 py-1 rounded text-xs font-bold">0</span></a>
         {% if user.is_authenticated %}
           <span class="text-white/70">{{ user.username }}</span>
           <a href="{% url 'admin:index' %}" class="underline">Gestión</a>
@@ -53,6 +53,8 @@
       </div>
     </div>
   </footer>
+  {% load static %}
+  <script src="{% static 'js/cart.js' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

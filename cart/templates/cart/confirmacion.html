@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Pedido {{ pedido.codigo }} recibido{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto px-6 py-16 text-center">
+  <p class="text-xs uppercase tracking-widest text-green-700 font-bold">Pedido recibido</p>
+  <h1 class="font-grotesk text-3xl font-bold mt-2">{{ pedido.codigo }}</h1>
+  <p class="mt-3 text-gray-600">Gracias {{ pedido.nombre_completo }}. Coordinamos pago y entrega por WhatsApp al {{ pedido.telefono }}.</p>
+  <div class="mt-6 bg-white border rounded-xl p-6 text-left">
+    {% for it in pedido.items.all %}
+    <div class="flex justify-between py-2 border-b text-sm"><span>{{ it.nombre_snapshot }} x{{ it.cantidad }}</span><span class="font-bold">USD {{ it.precio_snapshot }}</span></div>
+    {% endfor %}
+    <div class="flex justify-between py-3 font-bold"><span>Total</span><span>USD {{ pedido.total }}</span></div>
+  </div>
+  <a href="{% url 'core:home' %}" class="inline-block mt-6 underline">Volver al inicio</a>
+</div>
+{% endblock %}

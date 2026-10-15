@@ -56,3 +56,28 @@ class VentaTest(TestCase):
         sale, err = validar_codigo(self.sale.codigo)
         self.assertIsNone(sale)
         self.assertIn("vencido", err)
+
+    def test_checkout_endpoint_crea_pedido(self):
+        resp = self.client.post(
+            "/carrito/checkout/",
+            data={
+                "codigo": self.sale.codigo,
+                "datos": {"nombre_completo": "María Torres Vega", "documento_identidad": "1701234567",
+                          "email": "maria@mail.com", "telefono": "0987654321"},
+                "items": [{"sku": "MPG-T", "cantidad": 1}],
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertTrue(body["ok"])
+        self.assertEqual(Order.objects.count(), 1)
+
+    def test_checkout_sin_codigo_falla(self):
+        resp = self.client.post(
+            "/carrito/checkout/",
+            data={"codigo": "MPI-XXXXXX", "datos": {}, "items": []},
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertFalse(resp.json()["ok"])

@@ -24,6 +24,7 @@
       if (found) found.cantidad = Math.min(9999, found.cantidad + 1);
       else items.push({ sku, nombre, precio: Number(precio), cantidad: 1 });
       save(items);
+      toast(nombre + " agregado ✓");
     },
     setQty(sku, qty) {
       let items = load();
@@ -38,9 +39,27 @@
   };
 
   function renderBadge() {
+    const n = totalQty(load());
     document.querySelectorAll("#cart-badge").forEach((el) => {
-      el.textContent = totalQty(load());
+      el.textContent = n;
     });
+    document.querySelectorAll(".mobile-cart-count").forEach((el) => {
+      el.textContent = n;
+    });
+  }
+
+  function toast(msg) {
+    let box = document.getElementById("mpi-toast");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "mpi-toast";
+      box.className = "fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-[#0A0A0B] text-white text-sm font-semibold px-5 py-3 rounded-lg shadow-xl transition-opacity";
+      document.body.appendChild(box);
+    }
+    box.textContent = msg;
+    box.style.opacity = "1";
+    clearTimeout(box._t);
+    box._t = setTimeout(() => { box.style.opacity = "0"; }, 2200);
   }
 
   function renderCart() {
@@ -48,7 +67,7 @@
     if (!box) return;
     const items = load();
     if (!items.length) {
-      box.innerHTML = '<p class="text-sm text-gray-500">Tu carrito está vacío.</p>';
+      box.innerHTML = '<p class="text-sm text-gray-500">Tu carrito está vacío.</p><a class="text-sm font-bold text-[#8C6D00] underline" href="/catalogo/">Explorar catálogo →</a>';
     } else {
       box.innerHTML = items.map((i) => `
         <div class="flex items-center justify-between gap-3 border rounded p-3 bg-white">
@@ -81,4 +100,8 @@
   });
 
   document.addEventListener("DOMContentLoaded", () => { renderBadge(); renderCart(); });
+  // Sincroniza entre pestañas: lo que cambia en una se refleja en las demás.
+  window.addEventListener("storage", (e) => {
+    if (e.key === KEY) { renderBadge(); renderCart(); }
+  });
 })();

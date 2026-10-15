@@ -14,7 +14,8 @@
     <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Usa el <strong>código</strong> que te compartimos por WhatsApp junto a tus datos.</p>
     <form id="checkout-form" class="mt-4 flex flex-col gap-space-sm">
       {% csrf_token %}
-      <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Código de compra (WhatsApp) *<input name="codigo" required class="mt-1 w-full bg-surface border border-outline-variant rounded px-space-md py-2.5 font-body-sm" placeholder="MPI-XXXXXX" /></label>
+      <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Código de compra (WhatsApp) *<input name="codigo" required class="mt-1 w-full bg-surface border border-outline-variant rounded px-space-md py-2.5 font-body-sm" placeholder="MPI-XXXXXX" style="text-transform:uppercase" /></label>
+      <a target="_blank" href="https://wa.me/{{ site_settings.whatsapp_number|default:'593963796222' }}?text=Hola%20MEGA%20PRIME%2C%20solicito%20mi%20c%C3%B3digo%20de%20compra%20para%20procesar%20mi%20pedido%20web." class="inline-flex items-center justify-center gap-2 bg-green-700 hover:bg-green-800 text-white font-label-sm text-label-sm uppercase tracking-wider px-space-md py-2.5 rounded-lg font-bold">Solicitar este código por WhatsApp</a>
       <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Nombre completo *<input name="nombre_completo" required class="mt-1 w-full bg-surface border border-outline-variant rounded px-space-md py-2.5 font-body-sm" /></label>
       <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Documento de identidad *<input name="documento_identidad" required class="mt-1 w-full bg-surface border border-outline-variant rounded px-space-md py-2.5 font-body-sm" placeholder="Cédula / RUC / Pasaporte" /></label>
       <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Correo electrónico *<input name="email" type="email" required class="mt-1 w-full bg-surface border border-outline-variant rounded px-space-md py-2.5 font-body-sm" /></label>
@@ -33,6 +34,7 @@ document.getElementById("checkout-form").addEventListener("submit", async (e) =>
   const err = document.getElementById("checkout-error");
   err.classList.add("hidden");
   const fd = new FormData(e.target);
+  if (!window.MpiCart.items().length) { err.textContent = "Tu carrito está vacío. Agrega productos primero."; err.classList.remove("hidden"); return; }
   const res = await fetch("{% url 'cart:checkout' %}", {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-CSRFToken": fd.get("csrfmiddlewaretoken") },

@@ -12,7 +12,10 @@
     {% endfor %}
     <div class="flex justify-between py-3 font-headline-sm text-headline-sm font-bold text-primary"><span>Total</span><span>USD {{ pedido.total }}</span></div>
   </div>
-  <a href="{% url 'core:home' %}" class="inline-block mt-6 font-label-sm text-label-sm text-secondary uppercase tracking-wider underline">Volver al inicio</a>
+  <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+    <a target="_blank" href="https://wa.me/{{ site_settings.whatsapp_number|default:'593963796222' }}?text=Hola%20MEGA%20PRIME%2C%20mi%20pedido%20{{ pedido.codigo }}%20qued%C3%B3%20registrado.%20Coordinemos%20pago%20y%20entrega." class="inline-flex items-center justify-center gap-2 bg-green-700 hover:bg-green-800 text-white font-label-sm text-label-sm uppercase tracking-wider px-space-lg py-3 rounded-lg font-bold">Coordinar por WhatsApp</a>
+    <a href="{% url 'core:home' %}" class="inline-flex items-center justify-center font-label-sm text-label-sm text-secondary uppercase tracking-wider underline px-space-lg py-3">Volver al inicio</a>
+  </div>
 </div>
 </section>
 {% endblock %}

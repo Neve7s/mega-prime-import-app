@@ -6,6 +6,7 @@ docs/
 *.xls
 *_xlsx.zip
 _xlsx/
+*.sql
 
 # Assets de diseño / referencia (no sirven al sitio)
 screen.png

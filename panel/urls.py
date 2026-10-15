@@ -19,4 +19,5 @@ urlpatterns = [
     path("codigos/<str:codigo>/", views.codigo_detalle, name="codigo_detalle"),
     path("ajustes/", views.ajustes, name="ajustes"),
     path("calculadora/", views.calculadora, name="calculadora"),
+    path("calculadora/reporte/", views.calculadora_reporte, name="calculadora_reporte"),
 ]

@@ -3,14 +3,15 @@ from urllib.parse import quote
 from django.contrib.auth import logout
 from django.shortcuts import get_object_or_404, redirect, render
 
-from calculator.models import HSCode, TaxRule
-from calculator.services import estimate
+from calculator.models import TaxRule
 from cart.models import Order, OrderItem, SaleCode
 from catalog.models import Product
 from core.models import SiteSettings
 
+from django.views.decorators.csrf import ensure_csrf_cookie
+
 from .auth import staff_only
-from .forms import CalculadoraForm, OrderEstadoForm, ProductForm, SaleCodeForm, SiteSettingsForm
+from .forms import OrderEstadoForm, ProductForm, SaleCodeForm, SiteSettingsForm
 
 
 @staff_only
@@ -163,19 +164,206 @@ def ajustes(request):
 
 
 @staff_only
+@ensure_csrf_cookie
 def calculadora(request):
-    form = CalculadoraForm(request.GET or None)
-    resultado = None
+    from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+
+    from calculator.seed_embarques import EMBARQUES
+    from calculator.services import calculate_shipment
+
+    def _num(v, default=0):
+        try:
+            s = str(v).strip().replace(",", "")
+            return Decimal(s) if s not in ("", None) else Decimal(str(default))
+        except (InvalidOperation, ValueError, TypeError, AttributeError):
+            return Decimal(str(default))
+
+    def _q2(v):
+        return str(Decimal(str(v)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+
+    # Datos para el selector de embarques (gastos redondeados a 2 dec. para mostrar).
+    embarques_ui = {
+        key: {"nombre": e["nombre"], "tasas": e["tasas"],
+              "gastos": {k: _q2(v) for k, v in e["gastos"].items()},
+              "items": e["items"]}
+        for key, e in EMBARQUES.items()
+    }
+    sel = request.GET.get("embarque", "roma")
+    if sel not in EMBARQUES and sel != "nuevo":
+        sel = "roma"
+    if sel == "nuevo":
+        # Embarque en blanco: tasas generales, gastos en 0 y una fila vacía.
+        defaults_tasas = {"seguro_pct": "1", "advalorem_pct": "20",
+                          "fondinfa_pct": "0.5", "iva_pct": "15", "iva_pvp_pct": "15"}
+        defaults_gastos = {k: "0" for k in
+                           ("flete_intl", "flete_local", "gasto_admin", "bodegaje",
+                            "devolucion", "comision_banco", "descarga", "agente",
+                            "otros_unit")}
+        defaults_items = [{"nombre": "", "cant": "1", "cant_caja": "1",
+                           "valor_unit": "0", "margen_pct": "35",
+                           "compet1": "", "compet2": "", "compet3": "",
+                           "seguro_pct": "", "advalorem_pct": "",
+                           "fondinfa_pct": "", "iva_pct": ""}]
+    else:
+        seed = EMBARQUES[sel]
+        defaults_tasas = dict(seed["tasas"])
+        defaults_gastos = {k: _q2(v) for k, v in seed["gastos"].items()}
+        defaults_items = seed["items"]
+    override_keys = ("seguro_pct", "advalorem_pct", "fondinfa_pct", "iva_pct")
+
+    if request.method == "POST":
+        tasas = {k: _num(request.POST.get(k, v), v) for k, v in defaults_tasas.items()}
+        gastos = {k: _num(request.POST.get(k, v), v) for k, v in defaults_gastos.items()}
+        nombres = request.POST.getlist("nombre")
+        posted = {k: request.POST.getlist(k) for k in
+                  ("cant", "cant_caja", "valor_unit", "margen_pct", "compet1",
+                   "compet2", "compet3") + tuple(f"ov_{k}" for k in override_keys)}
+
+        def _raw(key, i, d=""):
+            lst = posted.get(key, [])
+            if key.startswith("ov_"):
+                lst = request.POST.getlist(key)
+            return lst[i] if i < len(lst) else d
+
+        def _ov(key, i):
+            s = _raw(f"ov_{key}", i, "").strip()
+            return s if s != "" else None
+
+        items = []
+        for i, nombre in enumerate(nombres):
+            if not (nombre.strip() or _raw("cant", i).strip() or _raw("valor_unit", i).strip()):
+                continue
+            items.append({
+                "nombre": nombre.strip() or f"Producto {i+1}",
+                "cant": _num(_raw("cant", i), 0),
+                "cant_caja": _num(_raw("cant_caja", i), 1) or 1,
+                "valor_unit": _num(_raw("valor_unit", i), 0),
+                "margen_pct": _num(_raw("margen_pct", i), 35),
+                "compet1": _num(_raw("compet1", i), 0),
+                "compet2": _num(_raw("compet2", i), 0),
+                "compet3": _num(_raw("compet3", i), 0),
+                # Override por producto: None/vacío = usa tasa general.
+                "seguro_pct": _ov("seguro_pct", i),
+                "advalorem_pct": _ov("advalorem_pct", i),
+                "fondinfa_pct": _ov("fondinfa_pct", i),
+                "iva_pct": _ov("iva_pct", i),
+            })
+        # valores para repintar el form
+        tasas_raw = {k: request.POST.get(k, v) for k, v in defaults_tasas.items()}
+        gastos_raw = {k: request.POST.get(k, v) for k, v in defaults_gastos.items()}
+
+        def _rl(key, i):
+            lst = request.POST.getlist(key)
+            return lst[i] if i < len(lst) else ""
+
+        items_raw = [{"nombre": n,
+                      "cant": _rl("cant", i),
+                      "cant_caja": _rl("cant_caja", i),
+                      "valor_unit": _rl("valor_unit", i),
+                      "margen_pct": _rl("margen_pct", i),
+                      "compet1": _rl("compet1", i),
+                      "compet2": _rl("compet2", i),
+                      "compet3": _rl("compet3", i),
+                      "seguro_pct": _rl("ov_seguro_pct", i),
+                      "advalorem_pct": _rl("ov_advalorem_pct", i),
+                      "fondinfa_pct": _rl("ov_fondinfa_pct", i),
+                      "iva_pct": _rl("ov_iva_pct", i)}
+                     for i, n in enumerate(nombres)]
+        calc = calculate_shipment(items, gastos, tasas)
+        return render(request, "panel/calculadora.html",
+                      {"tasas": tasas_raw, "gastos": gastos_raw, "items_raw": items_raw,
+                       "calc": calc, "rule": TaxRule.get_active(),
+                       "embarques_ui": embarques_ui, "embarque_sel": sel})
     rule = TaxRule.get_active()
-    if form.is_valid():
-        hs = form.cleaned_data["hs_code"]
-        resultado = estimate(
-            form.cleaned_data["valor_fob"], form.cleaned_data["flete"], form.cleaned_data["seguro"],
-            hs.ad_valorem_pct if hs else 0,
-            rule.fodinfa_pct if rule else 0, rule.iva_pct if rule else 0,
-        )
     return render(request, "panel/calculadora.html",
-                  {"form": form, "resultado": resultado, "rule": rule})
+                  {"tasas": defaults_tasas, "gastos": defaults_gastos,
+                   "items_raw": defaults_items, "calc": None, "rule": rule,
+                   "embarques_ui": embarques_ui, "embarque_sel": sel})
+
+
+@staff_only
+def calculadora_reporte(request):
+    """Descarga el reporte del embarque en .xlsx presentable.
+
+    Recibe el estado actual de la calculadora como JSON (el cálculo en vivo
+    corre en el navegador; aquí se recalcula en el servidor como fuente única
+    de verdad antes de generar el archivo).
+    """
+    import json as _json
+    from datetime import datetime
+    from decimal import Decimal, InvalidOperation
+    from django.http import HttpResponse, JsonResponse
+
+    from calculator.reports import build_reporte_xlsx
+    from calculator.services import calculate_shipment
+
+    if request.method != "POST":
+        return JsonResponse({"error": "Solo POST."}, status=405)
+    try:
+        payload = _json.loads(request.body.decode("utf-8") or "{}")
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({"error": "JSON inválido."}, status=400)
+
+    def _num(v, default=0):
+        try:
+            s = str(v).strip().replace(",", ".")
+            return Decimal(s) if s not in ("", None) else Decimal(str(default))
+        except (InvalidOperation, ValueError, TypeError, AttributeError):
+            return Decimal(str(default))
+
+    def _ov(v):
+        s = str(v or "").strip()
+        return s if s != "" else None
+
+    t = payload.get("tasas", {})
+    tasas = {"seguro_pct": _num(t.get("seguro_pct"), 1),
+             "advalorem_pct": _num(t.get("advalorem_pct"), 20),
+             "fondinfa_pct": _num(t.get("fondinfa_pct"), "0.5"),
+             "iva_pct": _num(t.get("iva_pct"), 15),
+             "iva_pvp_pct": _num(t.get("iva_pvp_pct"), 15)}
+    g = payload.get("gastos", {})
+    gastos = {"flete_intl": _num(g.get("flete_intl"), 0),
+              "flete_local": _num(g.get("flete_local"), 0),
+              "gasto_admin": _num(g.get("gasto_admin"), 0),
+              "bodegaje": _num(g.get("bodegaje"), 0),
+              "devolucion": _num(g.get("devolucion"), 0),
+              "comision_banco": _num(g.get("comision_banco"), 0),
+              "descarga": _num(g.get("descarga"), 0),
+              "agente": _num(g.get("agente"), 0),
+              "otros_unit": _num(g.get("otros_unit"), 0)}
+    items = []
+    for i, it in enumerate(payload.get("items", [])):
+        nombre = str(it.get("nombre") or "").strip()
+        if not (nombre or str(it.get("cant") or "").strip()
+                or str(it.get("valor_unit") or "").strip()):
+            continue
+        items.append({
+            "nombre": nombre or f"Producto {i + 1}",
+            "cant": _num(it.get("cant"), 0),
+            "cant_caja": _num(it.get("cant_caja"), 1) or Decimal(1),
+            "valor_unit": _num(it.get("valor_unit"), 0),
+            "margen_pct": _num(it.get("margen_pct"), 35),
+            "compet1": _num(it.get("compet1"), 0),
+            "compet2": _num(it.get("compet2"), 0),
+            "compet3": _num(it.get("compet3"), 0),
+            "seguro_pct": _ov(it.get("seguro_pct")),
+            "advalorem_pct": _ov(it.get("advalorem_pct")),
+            "fondinfa_pct": _ov(it.get("fondinfa_pct")),
+            "iva_pct": _ov(it.get("iva_pct")),
+        })
+    if not items:
+        return JsonResponse({"error": "Sin productos."}, status=400)
+    calc = calculate_shipment(items, gastos, tasas)
+    if calc["error"]:
+        return JsonResponse({"error": calc["error"]}, status=400)
+    nombre = str(payload.get("embarque") or "Embarque").strip()[:60]
+    data = build_reporte_xlsx(calc, tasas, gastos, nombre)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M")
+    resp = HttpResponse(
+        data,
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    resp["Content-Disposition"] = f'attachment; filename="reporte-embarque-{stamp}.xlsx"'
+    return resp
 
 
 def salir(request):

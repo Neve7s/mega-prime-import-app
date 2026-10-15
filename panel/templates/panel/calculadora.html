@@ -1,14 +1,473 @@
 {% extends "panel/base_panel.html" %}
 {% block title %}Calculadora — Panel{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold">Calculadora de impuestos</h1>
-<p class="text-sm text-gray-500">Regla activa: {{ rule|default:"sin regla" }}</p>
-<form method="get" class="panel-form mt-4 bg-white border rounded-xl p-5 flex flex-col gap-3 max-w-xl">
-{% include "panel/_form.html" with form=form %}
-<button class="bg-[#0A0A0B] text-[#D4AF37] py-2.5 rounded-lg font-bold">Calcular</button></form>
-{% if resultado %}
-<div class="mt-4 bg-white border rounded-xl p-5 max-w-xl">
-  {% for k, v in resultado.items %}<div class="flex justify-between text-sm py-1.5 border-b last:border-0"><span class="uppercase text-gray-500 text-xs font-bold">{{ k }}</span><span class="font-bold">USD {{ v }}</span></div>{% endfor %}
+<div id="calc-app">
+<style>
+  /* Números estilo planilla: sin caja ni flechitas, valor siempre visible */
+  #calc-app input[type="number"] { text-align: right; font-variant-numeric: tabular-nums; padding: 4px 6px; }
+  #calc-app input[type="number"]::-webkit-outer-spin-button,
+  #calc-app input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  #calc-app input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+  #tasas-box input[type="number"] { width: 68px; }
+  #items-table { table-layout: fixed; }
+  #items-table input[type="number"] {
+    width: 100%; min-width: 0; border: 1px solid transparent;
+    background: transparent; border-radius: 0.375rem; padding: 3px 4px; font-size: 12px;
+  }
+  #items-table input[type="number"]:hover { border-color: #e4e4e7; background: #fff; }
+  #items-table input[type="number"]:focus { outline: none; border-color: #D4AF37; background: #fff; box-shadow: 0 0 0 2px rgba(212,175,55,.2); }
+  #items-table input[type="number"]::placeholder { color: #d4d4d8; }
+  #items-table td { padding: 2px 3px; }
+  /* Nombre: con caja (como te gusta) pero estirando toda la columna */
+  #items-table input[name="nombre"] {
+    width: 100%; min-width: 230px; border: 1px solid #e4e4e7; background: #fff;
+    border-radius: 0.375rem; padding: 3px 6px; font-size: 12px;
+  }
+  #items-table input[name="nombre"]:focus { outline: none; border-color: #D4AF37; box-shadow: 0 0 0 2px rgba(212,175,55,.2); }
+  /* Tasas y gastos: mismo estilo planilla, sin caja hasta editar */
+  #tasas-box input[type="number"], #gastos-box input[type="number"] {
+    border: 1px solid transparent; background: transparent;
+  }
+  #tasas-box input[type="number"]:hover, #gastos-box input[type="number"]:hover { border-color: #e4e4e7; background: #fff; }
+  #tasas-box input[type="number"]:focus, #gastos-box input[type="number"]:focus {
+    outline: none; border-color: #D4AF37; background: #fff; box-shadow: 0 0 0 2px rgba(212,175,55,.2);
+  }
+</style>
+
+<!-- ══ Encabezado: título + impuestos generales al otro lado ══ -->
+<div class="bg-white border rounded-xl px-4 py-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+  <div>
+    <h1 class="text-xl font-bold leading-tight">Calculadora de impuestos</h1>
+    <p class="text-xs text-gray-500">Réplica COSTOS ROMA.xlsx · prorrateo por cantidad · vacío en ⚙ = usa el general</p>
+  </div>
+  <div class="flex items-end gap-2 panel-form" id="tasas-box">
+    <label class="text-[10px] font-bold text-gray-500 uppercase">Seguro %<input id="t_seguro" type="number" step="0.01" min="0" value="{{ tasas.seguro_pct }}" /></label>
+    <label class="text-[10px] font-bold text-gray-500 uppercase">Ad-Val %<input id="t_adval" type="number" step="0.01" min="0" value="{{ tasas.advalorem_pct }}" /></label>
+    <label class="text-[10px] font-bold text-gray-500 uppercase">Fondinfa %<input id="t_fond" type="number" step="0.01" min="0" value="{{ tasas.fondinfa_pct }}" /></label>
+    <label class="text-[10px] font-bold text-gray-500 uppercase" title="IVA de importación: se paga en aduana y SUMA al costo">IVA import. %<input id="t_iva" type="number" step="0.01" min="0" value="{{ tasas.iva_pct }}" /></label>
+    <label class="text-[10px] font-bold text-gray-500 uppercase" title="IVA de venta: se cobra al cliente en la factura, NO es costo">IVA venta %<input id="t_iva_pvp" type="number" step="0.01" min="0" value="{{ tasas.iva_pvp_pct }}" /></label>
+  </div>
 </div>
-{% endif %}
+
+<!-- ══ Gastos origen / destino compactos ══ -->
+<div class="bg-white border rounded-xl px-4 py-3 mt-3">
+  <div class="grid md:grid-cols-2 gap-x-6 gap-y-1 panel-form" id="gastos-box">
+    <div>
+      <div class="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-1">Origen</div>
+      <div class="grid grid-cols-2 gap-2">
+        <label class="text-[11px] text-gray-500">Flete intl<input id="g_flete_intl" type="number" step="0.01" min="0" value="{{ gastos.flete_intl }}" /></label>
+        <label class="text-[11px] text-gray-500">ISD / Comisión<input id="g_comision" type="number" step="0.01" min="0" value="{{ gastos.comision_banco }}" /></label>
+      </div>
+    </div>
+    <div>
+      <div class="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-1">Destino</div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <label class="text-[11px] text-gray-500">Flete local<input id="g_flete_local" type="number" step="0.01" min="0" value="{{ gastos.flete_local }}" /></label>
+        <label class="text-[11px] text-gray-500">Bodegaje<input id="g_bodegaje" type="number" step="0.01" min="0" value="{{ gastos.bodegaje }}" /></label>
+        <label class="text-[11px] text-gray-500">Devolución<input id="g_devol" type="number" step="0.01" min="0" value="{{ gastos.devolucion }}" /></label>
+        <label class="text-[11px] text-gray-500">Admin<input id="g_admin" type="number" step="0.01" min="0" value="{{ gastos.gasto_admin }}" /></label>
+        <label class="text-[11px] text-gray-500">Descarga<input id="g_descarga" type="number" step="0.01" min="0" value="{{ gastos.descarga }}" /></label>
+        <label class="text-[11px] text-gray-500">Agente<input id="g_agente" type="number" step="0.01" min="0" value="{{ gastos.agente }}" /></label>
+        <label class="text-[11px] text-gray-500">Otros x und<input id="g_otros" type="number" step="0.01" min="0" value="{{ gastos.otros_unit }}" /></label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Resumen en vivo + descargar ══ -->
+<div class="bg-white border rounded-xl px-4 py-3 mt-3">
+  <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+    <h2 class="font-bold text-xs uppercase tracking-wide">Reporte del embarque <span class="font-normal normal-case text-gray-400">(se actualiza solo)</span></h2>
+    <button type="button" id="btn-reporte" class="bg-[#0A0A0B] text-[#D4AF37] text-xs font-bold px-4 py-2 rounded-lg">⬇ Descargar reporte</button>
+  </div>
+  <div id="calc-error" class="hidden text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-2"></div>
+  <div class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-2 text-center">
+    <div class="bg-gray-50 rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-gray-400 font-bold">FOB</div><div class="text-xs font-bold" id="r_fob">–</div></div>
+    <div class="bg-gray-50 rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-gray-400 font-bold">Flete</div><div class="text-xs font-bold" id="r_flete">–</div></div>
+    <div class="bg-gray-50 rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-gray-400 font-bold">Seguro</div><div class="text-xs font-bold" id="r_seguro">–</div></div>
+    <div class="bg-gray-50 rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-gray-400 font-bold">Ad-Val</div><div class="text-xs font-bold" id="r_adval">–</div></div>
+    <div class="bg-gray-50 rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-gray-400 font-bold">Fondinfa</div><div class="text-xs font-bold" id="r_fond">–</div></div>
+    <div class="bg-gray-50 rounded-lg px-1 py-1.5" title="IVA pagado en aduana: parte del costo"><div class="text-[9px] uppercase text-gray-400 font-bold">IVA imp.</div><div class="text-xs font-bold" id="r_iva">–</div></div>
+    <div class="bg-gray-50 rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-gray-400 font-bold">Total trib.</div><div class="text-xs font-bold" id="r_trib">–</div></div>
+    <div class="bg-gray-50 rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-gray-400 font-bold">Locales</div><div class="text-xs font-bold" id="r_locales">–</div></div>
+    <div class="bg-[#0A0A0B] rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-[#D4AF37] font-bold">Gran total</div><div class="text-xs font-bold text-[#D4AF37]" id="r_gran">–</div></div>
+    <div class="bg-amber-50 border border-amber-200 rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-amber-600 font-bold">Imp+IVA</div><div class="text-xs font-bold" id="r_imp">–</div></div>
+  </div>
+</div>
+
+<!-- ══ Productos: tabla editable con resultados en vivo ══ -->
+<div class="bg-white border rounded-xl px-4 py-3 mt-3">
+  <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+    <h2 class="font-bold text-xs uppercase tracking-wide">Productos</h2>
+    <div class="flex items-center gap-2 panel-form">
+      <label class="text-[10px] font-bold uppercase text-gray-400">Embarque
+        <select id="embarque-sel" style="min-width:150px">
+          <option value="roma" {% if embarque_sel == "roma" %}selected{% endif %}>Teja Roma (15 ítems)</option>
+          <option value="espanol" {% if embarque_sel == "espanol" %}selected{% endif %}>Teja Español (21 ítems)</option>
+          <option value="nuevo" {% if embarque_sel == "nuevo" %}selected{% endif %}>➕ Nuevo embarque (vacío)</option>
+        </select>
+      </label>
+      <button type="button" id="add-row" class="text-xs font-bold bg-gray-100 border rounded-lg px-3 py-1.5 hover:bg-gray-200">+ Agregar</button>
+    </div>
+  </div>
+  <p class="text-[11px] text-gray-400 mb-2">Edite directo en la tabla — todo se recalcula al escribir. ⚙ o click derecho = impuestos propios del producto.</p>
+  <div class="overflow-x-auto">
+  <table class="w-full text-xs" id="items-table">
+    <colgroup>
+      <col /><col style="width:60px" /><col style="width:54px" /><col style="width:68px" /><col style="width:50px" />
+      <col style="width:62px" /><col style="width:62px" /><col style="width:62px" />
+      <col style="width:80px" /><col style="width:66px" /><col style="width:62px" />
+      <col style="width:68px" /><col style="width:68px" />
+      <col style="width:64px" /><col style="width:26px" />
+    </colgroup>
+    <thead><tr class="text-left text-[10px] uppercase text-gray-400 border-b">
+      <th class="p-1">Producto</th>
+      <th class="p-1 text-right">Cant</th><th class="p-1 text-right">C/Caja</th><th class="p-1 text-right">V. FOB</th><th class="p-1 text-right">Marg%</th>
+      <th class="p-1 text-right">Comp 1</th><th class="p-1 text-right">Comp 2</th><th class="p-1 text-right">Comp 3</th>
+      <th class="p-1 text-right">V. Total</th><th class="p-1 text-right">C. Caja</th><th class="p-1 text-right">C. Unit</th>
+      <th class="p-1 text-right">PVP s/IVA</th><th class="p-1 text-right">PVP c/IVA</th>
+      <th class="p-1"></th><th class="p-1"></th>
+    </tr></thead>
+    <tbody id="items-body" class="panel-form">
+    {% for it in items_raw %}
+      <tr class="border-b item-row hover:bg-gray-50" title="Click derecho = impuestos propios">
+        <td><input name="nombre" value="{{ it.nombre }}" placeholder="Producto..." required /></td>
+        <td><input name="cant" type="number" step="0.01" min="0" value="{{ it.cant }}" required /></td>
+        <td><input name="cant_caja" type="number" step="0.01" min="1" value="{{ it.cant_caja }}" required /></td>
+        <td><input name="valor_unit" type="number" step="0.01" min="0" value="{{ it.valor_unit }}" required /></td>
+        <td><input name="margen_pct" type="number" step="0.01" min="0" max="99" value="{{ it.margen_pct }}" /></td>
+        <td><input name="compet1" type="number" step="0.01" min="0" value="{{ it.compet1 }}" /></td>
+        <td><input name="compet2" type="number" step="0.01" min="0" value="{{ it.compet2 }}" /></td>
+        <td><input name="compet3" type="number" step="0.01" min="0" value="{{ it.compet3 }}" /></td>
+        <td class="p-1 text-right font-bold whitespace-nowrap" data-c="valor_total">–</td>
+        <td class="p-1 text-right font-bold whitespace-nowrap" data-c="costo_caja">–</td>
+        <td class="p-1 text-right whitespace-nowrap" data-c="costo_unit">–</td>
+        <td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="pvp_sin">–</td>
+        <td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="pvp_con">–</td>
+        <td class="p-1 whitespace-nowrap">
+          <button type="button" class="tax-btn text-xs font-bold bg-gray-100 border rounded px-1.5 py-0.5 hover:bg-gray-200" title="Impuestos propios (vacío = general)">⚙</button>
+          <span class="tax-badge text-[9px] font-bold px-1 py-0.5 rounded bg-gray-100 text-gray-500">GEN</span>
+        </td>
+        <td class="p-1"><button type="button" class="rm-row text-red-400 font-bold px-1">×</button></td>
+      </tr>
+      <tr class="tax-row" hidden>
+        <td colspan="15" class="p-2 bg-amber-50/60 border-b">
+          <span class="text-[10px] font-bold uppercase text-amber-700">Impuestos propios <span class="font-normal normal-case text-gray-400">(vacío = general)</span></span>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-1">
+            <label class="text-[11px] text-gray-500">Ad-Valorem %<input name="ov_advalorem_pct" type="number" step="0.01" min="0" value="{{ it.advalorem_pct }}" placeholder="{{ tasas.advalorem_pct }}" /></label>
+            <label class="text-[11px] text-gray-500">Seguro %<input name="ov_seguro_pct" type="number" step="0.01" min="0" value="{{ it.seguro_pct }}" placeholder="{{ tasas.seguro_pct }}" /></label>
+            <label class="text-[11px] text-gray-500">Fondinfa %<input name="ov_fondinfa_pct" type="number" step="0.01" min="0" value="{{ it.fondinfa_pct }}" placeholder="{{ tasas.fondinfa_pct }}" /></label>
+            <label class="text-[11px] text-gray-500" title="IVA de importación de este producto">IVA import. %<input name="ov_iva_pct" type="number" step="0.01" min="0" value="{{ it.iva_pct }}" placeholder="{{ tasas.iva_pct }}" /></label>
+          </div>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+</div><!-- /calc-app -->
+
+{{ embarques_ui|json_script:"embarques-data" }}
+
+<script>
+(function(){
+  "use strict";
+  var body = document.getElementById('items-body');
+  var lastCalc = null;
+
+  function num(v, d){
+    d = (d === undefined) ? 0 : d;
+    if (v === null || v === undefined) return d;
+    var s = String(v).trim().replace(',', '.');
+    if (s === '') return d;
+    var n = parseFloat(s);
+    return isNaN(n) ? d : n;
+  }
+  function q(v){ return Math.round((v + Number.EPSILON) * 100) / 100; }
+  function fmt(v){ return q(v).toFixed(2); }
+  function val(id, d){ var el = document.getElementById(id); return num(el ? el.value : '', d); }
+  function cell(row, name){ return row.querySelector('input[name="' + name + '"]'); }
+  function ovNum(taxRow, name){
+    var el = taxRow.querySelector('input[name="' + name + '"]');
+    if (!el || String(el.value).trim() === '') return null;
+    var n = parseFloat(String(el.value).trim().replace(',', '.'));
+    return isNaN(n) ? null : n;
+  }
+
+  // Réplica en JS de calculator.services.calculate_shipment
+  function compute(){
+    var T = {seg: val('t_seguro', 1), adv: val('t_adval', 20), fon: val('t_fond', 0.5), iva: val('t_iva', 15), ivaPvp: val('t_iva_pvp', 15)};
+    var G = {flete: val('g_flete_intl', 0), local: val('g_flete_local', 0), admin: val('g_admin', 0),
+             bod: val('g_bodegaje', 0), dev: val('g_devol', 0), com: val('g_comision', 0),
+             des: val('g_descarga', 0), age: val('g_agente', 0), otros: val('g_otros', 0)};
+    var rows = Array.prototype.slice.call(body.querySelectorAll('.item-row'));
+    var items = [], totalCant = 0, totalFob = 0;
+    rows.forEach(function(row){
+      var taxRow = row.nextElementSibling;
+      var cant = num(cell(row, 'cant').value, 0);
+      var cc = num(cell(row, 'cant_caja').value, 1) || 1;
+      var vu = num(cell(row, 'valor_unit').value, 0);
+      var fob = cant * vu;
+      totalCant += cant; totalFob += fob;
+      items.push({row: row, taxRow: taxRow,
+        nombre: cell(row, 'nombre').value.trim() || 'Producto',
+        cant: cant, cc: cc, vu: vu, fob: fob,
+        margen: num(cell(row, 'margen_pct').value, 35),
+        c1: num(cell(row, 'compet1').value, 0), c2: num(cell(row, 'compet2').value, 0), c3: num(cell(row, 'compet3').value, 0),
+        sPct: ovNum(taxRow, 'ov_seguro_pct'),
+        aPct: ovNum(taxRow, 'ov_advalorem_pct'),
+        fPct: ovNum(taxRow, 'ov_fondinfa_pct'),
+        vPct: ovNum(taxRow, 'ov_iva_pct')});
+    });
+    if (totalCant <= 0) return {error: 'Ingrese cantidades > 0.', T: T, G: G, items: [], resumen: null};
+
+    var sSeg = 0, sAdv = 0, sFon = 0, sIva = 0;
+    items.forEach(function(it){
+      var ratio = it.cant / totalCant;
+      var sp = it.sPct !== null ? it.sPct : T.seg;
+      var ap = it.aPct !== null ? it.aPct : T.adv;
+      var fp = it.fPct !== null ? it.fPct : T.fon;
+      var vp = it.vPct !== null ? it.vPct : T.iva;
+      it.ratio = ratio; it.sp = sp; it.ap = ap; it.fp = fp; it.vp = vp;
+      it.especial = (it.sPct !== null || it.aPct !== null || it.fPct !== null || it.vPct !== null);
+      it.flete = G.flete * ratio;
+      it.seg = (it.fob + it.flete) * sp / 100;
+      it.adv = (it.fob + it.seg) * ap / 100;
+      it.fon = (it.fob + it.flete + it.seg) * fp / 100;
+      it.iva = (it.fob + it.flete + it.seg + it.adv + it.fon) * vp / 100;
+      sSeg += it.seg; sAdv += it.adv; sFon += it.fon; sIva += it.iva;
+    });
+    var trib = totalFob + G.flete + sSeg + sAdv + sFon + sIva;
+    var otrosT = G.otros * totalCant;
+    var locales = G.com + G.age + G.local + G.bod + G.dev + G.admin + G.des + otrosT;
+    items.forEach(function(it){
+      var adic = G.com * it.ratio + G.age * it.ratio + G.local * it.ratio + G.bod * it.ratio
+               + G.dev * it.ratio + G.admin * it.ratio + G.des * it.ratio + G.otros * it.cant;
+      it.adic = adic;
+      it.vTotal = it.fob + it.adv + it.flete + it.seg + it.fon + adic;
+      it.cCaja = it.cant ? it.vTotal / it.cant : 0;
+      it.cUnit = it.cc ? it.cCaja / it.cc : it.cCaja;
+      var m = it.margen / 100;
+      it.pvpSin = m < 1 ? it.cCaja / (1 - m) : 0;
+      it.pvpCon = it.pvpSin * (1 + T.ivaPvp / 100);
+    });
+    return {error: null, T: T, G: G, items: items,
+      resumen: {cant: totalCant, fob: totalFob, flete: G.flete, seg: sSeg, adv: sAdv,
+                fon: sFon, iva: sIva, trib: trib, locales: locales,
+                gran: trib + locales, imp: sAdv + sFon + sIva}};
+  }
+
+  function render(){
+    var c = compute();
+    lastCalc = c;
+    var err = document.getElementById('calc-error');
+    if (c.error){
+      err.textContent = c.error; err.classList.remove('hidden');
+      ['r_fob','r_flete','r_seguro','r_adval','r_fond','r_iva','r_trib','r_locales','r_gran','r_imp']
+        .forEach(function(id){ document.getElementById(id).textContent = '–'; });
+      return;
+    }
+    err.classList.add('hidden');
+    var R = c.resumen, set = function(id, v){ document.getElementById(id).textContent = fmt(v); };
+    set('r_fob', R.fob); set('r_flete', R.flete); set('r_seguro', R.seg); set('r_adval', R.adv);
+    set('r_fond', R.fon); set('r_iva', R.iva); set('r_trib', R.trib);
+    set('r_locales', R.locales); set('r_gran', R.gran); set('r_imp', R.imp);
+    c.items.forEach(function(it){
+      var setC = function(k, v){ var el = it.row.querySelector('[data-c="' + k + '"]'); if (el) el.textContent = fmt(v); };
+      setC('valor_total', it.vTotal); setC('costo_caja', it.cCaja); setC('costo_unit', it.cUnit);
+      setC('pvp_sin', it.pvpSin); setC('pvp_con', it.pvpCon);
+      var badge = it.row.querySelector('.tax-badge');
+      if (badge){
+        badge.textContent = it.especial ? 'ESP' : 'GEN';
+        badge.className = 'tax-badge text-[9px] font-bold px-1 py-0.5 rounded ' + (it.especial ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500');
+        if (it.especial && it.taxRow) it.taxRow.hidden = false;
+      }
+    });
+  }
+
+  function syncPlaceholders(){
+    var map = {'ov_advalorem_pct': 't_adval', 'ov_seguro_pct': 't_seguro', 'ov_fondinfa_pct': 't_fond', 'ov_iva_pct': 't_iva'};
+    Object.keys(map).forEach(function(ov){
+      var g = document.getElementById(map[ov]);
+      var gv = g ? g.value : '';
+      document.querySelectorAll('input[name="' + ov + '"]').forEach(function(i){ i.placeholder = gv; });
+    });
+  }
+
+  function esc(s){
+    return String(s === undefined || s === null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  }
+  function rowHtml(it){
+    it = it || {};
+    var g = function(k, d){ return esc(it[k] !== undefined && it[k] !== '' ? it[k] : (d !== undefined ? d : '')); };
+    return '<tr class="border-b item-row hover:bg-gray-50" title="Click derecho = impuestos propios">'
+      + '<td><input name="nombre" placeholder="Producto..." required value="' + esc(it.nombre || '') + '" /></td>'
+      + '<td><input name="cant" type="number" step="0.01" min="0" value="' + g('cant', '1') + '" required /></td>'
+      + '<td><input name="cant_caja" type="number" step="0.01" min="1" value="' + g('cant_caja', '1') + '" required /></td>'
+      + '<td><input name="valor_unit" type="number" step="0.01" min="0" value="' + g('valor_unit', '0') + '" required /></td>'
+      + '<td><input name="margen_pct" type="number" step="0.01" min="0" max="99" value="' + g('margen_pct', '35') + '" /></td>'
+      + '<td><input name="compet1" type="number" step="0.01" min="0" value="' + g('compet1') + '" /></td>'
+      + '<td><input name="compet2" type="number" step="0.01" min="0" value="' + g('compet2') + '" /></td>'
+      + '<td><input name="compet3" type="number" step="0.01" min="0" value="' + g('compet3') + '" /></td>'
+      + '<td class="p-1 text-right font-bold whitespace-nowrap" data-c="valor_total">–</td>'
+      + '<td class="p-1 text-right font-bold whitespace-nowrap" data-c="costo_caja">–</td>'
+      + '<td class="p-1 text-right whitespace-nowrap" data-c="costo_unit">–</td>'
+      + '<td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="pvp_sin">–</td>'
+      + '<td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="pvp_con">–</td>'
+      + '<td class="p-1 whitespace-nowrap"><button type="button" class="tax-btn text-xs font-bold bg-gray-100 border rounded px-1.5 py-0.5 hover:bg-gray-200" title="Impuestos propios (vacío = general)">⚙</button> <span class="tax-badge text-[9px] font-bold px-1 py-0.5 rounded bg-gray-100 text-gray-500">GEN</span></td>'
+      + '<td class="p-1"><button type="button" class="rm-row text-red-400 font-bold px-1">×</button></td></tr>'
+      + '<tr class="tax-row" hidden><td colspan="15" class="p-2 bg-amber-50/60 border-b">'
+      + '<span class="text-[10px] font-bold uppercase text-amber-700">Impuestos propios <span class="font-normal normal-case text-gray-400">(vacío = general)</span></span>'
+      + '<div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-1">'
+      + '<label class="text-[11px] text-gray-500">Ad-Valorem %<input name="ov_advalorem_pct" type="number" step="0.01" min="0" value="' + esc((it || {}).advalorem_pct) + '" /></label>'
+      + '<label class="text-[11px] text-gray-500">Seguro %<input name="ov_seguro_pct" type="number" step="0.01" min="0" value="' + esc((it || {}).seguro_pct) + '" /></label>'
+      + '<label class="text-[11px] text-gray-500">Fondinfa %<input name="ov_fondinfa_pct" type="number" step="0.01" min="0" value="' + esc((it || {}).fondinfa_pct) + '" /></label>'
+      + '<label class="text-[11px] text-gray-500" title="IVA de importación de este producto">IVA import. %<input name="ov_iva_pct" type="number" step="0.01" min="0" value="' + esc((it || {}).iva_pct) + '" /></label>'
+      + '</div></td></tr>';
+  }
+  function blankRow(){ return rowHtml({}); }
+
+  // ── Cargar embarque completo del Excel (tasas + gastos + productos) ──
+  var EMBARQUES = {};
+  try { EMBARQUES = JSON.parse(document.getElementById('embarques-data').textContent); } catch (e) { EMBARQUES = {}; }
+  function setVal(id, v){ var el = document.getElementById(id); if (el) el.value = v; }
+  var TASAS_GENERALES = {seguro_pct: '1', advalorem_pct: '20', fondinfa_pct: '0.5', iva_pct: '15', iva_pvp_pct: '15'};
+  function cargarEmbarque(key){
+    if (key === 'nuevo') {
+      setVal('t_seguro', TASAS_GENERALES.seguro_pct); setVal('t_adval', TASAS_GENERALES.advalorem_pct);
+      setVal('t_fond', TASAS_GENERALES.fondinfa_pct); setVal('t_iva', TASAS_GENERALES.iva_pct);
+      setVal('t_iva_pvp', TASAS_GENERALES.iva_pvp_pct);
+      ['g_flete_intl','g_flete_local','g_admin','g_bodegaje','g_devol','g_comision','g_descarga','g_agente','g_otros']
+        .forEach(function(id){ setVal(id, '0'); });
+      body.innerHTML = rowHtml({nombre: '', cant: '1', cant_caja: '1', valor_unit: '0', margen_pct: '35'});
+      syncPlaceholders(); render();
+      return;
+    }
+    var E = EMBARQUES[key];
+    if (!E) return;
+    setVal('t_seguro', E.tasas.seguro_pct); setVal('t_adval', E.tasas.advalorem_pct);
+    setVal('t_fond', E.tasas.fondinfa_pct); setVal('t_iva', E.tasas.iva_pct);
+    setVal('t_iva_pvp', E.tasas.iva_pvp_pct);
+    setVal('g_flete_intl', E.gastos.flete_intl); setVal('g_flete_local', E.gastos.flete_local);
+    setVal('g_admin', E.gastos.gasto_admin); setVal('g_bodegaje', E.gastos.bodegaje);
+    setVal('g_devol', E.gastos.devolucion); setVal('g_comision', E.gastos.comision_banco);
+    setVal('g_descarga', E.gastos.descarga); setVal('g_agente', E.gastos.agente);
+    setVal('g_otros', E.gastos.otros_unit);
+    var html = '';
+    E.items.forEach(function(it){ html += rowHtml(it); });
+    body.innerHTML = html;
+    syncPlaceholders(); render();
+  }
+  document.getElementById('embarque-sel').addEventListener('change', function(){
+    cargarEmbarque(this.value);
+  });
+
+  document.getElementById('add-row').addEventListener('click', function(){
+    body.insertAdjacentHTML('beforeend', blankRow());
+    syncPlaceholders(); render();
+  });
+  body.addEventListener('click', function(e){
+    if (e.target && e.target.classList.contains('rm-row')) {
+      if (body.querySelectorAll('.item-row').length > 1) {
+        var row = e.target.closest('tr');
+        var tx = row.nextElementSibling;
+        if (tx && tx.classList.contains('tax-row')) tx.remove();
+        row.remove(); render();
+      }
+      return;
+    }
+    if (e.target && e.target.classList.contains('tax-btn')) {
+      var row = e.target.closest('tr');
+      var tx = row.nextElementSibling;
+      if (tx && tx.classList.contains('tax-row')) tx.hidden = !tx.hidden;
+    }
+  });
+  body.addEventListener('contextmenu', function(e){
+    var row = e.target.closest ? e.target.closest('.item-row') : null;
+    if (!row) return;
+    e.preventDefault();
+    var tx = row.nextElementSibling;
+    if (tx && tx.classList.contains('tax-row')) tx.hidden = !tx.hidden;
+  });
+  document.getElementById('calc-app').addEventListener('input', function(){
+    syncPlaceholders(); render();
+  });
+
+  // ── Descargar reporte (.xlsx presentable, generado en el servidor) ──
+  function getCookie(name){
+    var m = document.cookie.match(new RegExp('(^|;\\s*)' + name + '=([^;]*)'));
+    return m ? decodeURIComponent(m[2]) : '';
+  }
+  function collectState(){
+    var gv = function(id){ var el = document.getElementById(id); return el ? el.value : ''; };
+    var sel = document.getElementById('embarque-sel');
+    var payload = {
+      embarque: sel ? sel.options[sel.selectedIndex].text : 'Embarque',
+      tasas: {seguro_pct: gv('t_seguro'), advalorem_pct: gv('t_adval'), fondinfa_pct: gv('t_fond'),
+              iva_pct: gv('t_iva'), iva_pvp_pct: gv('t_iva_pvp')},
+      gastos: {flete_intl: gv('g_flete_intl'), flete_local: gv('g_flete_local'), gasto_admin: gv('g_admin'),
+               bodegaje: gv('g_bodegaje'), devolucion: gv('g_devol'), comision_banco: gv('g_comision'),
+               descarga: gv('g_descarga'), agente: gv('g_agente'), otros_unit: gv('g_otros')},
+      items: []
+    };
+    body.querySelectorAll('.item-row').forEach(function(row){
+      var tx = row.nextElementSibling;
+      var v = function(n){ var el = row.querySelector('input[name="' + n + '"]'); return el ? el.value : ''; };
+      var o = function(n){ var el = tx ? tx.querySelector('input[name="' + n + '"]') : null; return el ? el.value : ''; };
+      payload.items.push({nombre: v('nombre'), cant: v('cant'), cant_caja: v('cant_caja'),
+        valor_unit: v('valor_unit'), margen_pct: v('margen_pct'),
+        compet1: v('compet1'), compet2: v('compet2'), compet3: v('compet3'),
+        seguro_pct: o('ov_seguro_pct'), advalorem_pct: o('ov_advalorem_pct'),
+        fondinfa_pct: o('ov_fondinfa_pct'), iva_pct: o('ov_iva_pct')});
+    });
+    return payload;
+  }
+  document.getElementById('btn-reporte').addEventListener('click', async function(){
+    if (!lastCalc || lastCalc.error){ alert(lastCalc && lastCalc.error ? lastCalc.error : 'Sin datos.'); return; }
+    var btn = this, old = btn.textContent;
+    btn.disabled = true; btn.textContent = '⏳ Generando…';
+    var URL_REPORTE = '{% url "panel:calculadora_reporte" %}';
+    function doPost(){
+      return fetch(URL_REPORTE, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+        body: JSON.stringify(collectState())
+      });
+    }
+    try {
+      var r = await doPost();
+      if (r.status === 403) {
+        // Página vieja cacheada sin cookie CSRF: recargamos la cookie y reintentamos una vez
+        await fetch(window.location.href, {credentials: 'same-origin'});
+        r = await doPost();
+      }
+      if (!r.ok) {
+        var detail = '';
+        try { var j = await r.clone().json(); if (j && j.error) detail = j.error; } catch (e) {}
+        if (r.status === 404) throw new Error('El servidor no tiene el generador de reportes: detenga y vuelva a iniciar el servidor (python manage.py runserver).');
+        if (r.status === 403) throw new Error('Acceso denegado (403): recargue la página con Ctrl+F5 e intente de nuevo.');
+        throw new Error('Error ' + r.status + (detail ? ': ' + detail : '. Revise la terminal donde corre el servidor.'));
+      }
+      var disp = r.headers.get('Content-Disposition') || '';
+      var m = disp.match(/filename="([^"]+)"/);
+      var blob = await r.blob();
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = m ? m[1] : 'reporte-embarque.xlsx';
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 800);
+    } catch (err) {
+      alert(err && err.message ? err.message : 'No se pudo generar el reporte. Intente de nuevo.');
+    } finally {
+      btn.disabled = false; btn.textContent = old;
+    }
+  });
+
+  syncPlaceholders();
+  render();
+})();
+</script>
 {% endblock %}

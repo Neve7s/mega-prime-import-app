@@ -10,12 +10,6 @@
 <p class="font-body-md text-body-md text-on-surface-variant mt-space-xs">Materiales listos para despacho mayorista con fichas técnicas descargables para memorias descriptivas.</p>
 </div>
 <!-- Filter Bar -->
-<div class="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0" id="filter-container">
-<button class="catalog-filter active bg-primary text-on-primary px-space-md py-2 rounded font-label-sm text-label-sm uppercase tracking-wider transition-colors shadow-sm" data-category="all">Todos</button>
-
-
-
-</div>
 </div>
 
 {% for cat in categorias %}<button class="catalog-filter bg-surface-container-lowest hover:bg-surface-container text-on-surface px-space-md py-2 rounded font-label-sm text-label-sm uppercase tracking-wider transition-colors" data-category="{{ cat.slug }}">{{ cat.nombre }}</button>{% endfor %}<!-- Products Grid -->
@@ -23,7 +17,7 @@
 {% for product in productos %}
 {% include "catalog/_card.html" with product=product %}
 {% empty %}<p class="font-body-md">Sin productos publicados.</p>{% endfor %}
-<div class="mt-6 text-center"><a href="{% url 'catalog:catalogo' %}" class="inline-flex items-center gap-2 bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg uppercase tracking-wider px-space-lg py-3 rounded-lg">Ver catálogo completo <span class="material-symbols-outlined text-[18px]">arrow_forward</span></a></div>
+
 <script>window.MPI_PRODUCTS = window.MPI_PRODUCTS || {};{% for product in productos %}window.MPI_PRODUCTS["{{ product.sku }}"] = {nombre: "{{ product.nombre|escapejs }}", precio: {{ product.precio_mayor }}};{% endfor %}</script>
 
 </div>

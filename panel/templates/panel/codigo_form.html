@@ -2,6 +2,8 @@
 {% block title %}Generar código — Panel{% endblock %}
 {% block content %}
 <h1 class="text-2xl font-bold">Generar código de compra</h1>
-<form method="post" class="mt-4 bg-white border rounded-xl p-6 flex flex-col gap-3 max-w-xl">{% csrf_token %}{{ form.as_p }}
-<button class="bg-[#1e232a] text-white py-2 rounded font-bold">Generar</button></form>
+<p class="text-sm text-gray-500 mt-1">Se genera un código único (7 días de vigencia, 1 uso) para compartir por WhatsApp.</p>
+<form method="post" class="panel-form mt-4 bg-white border rounded-xl p-5 flex flex-col gap-3 max-w-xl">{% csrf_token %}
+{% include "panel/_form.html" with form=form %}
+<button class="bg-[#0A0A0B] text-[#D4AF37] py-2.5 rounded-lg font-bold">Generar código</button></form>
 {% endblock %}

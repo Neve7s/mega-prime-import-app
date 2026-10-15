@@ -13,6 +13,13 @@
     .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
     .nav-item.active { background: rgba(212,175,55,0.15); color: #D4AF37; }
     .nav-section { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: #71717a; padding: 0.9rem 0.75rem 0.3rem; }
+    .panel-form input[type="text"], .panel-form input[type="number"], .panel-form input[type="email"],
+    .panel-form input[type="url"], .panel-form input[type="date"], .panel-form select, .panel-form textarea {
+      width: 100%; border: 1px solid #d4d4d8; border-radius: 0.5rem; padding: 0.55rem 0.75rem; font-size: 0.9rem; background: #fff;
+    }
+    .panel-form input:focus, .panel-form select:focus, .panel-form textarea:focus { outline: none; border-color: #D4AF37; box-shadow: 0 0 0 2px rgba(212,175,55,0.25); }
+    .panel-form input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: #0A0A0B; }
+    .panel-form input[type="file"] { font-size: 0.85rem; }
   </style>
 </head>
 <body class="bg-[#f4f4f5]">

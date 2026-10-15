@@ -3,11 +3,12 @@
 {% block content %}
 <h1 class="text-2xl font-bold">Calculadora de impuestos</h1>
 <p class="text-sm text-gray-500">Regla activa: {{ rule|default:"sin regla" }}</p>
-<form method="get" class="mt-4 bg-white border rounded-xl p-6 flex flex-col gap-3 max-w-xl">{{ form.as_p }}
-<button class="bg-[#1e232a] text-white py-2 rounded font-bold">Calcular</button></form>
+<form method="get" class="panel-form mt-4 bg-white border rounded-xl p-5 flex flex-col gap-3 max-w-xl">
+{% include "panel/_form.html" with form=form %}
+<button class="bg-[#0A0A0B] text-[#D4AF37] py-2.5 rounded-lg font-bold">Calcular</button></form>
 {% if resultado %}
-<div class="mt-4 bg-white border rounded-xl p-6 max-w-xl">
-  {% for k, v in resultado.items %}<div class="flex justify-between text-sm py-1 border-b"><span>{{ k }}</span><span class="font-bold">USD {{ v }}</span></div>{% endfor %}
+<div class="mt-4 bg-white border rounded-xl p-5 max-w-xl">
+  {% for k, v in resultado.items %}<div class="flex justify-between text-sm py-1.5 border-b last:border-0"><span class="uppercase text-gray-500 text-xs font-bold">{{ k }}</span><span class="font-bold">USD {{ v }}</span></div>{% endfor %}
 </div>
 {% endif %}
 {% endblock %}

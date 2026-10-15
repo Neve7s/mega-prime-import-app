@@ -26,3 +26,17 @@ class PanelTest(TestCase):
         self.assertEqual(self.client.get("/webadmin/codigos/").status_code, 200)
         self.assertEqual(self.client.get("/webadmin/ajustes/").status_code, 200)
         self.assertEqual(self.client.get("/webadmin/calculadora/").status_code, 200)
+
+    def test_staff_crea_producto_desde_panel(self):
+        from catalog.models import Category, Product
+
+        cat = Category.objects.create(nombre="Porcelanatos", slug="porcelanato")
+        self.client.force_login(self.staff)
+        resp = self.client.post("/webadmin/productos/nuevo/", data={
+            "categoria": cat.pk, "sku": "MPG-PANEL", "nombre": "Panel test",
+            "slug": "panel-test", "descripcion": "", "precio_mayor": "10.00",
+            "unidad": "m2", "stock_cantidad": "5", "origen": "", "imagen_url": "",
+            "en_stock": "on", "activo": "on",
+        })
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(Product.objects.filter(sku="MPG-PANEL").exists())

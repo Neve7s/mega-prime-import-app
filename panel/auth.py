@@ -27,4 +27,4 @@ class PanelLoginView(LoginView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        return "/panel/"
+        return "/webadmin/"

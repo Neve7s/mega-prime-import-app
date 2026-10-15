@@ -1,0 +1,55 @@
+<!-- SECTION 3: PRODUCT CATALOG 2025 WITH LIVE FILTER & SPEC MATRIX -->
+<section class="w-full py-space-xl bg-surface-container-low" id="catalogo-2025">
+<div class="max-w-[1440px] mx-auto px-margin md:px-margin-md lg:px-margin-lg flex flex-col gap-space-xl">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md">
+<div>
+<div class="inline-flex items-center gap-space-xs bg-surface-container-high px-space-sm py-1 rounded font-label-sm text-label-sm uppercase tracking-wider text-secondary font-bold mb-space-xs">
+            Ingresos Trimestre I / 2025
+          </div>
+<h2 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Colección Insignia &amp; Especificaciones</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-space-xs">Materiales listos para despacho mayorista con fichas técnicas descargables para memorias descriptivas.</p>
+</div>
+<!-- Filter Bar -->
+<div class="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0" id="filter-container">
+<button class="catalog-filter active bg-primary text-on-primary px-space-md py-2 rounded font-label-sm text-label-sm uppercase tracking-wider transition-colors shadow-sm" data-category="all">Todos</button>
+
+
+
+</div>
+</div>
+
+{% for cat in categorias %}<button class="catalog-filter bg-surface-container-lowest hover:bg-surface-container text-on-surface px-space-md py-2 rounded font-label-sm text-label-sm uppercase tracking-wider transition-colors" data-category="{{ cat.slug }}">{{ cat.nombre }}</button>{% endfor %}<!-- Products Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter" id="products-grid">
+{% for product in productos %}
+<div class="product-item bg-surface-container-lowest rounded-xl p-space-md flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow" data-category="{{ product.categoria.slug }}">
+<div class="flex flex-col gap-space-sm">
+<div class="relative w-full aspect-square rounded-lg overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" alt="{{ product.nombre }}" loading="lazy" src="{{ product.imagen_src }}" />
+<span class="absolute top-2 left-2 bg-secondary text-on-secondary px-2 py-0.5 rounded font-label-sm text-label-sm font-bold uppercase">{{ product.origen|default:'' }}</span>
+<span class="absolute top-2 right-2 bg-primary text-on-primary px-2 py-0.5 rounded font-label-sm text-label-sm font-bold uppercase">Stock: {{ product.stock_cantidad|floatformat:0 }} {{ product.get_unidad_display }}</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm uppercase text-secondary font-bold tracking-wider">SKU: {{ product.sku }}</span>
+<h4 class="font-headline-sm text-headline-sm font-bold text-primary mt-0.5">{{ product.nombre }}</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">USD {{ product.precio_mayor }} / {{ product.get_unidad_display }}</p>
+</div>
+<div class="bg-surface-container-low p-space-sm rounded flex flex-col gap-1 text-body-sm font-body-sm text-on-surface">
+{% for k, v in product.ficha_tecnica.items %}<div class="flex justify-between"><span class="text-on-surface-variant">{{ k }}:</span><span class="font-semibold">{{ v }}</span></div>{% endfor %}
+</div>
+</div>
+<div class="pt-space-md flex flex-col gap-2">
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary py-2 rounded font-label-sm text-label-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-1 shadow-sm" onclick="addToQuote('{{ product.sku }}')">
+<span class="material-symbols-outlined text-[16px]">add_shopping_cart</span>
+              Agregar a Cotización
+            </button>
+<a class="text-center font-label-sm text-label-sm text-secondary hover:underline uppercase tracking-wider py-1 flex items-center justify-center gap-1" href="{% url 'cart:carrito' %}">
+<span class="material-symbols-outlined text-[14px]">shopping_cart</span> Ir al carrito
+            </a>
+</div>
+</div>
+{% empty %}<p class="font-body-md">Sin productos publicados.</p>{% endfor %}
+<script>window.MPI_PRODUCTS = window.MPI_PRODUCTS || {};{% for product in productos %}window.MPI_PRODUCTS["{{ product.sku }}"] = {nombre: "{{ product.nombre|escapejs }}", precio: {{ product.precio_mayor }}};{% endfor %}</script>
+
+</div>
+</div>
+</section>

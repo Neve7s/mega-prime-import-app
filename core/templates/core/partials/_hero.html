@@ -1,0 +1,90 @@
+<!-- SECTION 1: HERO INDUSTRIAL PRESTIGE -->
+<section class="relative w-full overflow-hidden bg-primary text-on-primary">
+<!-- Geometric Architecture Grid Overlay -->
+<div class="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none"></div>
+<div class="absolute -top-32 -right-32 w-96 h-96 bg-secondary-container/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="relative max-w-[1440px] mx-auto px-margin md:px-margin-md lg:px-margin-lg pt-space-xl pb-space-xl lg:pt-28 lg:pb-36 flex flex-col">
+<!-- High-Impact Overline Spec -->
+<div class="inline-flex items-center gap-space-sm self-start bg-primary-container px-space-md py-1.5 rounded mb-space-lg shadow-sm">
+<span class="w-2 h-2 rounded-full bg-secondary-container animate-pulse"></span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest text-secondary-fixed">Hub Logístico &amp; Distribución Mayorista</span>
+<span class="text-outline-variant">•</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-primary-container">{{ site_settings.hero_city|default:'Ambato, Ecuador' }}</span>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-lg items-center">
+<!-- Core Typography Column -->
+<div class="lg:col-span-7 flex flex-col gap-space-lg">
+<h1 class="font-display-lg text-display-lg font-bold tracking-tight text-on-primary leading-[1.08]">
+            {{ site_settings.hero_title|default:'Excelencia en Cada Acabado, Potencia en Cada Herramienta.' }}
+</h1>
+<p class="font-body-lg text-body-lg text-surface-container-highest max-w-2xl leading-relaxed">
+            {{ site_settings.hero_subtitle }}
+          </p>
+<!-- CTAs Industrial -->
+<div class="flex flex-wrap items-center gap-space-md pt-space-sm">
+<a class="inline-flex items-center gap-space-sm bg-secondary-container hover:bg-secondary text-primary font-label-lg text-label-lg uppercase tracking-wider px-space-lg py-3 rounded-lg shadow-md transition-all duration-200" href="#catalogo-2025">
+<span class="material-symbols-outlined text-[20px]">architecture</span>
+              {{ site_settings.hero_cta_primary|default:'Explorar Catálogo 2025' }}
+            </a>
+<a class="inline-flex items-center gap-space-sm bg-surface-container-lowest/10 hover:bg-surface-container-lowest/20 text-on-primary font-label-lg text-label-lg uppercase tracking-wider px-space-lg py-3 rounded-lg transition-all duration-200 shadow-sm" href="#cotizador-express">
+<span class="material-symbols-outlined text-[20px] text-secondary-fixed-dim">calculate</span>
+              {{ site_settings.hero_cta_secondary|default:'Cotizar Proyecto por Mayor' }}
+            </a>
+</div>
+<!-- Trust Badges Bar -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-gutter-sm pt-space-md">
+<div class="flex flex-col gap-1">
+<span class="font-headline-sm text-headline-sm text-on-primary font-bold">{{ hero_stats.0.value|default:'+15 Años' }}</span>
+<span class="font-label-sm text-label-sm text-surface-container-highest uppercase">{{ hero_stats.0.label|default:'Importación Directa' }}</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-headline-sm text-headline-sm text-secondary-fixed font-bold">{{ hero_stats.1.value|default:'48 Horas' }}</span>
+<span class="font-label-sm text-label-sm text-surface-container-highest uppercase">{{ hero_stats.1.label|default:'Despacho a Obra' }}</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-headline-sm text-headline-sm text-on-primary font-bold">{{ hero_stats.2.value|default:'Stock Real' }}</span>
+<span class="font-label-sm text-label-sm text-surface-container-highest uppercase">{{ hero_stats.2.label|default:'Garantizado en Planta' }}</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-headline-sm text-headline-sm text-secondary-fixed font-bold">{{ hero_stats.3.value|default:'Precios B2B' }}</span>
+<span class="font-label-sm text-label-sm text-surface-container-highest uppercase">{{ hero_stats.3.label|default:'Fábrica Sin Retrasos' }}</span>
+</div>
+</div>
+</div>
+<!-- Visual Hero Showcase & Floating Telemetry Cards -->
+<div class="lg:col-span-5 relative mt-space-lg lg:mt-0">
+<div class="relative w-full aspect-[4/5] rounded-xl overflow-hidden shadow-2xl">
+<img class="w-full h-full object-cover" data-alt="Close-up architectural photograph of a luxury corporate lobby interior featuring ultra-large sintered stone wall slabs in Calacatta gold, precision brushed bronze metallic transitions, polished microcement floors, warm atmospheric industrial architectural downlighting, sharp geometric composition, high-end commercial design." src="{% if site_settings.hero_image %}{{ site_settings.hero_image.url }}{% else %}https://lh3.googleusercontent.com/aida-public/AB6AXuC4fkF190L1nAKqL3ghINgt7Og_Z8e0JdbVUZp6UVlhOTk2wPGQbEvWyU2EN_A3avGIaMmfwWNMrU3Y98OKgrsnmhnRJ9y9j4qcxDi1SnWr7xIhZcX1wLTOAjtFLCJrvMtFWsWmf7DG5SD5iXXieWfW-zmM4rBA2Jv2EiBc9FngaNktg_kEKKIs4H8nWcYNIjcxm0c09nzKxRibgQ5YMZ-JqzSKqhJLtG0QmxR3lVKbYrXCqugDgL7Y{% endif %}"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/30 to-transparent"></div>
+<!-- Material Spec Marker Overlay -->
+<div class="absolute top-space-md left-space-md bg-primary-container/90 backdrop-blur-md px-space-md py-2 rounded-lg flex items-center gap-space-xs text-on-primary shadow-md">
+<span class="material-symbols-outlined text-secondary-container text-[18px]">verified</span>
+<span class="font-label-sm text-label-sm tracking-wider uppercase">{{ site_settings.hero_spec_label|default:'Placa Sinterizada 3200x1600x12mm' }}</span>
+</div>
+<!-- Bottom Live Telemetry Overlay -->
+<div class="absolute bottom-space-md inset-x-space-md bg-surface-container-lowest text-on-surface p-space-md rounded-xl shadow-xl flex items-center justify-between">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[22px]">domain</span>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm font-bold text-primary">+1,200</div>
+<div class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Obras Suministradas</div>
+</div>
+</div>
+<div class="h-8 w-px bg-surface-container-high"></div>
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[22px]">warehouse</span>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm font-bold text-primary">{{ site_settings.hero_telemetry_2_value|default:'40,000 m²' }}</div>
+<div class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">{{ site_settings.hero_telemetry_2_label|default:'Stock en Bodega Ambato' }}</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>

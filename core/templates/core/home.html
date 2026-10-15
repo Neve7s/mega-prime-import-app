@@ -1,52 +1,11 @@
-{% extends "base.html" %}
-{% block title %}{{ site_settings.meta_title|default:"Mega Prime Import ECU — Acabados y Herramientas por Mayor" }}{% endblock %}
+{% extends "base_landing.html" %}
 {% block content %}
-<section class="bg-[#080d13] text-white">
-  <div class="max-w-[1440px] mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-    <div class="lg:col-span-7">
-      <p class="text-xs uppercase tracking-widest text-[#ffb77d]">{{ site_settings.tagline|default:"Hub Logístico & Distribución Mayorista" }} • {{ site_settings.hero_city|default:"Ambato, Ecuador" }}</p>
-      <h1 class="font-grotesk text-4xl md:text-6xl font-bold leading-tight mt-4">{{ site_settings.hero_title|default:"Excelencia en Cada Acabado, Potencia en Cada Herramienta." }}</h1>
-      <p class="mt-4 max-w-2xl text-white/80">{{ site_settings.hero_subtitle }}</p>
-      <div class="mt-6 flex flex-wrap gap-3">
-        <a href="#catalogo" class="bg-[#fe932c] text-black font-bold px-5 py-3 rounded">{{ site_settings.hero_cta_primary|default:"Explorar Catálogo 2025" }}</a>
-        <a href="#cotizador" class="border border-white/30 px-5 py-3 rounded">{{ site_settings.hero_cta_secondary|default:"Cotizar Proyecto por Mayor" }}</a>
-      </div>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-8">
-        {% for stat in hero_stats %}
-        <div class="flex flex-col gap-1">
-          <span class="font-grotesk font-bold text-xl">{{ stat.value }}</span>
-          <span class="text-xs uppercase text-white/70">{{ stat.label }}</span>
-        </div>
-        {% empty %}
-        <div class="text-sm text-white/50">Cifras hero editables en Admin → Cifras hero.</div>
-        {% endfor %}
-      </div>
-    </div>
-    <div class="lg:col-span-5">
-      {% if site_settings.hero_image %}
-      <img src="{{ site_settings.hero_image.url }}" alt="Hero {{ site_settings.site_name }}" class="w-full aspect-[4/5] object-cover rounded-xl shadow-2xl" />
-      {% else %}
-      <div class="w-full aspect-[4/5] rounded-xl bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-2 text-white/50 text-sm p-8 text-center">
-        <span class="material-symbols-outlined text-4xl">add_photo_alternate</span>
-        <span>Sube la imagen hero en Admin → Ajustes del sitio → hero_image</span>
-        {% if site_settings.hero_spec_label %}<span class="text-white/70">{{ site_settings.hero_spec_label }}</span>{% endif %}
-      </div>
-      {% endif %}
-      <div class="flex justify-between text-xs mt-3 text-gray-400">
-        <span>{{ site_settings.hero_telemetry_1_value }} {{ site_settings.hero_telemetry_1_label }}</span>
-        <span>{{ site_settings.hero_telemetry_2_value }} {{ site_settings.hero_telemetry_2_label }}</span>
-      </div>
-    </div>
-  </div>
-</section>
-<section id="catalogo" class="max-w-[1440px] mx-auto px-6 py-12">
-  <h2 class="font-grotesk text-2xl font-bold">Catálogo 2025</h2>
-  <p class="text-sm text-gray-600">Grid dinámico HTMX (Task 5). Por ahora estático.</p>
-  <div id="catalog-grid"><p class="text-sm text-gray-500">Sin productos aún — ver Task 4.</p></div>
-</section>
-<section id="cotizador" class="max-w-[1440px] mx-auto px-6 py-12">
-  <h2 class="font-grotesk text-2xl font-bold">Cotizador / Calculadora impuestos</h2>
-  <p class="text-sm text-gray-600">Widget HTMX (Task 9). WhatsApp directo: <a class="underline" target="_blank" href=https://wa.me/{{ site_settings.whatsapp_number|default:'593963796222' }}?text={{ site_settings.whatsapp_default_message|urlencode }}">{{ site_settings.phone_display }}</a></p>
-  <div id="calc-widget"><p class="text-sm text-gray-500">Próximamente.</p></div>
-</section>
+{% include "core/partials/_hero.html" %}
+{% include "core/partials/_pillars.html" %}
+{% include "core/partials/_catalog.html" %}
+{% include "core/partials/_advantages.html" %}
+{% include "core/partials/_calculator.html" %}
+{% include "core/partials/_certs.html" %}
+{% include "core/partials/_testimonials.html" %}
+{% include "core/partials/_cta.html" %}
 {% endblock %}

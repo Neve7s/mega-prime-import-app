@@ -24,12 +24,12 @@
 </head>
 <body class="bg-[#f4f4f5]">
 <div class="flex min-h-screen">
-  <aside class="w-60 bg-[#0A0A0B] text-white flex flex-col shrink-0">
+  <aside class="w-60 bg-[#0A0A0B] text-white flex flex-col shrink-0 h-screen sticky top-0">
     <div class="px-5 py-5 border-b border-white/10">
       <div class="font-bold tracking-tight text-lg">MEGA PRIME</div>
       <div class="text-[11px] uppercase tracking-widest text-[#D4AF37]">Panel de tienda</div>
     </div>
-    <nav class="flex flex-col px-3 pb-3 text-sm">
+    <nav class="flex flex-col px-3 pb-3 text-sm flex-1 overflow-y-auto">
       <div class="nav-section">Inicio</div>
       <a class="nav-item" href="{% url 'panel:dashboard' %}">📊 Tablero</a>
       <div class="nav-section">Tienda</div>
@@ -40,7 +40,7 @@
       <div class="nav-section">Sistema</div>
       <a class="nav-item" href="{% url 'panel:ajustes' %}">⚙️ Ajustes del sitio</a>
     </nav>
-    <div class="mt-auto p-3 border-t border-white/10 text-sm flex flex-col gap-1">
+    <div class="p-3 border-t border-white/10 text-sm flex flex-col gap-1 shrink-0">
       <a class="nav-item" target="_blank" href="{% url 'core:home' %}">🌐 Ver sitio</a>
       <a class="nav-item" href="{% url 'panel:salir' %}">↩ Salir ({{ user.username }})</a>
     </div>

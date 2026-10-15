@@ -14,15 +14,21 @@
     renderCart();
   }
   function totalQty(items) { return items.reduce((a, i) => a + i.cantidad, 0); }
-  function totalMoney(items) { return items.reduce((a, i) => a + i.cantidad * Number(i.precio), 0); }
+  function toNumber(v) {
+    // Acepta "68.50" o "68,50" (formato es-EC).
+    const n = Number(String(v).replace(",", "."));
+    return Number.isFinite(n) ? n : 0;
+  }
+  function totalMoney(items) { return items.reduce((a, i) => a + i.cantidad * toNumber(i.precio), 0); }
 
   window.MpiCart = {
     items: load,
     add(sku, nombre, precio) {
       const items = load();
+      precio = toNumber(precio);
       const found = items.find((i) => i.sku === sku);
       if (found) found.cantidad = Math.min(9999, found.cantidad + 1);
-      else items.push({ sku, nombre, precio: Number(precio), cantidad: 1 });
+      else items.push({ sku, nombre, precio, cantidad: 1 });
       save(items);
       toast(nombre + " agregado ✓");
     },

@@ -15,12 +15,9 @@
 </div>
 </div>
 <div class="pt-space-md flex flex-col gap-2">
-<button class="w-full bg-primary hover:bg-primary-container text-on-primary py-2 rounded font-label-sm text-label-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-1 shadow-sm" onclick="addToQuote('{{ product.sku }}')">
-<span class="material-symbols-outlined text-[16px]">add_shopping_cart</span>
-              Agregar a Cotización
-            </button>
-<a class="text-center font-label-sm text-label-sm text-secondary hover:underline uppercase tracking-wider py-1 flex items-center justify-center gap-1" href="{% url 'cart:carrito' %}">
-<span class="material-symbols-outlined text-[14px]">shopping_cart</span> Ir al carrito
+<a class="w-full bg-primary hover:bg-primary-container text-on-primary py-2 rounded font-label-sm text-label-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-1 shadow-sm" href="{% url 'catalog:detalle' product.slug %}">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+              Ver más detalles
             </a>
 </div>
 </div>

@@ -1,2 +1,2 @@
 {% for product in productos %}{% include "catalog/_card.html" with product=product %}{% empty %}<p class="font-body-md">Sin productos para este filtro.</p>{% endfor %}
-<script>window.MPI_PRODUCTS = window.MPI_PRODUCTS || {};{% for product in productos %}window.MPI_PRODUCTS["{{ product.sku }}"] = {nombre: "{{ product.nombre|escapejs }}", precio: {{ product.precio_mayor }}};{% endfor %}</script>
+<script>{% load l10n %}window.MPI_PRODUCTS = window.MPI_PRODUCTS || {};{% for product in productos %}window.MPI_PRODUCTS["{{ product.sku }}"] = {nombre: "{{ product.nombre|escapejs }}", precio: {{ product.precio_mayor|unlocalize }}};{% endfor %}</script>

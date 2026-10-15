@@ -25,10 +25,14 @@
     </div>
   </div>
 </div>
+<div class="max-w-[1200px] mx-auto px-margin md:px-margin-md mt-space-lg flex items-center justify-between gap-4">
+  {% if anterior %}<a href="{% url 'catalog:detalle' anterior %}" class="inline-flex items-center gap-2 font-label-sm text-label-sm uppercase tracking-wider text-secondary hover:underline"><span class="material-symbols-outlined">arrow_back</span> Anterior</a>{% else %}<span></span>{% endif %}
+  <a href="{% url 'catalog:catalogo' %}" class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant hover:underline">Ver catálogo</a>
+  {% if siguiente %}<a href="{% url 'catalog:detalle' siguiente %}" class="inline-flex items-center gap-2 font-label-sm text-label-sm uppercase tracking-wider text-secondary hover:underline">Siguiente <span class="material-symbols-outlined">arrow_forward</span></a>{% else %}<span></span>{% endif %}
+</div>
 {% if relacionados %}
 <div class="max-w-[1200px] mx-auto px-margin md:px-margin-md mt-space-xl">
-  <h2 class="font-headline-md text-headline-md font-bold text-primary">También te puede interesar</h2>
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-gutter mt-4">
+  <h2 class="font-headline-md text-headline-md font-bold text-primary">También te puede interesar</h2>  <div class="grid grid-cols-2 lg:grid-cols-4 gap-gutter mt-4">
     {% for r in relacionados %}
     <a href="{% url 'catalog:detalle' r.slug %}" class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm hover:shadow-md block">
       <img class="w-full aspect-square object-cover rounded-lg" alt="{{ r.nombre }}" loading="lazy" src="{{ r.imagen_src }}" />
@@ -40,5 +44,5 @@
 </div>
 {% endif %}
 </section>
-<script>window.MPI_PRODUCTS = window.MPI_PRODUCTS || {}; window.MPI_PRODUCTS["{{ product.sku }}"] = {nombre: "{{ product.nombre|escapejs }}", precio: {{ product.precio_mayor }}};</script>
+<script>{% load l10n %}window.MPI_PRODUCTS = window.MPI_PRODUCTS || {}; window.MPI_PRODUCTS["{{ product.sku }}"] = {nombre: "{{ product.nombre|escapejs }}", precio: {{ product.precio_mayor|unlocalize }}};</script>
 {% endblock %}

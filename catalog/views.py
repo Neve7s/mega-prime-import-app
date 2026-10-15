@@ -31,8 +31,14 @@ def detalle(request, slug):
     product = get_object_or_404(Product, slug=slug, activo=True)
     relacionados = (Product.objects.filter(activo=True, categoria=product.categoria)
                     .exclude(pk=product.pk)[:4])
+    ordenados = list(Product.objects.filter(activo=True)
+                     .order_by("categoria__orden", "nombre").values_list("slug", flat=True))
+    idx = ordenados.index(product.slug)
+    anterior = ordenados[idx - 1] if idx > 0 else None
+    siguiente = ordenados[idx + 1] if idx < len(ordenados) - 1 else None
     return render(request, "catalog/detalle.html",
-                  {"product": product, "relacionados": relacionados})
+                  {"product": product, "relacionados": relacionados,
+                   "anterior": anterior, "siguiente": siguiente})
 
 
 def catalogo(request):

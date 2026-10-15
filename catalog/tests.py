@@ -2,10 +2,13 @@ from decimal import Decimal
 from io import BytesIO
 
 from django.core.files.base import ContentFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from PIL import Image
 
 from .models import Category, Product
+
+import shutil
+import tempfile
 
 
 class ProductTest(TestCase):
@@ -68,15 +71,20 @@ class ProductTest(TestCase):
         self.assertContains(det, "MEGA PRIME")
 
     def test_upload_png_se_convierte_a_webp(self):
-        buf = BytesIO()
-        Image.new("RGB", (2000, 1000), "red").save(buf, "PNG")
-        p = Product(
-            categoria=self.cat, sku="MPG-W", nombre="W", slug="w",
-            precio_mayor=Decimal("1"),
-        )
-        p.imagen.save("foto.png", ContentFile(buf.getvalue()), save=True)
-        p.refresh_from_db()
-        self.assertTrue(p.imagen.name.endswith(".webp"))
-        with Image.open(p.imagen.path) as img:
-            self.assertEqual(img.format, "WEBP")
-            self.assertLessEqual(max(img.size), 1600)
+        tmp = tempfile.mkdtemp()
+        try:
+            with override_settings(MEDIA_ROOT=tmp):
+                buf = BytesIO()
+                Image.new("RGB", (2000, 1000), "red").save(buf, "PNG")
+                p = Product(
+                    categoria=self.cat, sku="MPG-W", nombre="W", slug="w",
+                    precio_mayor=Decimal("1"),
+                )
+                p.imagen.save("foto.png", ContentFile(buf.getvalue()), save=True)
+                p.refresh_from_db()
+                self.assertTrue(p.imagen.name.endswith(".webp"))
+                with Image.open(p.imagen.path) as img:
+                    self.assertEqual(img.format, "WEBP")
+                    self.assertLessEqual(max(img.size), 1600)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)

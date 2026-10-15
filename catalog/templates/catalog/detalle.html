@@ -1,0 +1,44 @@
+{% extends "base_landing.html" %}
+{% block title %}{{ product.nombre }} — {{ site_settings.site_name|default:"MEGA PRIME" }}{% endblock %}
+{% block content %}
+<section class="w-full py-space-xl bg-surface">
+<div class="max-w-[1200px] mx-auto px-margin md:px-margin-md grid grid-cols-1 lg:grid-cols-2 gap-gutter-lg">
+  <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-surface-container-low shadow-md">
+    <img class="w-full h-full object-cover" alt="{{ product.nombre }}" src="{{ product.imagen_src }}" />
+    <span class="absolute top-3 left-3 bg-secondary text-on-secondary px-2 py-0.5 rounded font-label-sm text-label-sm font-bold uppercase">{{ product.origen|default:'' }}</span>
+  </div>
+  <div class="flex flex-col gap-space-md">
+    <div>
+      <span class="font-label-sm text-label-sm uppercase text-secondary font-bold tracking-wider">{{ product.categoria.nombre }} · SKU: {{ product.sku }}</span>
+      <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight mt-1">{{ product.nombre }}</h1>
+      <p class="font-headline-md text-headline-md font-bold text-secondary mt-2">USD {{ product.precio_mayor }} / {{ product.get_unidad_display }}</p>
+      <p class="font-body-sm text-body-sm {% if product.en_stock %}text-green-700{% else %}text-error{% endif %} font-bold mt-1">{% if product.en_stock %}Stock: {{ product.stock_cantidad|floatformat:0 }} {{ product.get_unidad_display }}{% else %}Sin stock — cotizar disponibilidad{% endif %}</p>
+    </div>
+    {% if product.descripcion %}<p class="font-body-md text-body-md text-on-surface-variant">{{ product.descripcion }}</p>{% endif %}
+    <div class="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-space-md">
+      <h2 class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Ficha técnica</h2>
+      {% for k, v in product.ficha_tecnica.items %}<div class="flex justify-between py-1.5 border-b border-outline-variant/20 font-body-sm text-body-sm"><span class="text-on-surface-variant">{{ k }}</span><span class="font-semibold">{{ v }}</span></div>{% endfor %}
+    </div>
+    <div class="flex flex-wrap gap-space-sm">
+      <button class="bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg uppercase tracking-wider px-space-lg py-3 rounded-lg" data-add-sku="{{ product.sku }}" data-add-nombre="{{ product.nombre }}" data-add-precio="{{ product.precio_mayor }}">Agregar a cotización</button>
+      <a class="bg-secondary-container hover:bg-secondary text-primary font-label-lg text-label-lg uppercase tracking-wider px-space-lg py-3 rounded-lg font-bold" href="{% url 'cart:carrito' %}">Ir al carrito</a>
+    </div>
+  </div>
+</div>
+{% if relacionados %}
+<div class="max-w-[1200px] mx-auto px-margin md:px-margin-md mt-space-xl">
+  <h2 class="font-headline-md text-headline-md font-bold text-primary">También te puede interesar</h2>
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-gutter mt-4">
+    {% for r in relacionados %}
+    <a href="{% url 'catalog:detalle' r.slug %}" class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm hover:shadow-md block">
+      <img class="w-full aspect-square object-cover rounded-lg" alt="{{ r.nombre }}" loading="lazy" src="{{ r.imagen_src }}" />
+      <div class="font-label-sm text-label-sm text-secondary font-bold mt-2">SKU: {{ r.sku }}</div>
+      <div class="font-headline-sm text-headline-sm font-bold text-primary">{{ r.nombre }}</div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+</section>
+<script>window.MPI_PRODUCTS = window.MPI_PRODUCTS || {}; window.MPI_PRODUCTS["{{ product.sku }}"] = {nombre: "{{ product.nombre|escapejs }}", precio: {{ product.precio_mayor }}};</script>
+{% endblock %}

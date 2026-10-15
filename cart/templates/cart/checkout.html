@@ -1,29 +1,32 @@
-{% extends "base.html" %}
-{% block title %}Finalizar pedido — {{ site_settings.site_name|default:"MEGA PRIME" }}{% endblock %}
+{% extends "base_landing.html" %}
+{% block title %}Carrito — {{ site_settings.site_name|default:"MEGA PRIME" }}{% endblock %}
 {% block content %}
-<div class="max-w-[1100px] mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+<section class="w-full py-space-xl bg-surface">
+<div class="max-w-[1100px] mx-auto px-margin md:px-margin-md grid grid-cols-1 lg:grid-cols-2 gap-gutter-lg">
   <div>
-    <h1 class="font-grotesk text-2xl font-bold">Tu carrito</h1>
-    <div id="cart-items" class="mt-4 flex flex-col gap-3"></div>
-    <p class="mt-4 font-bold">Total: <span id="cart-total">USD 0.00</span></p>
+    <div class="font-label-sm text-label-sm uppercase tracking-widest text-secondary font-bold">Tu selección mayorista</div>
+    <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Carrito de cotización</h1>
+    <div id="cart-items" class="mt-4 flex flex-col gap-space-sm"></div>
+    <p class="mt-4 font-headline-sm text-headline-sm font-bold text-primary">Total: <span id="cart-total">USD 0.00</span></p>
   </div>
-  <div class="bg-white border rounded-xl p-6">
-    <h2 class="font-grotesk text-xl font-bold">Procesar pedido</h2>
-    <p class="text-sm text-gray-600 mt-1">Usa el <strong>código</strong> que te compartimos por WhatsApp junto a tus datos.</p>
-    <form id="checkout-form" class="mt-4 flex flex-col gap-3">
+  <div class="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-space-lg shadow-sm">
+    <h2 class="font-headline-sm text-headline-sm font-bold text-primary">Procesar pedido</h2>
+    <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Usa el <strong>código</strong> que te compartimos por WhatsApp junto a tus datos.</p>
+    <form id="checkout-form" class="mt-4 flex flex-col gap-space-sm">
       {% csrf_token %}
-      <label class="text-xs font-bold uppercase">Código de compra (WhatsApp) *<input name="codigo" required class="mt-1 w-full border rounded px-3 py-2" placeholder="MPI-XXXXXX" /></label>
-      <label class="text-xs font-bold uppercase">Nombre completo *<input name="nombre_completo" required class="mt-1 w-full border rounded px-3 py-2" /></label>
-      <label class="text-xs font-bold uppercase">Documento de identidad *<input name="documento_identidad" required class="mt-1 w-full border rounded px-3 py-2" placeholder="Cédula / RUC / Pasaporte" /></label>
-      <label class="text-xs font-bold uppercase">Correo electrónico *<input name="email" type="email" required class="mt-1 w-full border rounded px-3 py-2" /></label>
-      <label class="text-xs font-bold uppercase">Número de teléfono *<input name="telefono" required class="mt-1 w-full border rounded px-3 py-2" placeholder="+593 ..." /></label>
-      <label class="text-xs font-bold uppercase">Ciudad<input name="ciudad" class="mt-1 w-full border rounded px-3 py-2" /></label>
-      <label class="text-xs font-bold uppercase">Notas<textarea name="notas" class="mt-1 w-full border rounded px-3 py-2"></textarea></label>
-      <p id="checkout-error" class="hidden text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3"></p>
-      <button class="bg-[#1e232a] text-white font-bold py-3 rounded">Procesar pedido</button>
+      <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Código de compra (WhatsApp) *<input name="codigo" required class="mt-1 w-full bg-surface border border-outline-variant rounded px-space-md py-2.5 font-body-sm" placeholder="MPI-XXXXXX" /></label>
+      <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Nombre completo *<input name="nombre_completo" required class="mt-1 w-full bg-surface border border-outline-variant rounded px-space-md py-2.5 font-body-sm" /></label>
+      <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Documento de identidad *<input name="documento_identidad" required class="mt-1 w-full bg-surface border border-outline-variant rounded px-space-md py-2.5 font-body-sm" placeholder="Cédula / RUC / Pasaporte" /></label>
+      <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Correo electrónico *<input name="email" type="email" required class="mt-1 w-full bg-surface border border-outline-variant rounded px-space-md py-2.5 font-body-sm" /></label>
+      <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Número de teléfono *<input name="telefono" required class="mt-1 w-full bg-surface border border-outline-variant rounded px-space-md py-2.5 font-body-sm" placeholder="+593 ..." /></label>
+      <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Ciudad<input name="ciudad" class="mt-1 w-full bg-surface border border-outline-variant rounded px-space-md py-2.5 font-body-sm" /></label>
+      <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Notas<textarea name="notas" class="mt-1 w-full bg-surface border border-outline-variant rounded px-space-md py-2.5 font-body-sm"></textarea></label>
+      <p id="checkout-error" class="hidden font-body-sm text-sm text-error bg-error-container rounded p-3"></p>
+      <button class="bg-secondary-container hover:bg-secondary text-primary font-label-lg text-label-lg uppercase tracking-wider px-space-lg py-3 rounded-lg font-bold transition-colors">Procesar pedido</button>
     </form>
   </div>
 </div>
+</section>
 <script>
 document.getElementById("checkout-form").addEventListener("submit", async (e) => {
   e.preventDefault();

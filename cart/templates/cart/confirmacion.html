@@ -1,16 +1,18 @@
-{% extends "base.html" %}
+{% extends "base_landing.html" %}
 {% block title %}Pedido {{ pedido.codigo }} recibido{% endblock %}
 {% block content %}
-<div class="max-w-2xl mx-auto px-6 py-16 text-center">
-  <p class="text-xs uppercase tracking-widest text-green-700 font-bold">Pedido recibido</p>
-  <h1 class="font-grotesk text-3xl font-bold mt-2">{{ pedido.codigo }}</h1>
-  <p class="mt-3 text-gray-600">Gracias {{ pedido.nombre_completo }}. Coordinamos pago y entrega por WhatsApp al {{ pedido.telefono }}.</p>
-  <div class="mt-6 bg-white border rounded-xl p-6 text-left">
+<section class="w-full py-space-xl bg-surface">
+<div class="max-w-2xl mx-auto px-margin text-center">
+  <p class="font-label-sm text-label-sm uppercase tracking-widest text-secondary font-bold">Pedido recibido</p>
+  <h1 class="font-headline-lg text-headline-lg font-bold text-primary mt-2">{{ pedido.codigo }}</h1>
+  <p class="font-body-md text-body-md text-on-surface-variant mt-3">Gracias {{ pedido.nombre_completo }}. Coordinamos pago y entrega por WhatsApp al {{ pedido.telefono }}.</p>
+  <div class="mt-6 bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-space-lg text-left shadow-sm">
     {% for it in pedido.items.all %}
-    <div class="flex justify-between py-2 border-b text-sm"><span>{{ it.nombre_snapshot }} x{{ it.cantidad }}</span><span class="font-bold">USD {{ it.precio_snapshot }}</span></div>
+    <div class="flex justify-between py-2 border-b border-outline-variant/20 font-body-sm text-body-sm"><span>{{ it.nombre_snapshot }} x{{ it.cantidad }}</span><span class="font-bold">USD {{ it.precio_snapshot }}</span></div>
     {% endfor %}
-    <div class="flex justify-between py-3 font-bold"><span>Total</span><span>USD {{ pedido.total }}</span></div>
+    <div class="flex justify-between py-3 font-headline-sm text-headline-sm font-bold text-primary"><span>Total</span><span>USD {{ pedido.total }}</span></div>
   </div>
-  <a href="{% url 'core:home' %}" class="inline-block mt-6 underline">Volver al inicio</a>
+  <a href="{% url 'core:home' %}" class="inline-block mt-6 font-label-sm text-label-sm text-secondary uppercase tracking-wider underline">Volver al inicio</a>
 </div>
+</section>
 {% endblock %}

@@ -31,6 +31,19 @@ class ProductTest(TestCase):
         )
         self.assertEqual(p.imagen_src, "https://ejemplo.com/x.jpg")
 
+    def test_detalle_usa_mismo_header_que_index(self):
+        p = Product.objects.create(
+            categoria=self.cat, sku="MPG-D", nombre="D", slug="d",
+            precio_mayor=Decimal("5"),
+        )
+        home = self.client.get("/").content.decode()
+        det = self.client.get(f"/catalogo/producto/{p.slug}/")
+        self.assertEqual(det.status_code, 200)
+        self.assertContains(det, p.nombre)
+        # mismo header que el index (marca del sitio)
+        self.assertIn("MEGA PRIME", home)
+        self.assertContains(det, "MEGA PRIME")
+
     def test_upload_png_se_convierte_a_webp(self):
         buf = BytesIO()
         Image.new("RGB", (2000, 1000), "red").save(buf, "PNG")

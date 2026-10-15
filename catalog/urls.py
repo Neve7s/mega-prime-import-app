@@ -1,5 +1,9 @@
 from django.urls import path
 
+from . import views
+
 app_name = "catalog"
 
-urlpatterns = []
+urlpatterns = [
+    path("producto/<slug:slug>/", views.detalle, name="detalle"),
+]

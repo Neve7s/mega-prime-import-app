@@ -56,3 +56,8 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 class HeroStatAdmin(admin.ModelAdmin):
     list_display = ("value", "label", "orden", "activo")
     list_editable = ("orden", "activo")
+
+
+admin.site.site_header = "MEGA PRIME IMPORT — Administración"
+admin.site.site_title = "Mega Prime Admin"
+admin.site.index_title = "Gestión del sitio megaprimeimport.com"

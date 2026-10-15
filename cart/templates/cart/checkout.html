@@ -8,6 +8,7 @@
     <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Carrito de cotización</h1>
     <div id="cart-items" class="mt-4 flex flex-col gap-space-sm"></div>
     <p class="mt-4 font-headline-sm text-headline-sm font-bold text-primary">Total: <span id="cart-total">USD 0.00</span></p>
+    <a id="wa-consulta" target="_blank" href="#" class="mt-3 inline-flex items-center justify-center gap-2 w-full bg-green-700 hover:bg-green-800 text-white font-label-sm text-label-sm uppercase tracking-wider px-space-md py-2.5 rounded-lg font-bold">Preguntar por WhatsApp</a>
   </div>
   <div class="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-space-lg shadow-sm">
     <h2 class="font-headline-sm text-headline-sm font-bold text-primary">Procesar pedido</h2>
@@ -29,6 +30,19 @@
 </div>
 </section>
 <script>
+const MPI_WA_NUMBER = "{{ site_settings.whatsapp_number|default:'593963796222' }}";
+function mpiWaLink() {
+  const items = window.MpiCart.items();
+  let msg = "Hola MEGA PRIME, quiero consultar por estos productos:\n";
+  items.forEach((i) => { msg += `\n• ${i.nombre} x${i.cantidad} — USD ${Number(i.precio).toFixed(2)}`; });
+  msg += `\n\nTotal estimado: USD ${items.reduce((a, i) => a + i.cantidad * Number(String(i.precio).replace(",", ".")), 0).toFixed(2)}`;
+  const a = document.getElementById("wa-consulta");
+  if (a) a.href = `https://wa.me/${MPI_WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+}
+document.addEventListener("DOMContentLoaded", mpiWaLink);
+document.addEventListener("click", () => setTimeout(mpiWaLink, 50));
+window.addEventListener("storage", mpiWaLink);
+</script>
 document.getElementById("checkout-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const err = document.getElementById("checkout-error");

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "cart",
     "calculator",
     "accounts",
+    "panel",
 ]
 
 MIDDLEWARE = [

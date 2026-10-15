@@ -9,6 +9,7 @@ urlpatterns = [
     path("catalogo/", include("catalog.urls")),
     path("carrito/", include("cart.urls")),
     path("calculadora/", include("calculator.urls")),
+    path("panel/", include("panel.urls")),
     path("", include("core.urls")),
 ]
 

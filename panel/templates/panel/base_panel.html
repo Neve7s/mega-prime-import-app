@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Panel — MEGA PRIME{% endblock %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>body { font-family: 'IBM Plex Sans', sans-serif; } h1,h2,h3 { font-family: 'Archivo', sans-serif; }</style>
+</head>
+<body class="bg-gray-100">
+<div class="flex min-h-screen">
+  <aside class="w-60 bg-[#080d13] text-white flex flex-col shrink-0">
+    <div class="px-5 py-5 font-bold tracking-tight border-b border-white/10">MEGA PRIME <span class="text-[#fe932c]">Panel</span></div>
+    <nav class="flex flex-col p-3 gap-1 text-sm">
+      <a class="px-3 py-2 rounded hover:bg-white/10" href="{% url 'panel:dashboard' %}">📊 Tablero</a>
+      <a class="px-3 py-2 rounded hover:bg-white/10" href="{% url 'panel:pedidos' %}">🧾 Punto de venta</a>
+      <a class="px-3 py-2 rounded hover:bg-white/10" href="{% url 'panel:codigos' %}">🔑 Códigos WhatsApp</a>
+      <a class="px-3 py-2 rounded hover:bg-white/10" href="{% url 'panel:productos' %}">📦 Productos</a>
+      <a class="px-3 py-2 rounded hover:bg-white/10" href="{% url 'panel:calculadora' %}">🧮 Calculadora</a>
+      <a class="px-3 py-2 rounded hover:bg-white/10" href="{% url 'panel:ajustes' %}">⚙️ Ajustes del sitio</a>
+    </nav>
+    <div class="mt-auto p-3 border-t border-white/10 text-sm flex flex-col gap-1">
+      <a class="px-3 py-2 rounded hover:bg-white/10" target="_blank" href="{% url 'core:home' %}">🌐 Ver sitio</a>
+      <a class="px-3 py-2 rounded hover:bg-white/10" href="{% url 'panel:salir' %}">Salir ({{ user.username }})</a>
+    </div>
+  </aside>
+  <main class="flex-1 p-6 max-w-6xl">{% block content %}{% endblock %}</main>
+</div>
+</body>
+</html>

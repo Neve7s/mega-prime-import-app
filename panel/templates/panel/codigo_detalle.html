@@ -1,0 +1,16 @@
+{% extends "panel/base_panel.html" %}
+{% block title %}Código {{ sale.codigo }} — Panel{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold">Código {{ sale.codigo }}</h1>
+<div class="mt-4 bg-white border rounded-xl p-6 max-w-xl">
+  <div class="text-4xl font-bold tracking-widest">{{ sale.codigo }}</div>
+  <p class="text-sm text-gray-600 mt-2">{{ sale.cliente_nombre|default:"Sin cliente asignado" }}{% if sale.cliente_telefono %} · {{ sale.cliente_telefono }}{% endif %} · {{ sale.get_estado_display }} · expira {{ sale.expira_en|date:"d/m/Y" }}</p>
+  <div class="flex gap-2 mt-4">
+    {% if wa %}<a target="_blank" class="bg-green-700 text-white px-4 py-2 rounded font-bold text-sm" href="{{ wa }}">Enviar por WhatsApp</a>{% endif %}
+    <button class="border px-4 py-2 rounded text-sm font-bold" onclick="navigator.clipboard.writeText('{{ sale.codigo }}');this.textContent='¡Copiado!';">Copiar código</button>
+  </div>
+  {% if sale.estado == "emitido" %}
+  <form method="post" class="mt-4">{% csrf_token %}<button class="text-red-700 text-sm underline">Anular código</button></form>
+  {% endif %}
+</div>
+{% endblock %}

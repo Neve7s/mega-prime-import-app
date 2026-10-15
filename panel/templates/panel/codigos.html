@@ -1,0 +1,13 @@
+{% extends "panel/base_panel.html" %}
+{% block title %}Códigos — Panel{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between">
+  <h1 class="text-2xl font-bold">Códigos WhatsApp</h1>
+  <a class="bg-[#1e232a] text-white px-4 py-2 rounded font-bold text-sm" href="{% url 'panel:codigo_crear' %}">+ Generar código</a>
+</div>
+<div class="bg-white rounded-xl border mt-4 divide-y">
+{% for c in codigos %}
+<a class="block px-4 py-3 hover:bg-gray-50" href="{% url 'panel:codigo_detalle' c.codigo %}"><strong>{{ c.codigo }}</strong> · {{ c.cliente_nombre|default:"—" }} · {{ c.get_estado_display }} · usos {{ c.usos }}/{{ c.max_usos }}</a>
+{% empty %}<p class="px-4 py-3 text-sm text-gray-500">Sin códigos.</p>{% endfor %}
+</div>
+{% endblock %}

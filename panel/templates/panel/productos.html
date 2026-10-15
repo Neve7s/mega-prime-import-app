@@ -1,0 +1,17 @@
+{% extends "panel/base_panel.html" %}
+{% block title %}Productos — Panel{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between">
+  <h1 class="text-2xl font-bold">Productos</h1>
+  <a class="bg-[#1e232a] text-white px-4 py-2 rounded font-bold text-sm" href="{% url 'panel:producto_nuevo' %}">+ Nuevo</a>
+</div>
+<form method="get" class="mt-4"><input name="q" value="{{ q }}" placeholder="Buscar SKU o nombre..." class="border rounded px-3 py-2 w-full max-w-md" /></form>
+<div class="bg-white rounded-xl border mt-4 divide-y">
+{% for p in productos %}
+<div class="px-4 py-3 flex items-center justify-between gap-3">
+  <div><strong>{{ p.sku }}</strong> · {{ p.nombre }} <span class="text-xs text-gray-500">USD {{ p.precio_mayor }} · stock {{ p.stock_cantidad }} · {% if p.activo %}activo{% else %}inactivo{% endif %}</span></div>
+  <a class="text-sm underline shrink-0" href="{% url 'panel:producto_editar' p.pk %}">Editar</a>
+</div>
+{% empty %}<p class="px-4 py-3 text-sm text-gray-500">Sin productos.</p>{% endfor %}
+</div>
+{% endblock %}

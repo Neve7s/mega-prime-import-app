@@ -1,0 +1,7 @@
+{% extends "panel/base_panel.html" %}
+{% block title %}{% if obj %}Editar{% else %}Nuevo{% endif %} producto — Panel{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold">{% if obj %}Editar {{ obj.sku }}{% else %}Nuevo producto{% endif %}</h1>
+<form method="post" enctype="multipart/form-data" class="mt-4 bg-white border rounded-xl p-6 flex flex-col gap-3 max-w-2xl">{% csrf_token %}{{ form.as_p }}
+<button class="bg-[#1e232a] text-white py-2 rounded font-bold">Guardar</button></form>
+{% endblock %}

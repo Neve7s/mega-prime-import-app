@@ -1,6 +1,8 @@
-{# Formulario por secciones: sections = [{title, fields: [nombres], full: [nombres]}] #}
+{# Formulario por secciones en rejilla: sections = [{title, fields, full, wide}] #}
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
 {% for sec in sections %}
-<h2 class="font-bold text-sm uppercase tracking-wider text-gray-500 {% if not forloop.first %}mt-5{% endif %} mb-2">{{ sec.title }}</h2>
+<div class="bg-white border rounded-xl p-5 {% if sec.wide %}xl:col-span-2{% endif %}">
+<h2 class="font-bold text-sm uppercase tracking-wider text-gray-500 mb-3">{{ sec.title }}</h2>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
   {% for field in form %}
   {% if field.name in sec.fields %}
@@ -15,5 +17,7 @@
   {% endif %}
   {% endfor %}
 </div>
+</div>
 {% endfor %}
+</div>
 {% for e in form.non_field_errors %}<p class="text-sm font-semibold text-red-700 bg-red-50 border border-red-200 rounded p-2 mt-3">{{ e }}</p>{% endfor %}

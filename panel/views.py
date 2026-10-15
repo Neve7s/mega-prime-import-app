@@ -78,10 +78,10 @@ def producto_editar(request, pk=None):
         form.save()
         return redirect("panel:productos")
     sections = [
-        {"title": "Datos básicos", "fields": ["categoria", "sku", "nombre", "slug", "descripcion"], "full": ["descripcion"]},
-        {"title": "Precio y stock", "fields": ["precio_mayor", "unidad", "stock_cantidad", "en_stock"], "full": []},
-        {"title": "Origen y visibilidad", "fields": ["origen", "destacado", "activo"], "full": []},
-        {"title": "Imagen", "fields": ["imagen", "imagen_url"], "full": ["imagen", "imagen_url"]},
+        {"wide": True, "title": "Datos básicos", "fields": ["categoria", "sku", "nombre", "slug", "descripcion"], "full": ["descripcion"]},
+        {"wide": False, "title": "Precio y stock", "fields": ["precio_mayor", "unidad", "stock_cantidad", "en_stock"], "full": []},
+        {"wide": False, "title": "Origen y visibilidad", "fields": ["origen", "destacado", "activo"], "full": []},
+        {"wide": True, "title": "Imagen", "fields": ["imagen", "imagen_url"], "full": ["imagen", "imagen_url"]},
     ]
     return render(request, "panel/producto_form.html", {"form": form, "obj": obj, "sections": sections})
 
@@ -124,8 +124,8 @@ def codigo_crear(request):
         sale.save()
         return redirect("panel:codigo_detalle", codigo=sale.codigo)
     sections = [
-        {"title": "Cliente", "fields": ["cliente_nombre", "cliente_telefono", "notas"], "full": ["notas"]},
-        {"title": "Uso", "fields": ["max_usos"], "full": []},
+        {"wide": False, "title": "Cliente", "fields": ["cliente_nombre", "cliente_telefono", "notas"], "full": ["notas"]},
+        {"wide": False, "title": "Uso", "fields": ["max_usos"], "full": []},
     ]
     return render(request, "panel/codigo_form.html", {"form": form, "sections": sections})
 
@@ -152,12 +152,12 @@ def ajustes(request):
         form.save()
         ok = True
     sections = [
-        {"title": "Branding", "fields": ["site_name", "tagline", "logo", "hero_image", "company_legal"], "full": ["logo", "hero_image"]},
-        {"title": "SEO", "fields": ["meta_title", "meta_description"], "full": ["meta_description"]},
-        {"title": "Hero", "fields": ["hero_city", "hero_title", "hero_subtitle", "hero_cta_primary", "hero_cta_secondary", "hero_spec_label", "hero_telemetry_1_value", "hero_telemetry_1_label", "hero_telemetry_2_value", "hero_telemetry_2_label"], "full": ["hero_subtitle"]},
-        {"title": "Contacto / WhatsApp", "fields": ["whatsapp_number", "whatsapp_default_message", "phone_display", "email", "address", "cities", "schedule"], "full": ["whatsapp_default_message"]},
-        {"title": "Redes", "fields": ["facebook_url", "instagram_url", "tiktok_url"], "full": []},
-        {"title": "Footer", "fields": ["footer_text"], "full": ["footer_text"]},
+        {"wide": False, "title": "Branding", "fields": ["site_name", "tagline", "logo", "hero_image", "company_legal"], "full": ["logo", "hero_image"]},
+        {"wide": False, "title": "SEO", "fields": ["meta_title", "meta_description"], "full": ["meta_description"]},
+        {"wide": True, "title": "Hero", "fields": ["hero_city", "hero_title", "hero_subtitle", "hero_cta_primary", "hero_cta_secondary", "hero_spec_label", "hero_telemetry_1_value", "hero_telemetry_1_label", "hero_telemetry_2_value", "hero_telemetry_2_label"], "full": ["hero_subtitle"]},
+        {"wide": True, "title": "Contacto / WhatsApp", "fields": ["whatsapp_number", "whatsapp_default_message", "phone_display", "email", "address", "cities", "schedule"], "full": ["whatsapp_default_message"]},
+        {"wide": False, "title": "Redes", "fields": ["facebook_url", "instagram_url", "tiktok_url"], "full": []},
+        {"wide": False, "title": "Footer", "fields": ["footer_text"], "full": ["footer_text"]},
     ]
     return render(request, "panel/ajustes.html", {"form": form, "ok": ok, "sections": sections})
 

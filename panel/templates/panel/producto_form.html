@@ -3,13 +3,11 @@
 {% block content %}
 <h1 class="text-2xl font-bold">{% if obj %}Editar {{ obj.sku }}{% else %}Nuevo producto{% endif %}</h1>
 <form method="post" enctype="multipart/form-data" class="panel-form mt-4 w-full">{% csrf_token %}
-  <div class="bg-white border rounded-xl p-5">
-    {% include "panel/_form_sections.html" with form=form sections=sections %}
-  </div>
+  {% include "panel/_form_sections.html" with form=form sections=sections %}
   {% if obj.imagen %}
-  <div class="bg-white border rounded-xl p-5 mt-4">
-    <h2 class="font-bold text-sm uppercase tracking-wider text-gray-500 mb-3">Imagen actual</h2>
-    <img src="{{ obj.imagen_src }}" alt="{{ obj.nombre }}" class="w-40 h-40 object-cover rounded-lg border" />
+  <div class="bg-white border rounded-xl p-5 mt-4 flex items-center gap-4">
+    <img src="{{ obj.imagen_src }}" alt="{{ obj.nombre }}" class="w-24 h-24 object-cover rounded-lg border" />
+    <span class="text-sm text-gray-500">Imagen actual (súbela de nuevo en la sección Imagen para reemplazarla)</span>
   </div>
   {% endif %}
   <button class="mt-4 bg-[#0A0A0B] text-[#D4AF37] px-8 py-2.5 rounded-lg font-bold">Guardar producto</button>

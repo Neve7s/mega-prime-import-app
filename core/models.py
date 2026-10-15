@@ -86,6 +86,15 @@ class SiteSettings(models.Model):
     def save(self, *args, **kwargs):
         self.pk = 1
         super().save(*args, **kwargs)
+        from .image_utils import optimize_field_file
+
+        changed = []
+        if optimize_field_file(self.logo, max_dim=800):
+            changed.append("logo")
+        if optimize_field_file(self.hero_image, max_dim=1920):
+            changed.append("hero_image")
+        if changed:
+            super().save(update_fields=changed)
 
     @property
     def whatsapp_link(self) -> str:

@@ -49,6 +49,13 @@ class Product(models.Model):
     def __str__(self) -> str:
         return f"{self.sku} — {self.nombre}"
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from core.image_utils import optimize_field_file
+
+        if optimize_field_file(self.imagen, max_dim=1600):
+            super().save(update_fields=["imagen"])
+
     @property
     def imagen_src(self) -> str:
         if self.imagen:
@@ -70,3 +77,10 @@ class ProductImage(models.Model):
 
     def __str__(self) -> str:
         return f"{self.producto.sku} #{self.orden}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from core.image_utils import optimize_field_file
+
+        if optimize_field_file(self.imagen, max_dim=1600):
+            super().save(update_fields=["imagen"])

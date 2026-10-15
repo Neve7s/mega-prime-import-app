@@ -1,6 +1,9 @@
 from decimal import Decimal
+from io import BytesIO
 
+from django.core.files.base import ContentFile
 from django.test import TestCase
+from PIL import Image
 
 from .models import Category, Product
 
@@ -27,3 +30,17 @@ class ProductTest(TestCase):
             precio_mayor=Decimal("1"), imagen_url="https://ejemplo.com/x.jpg",
         )
         self.assertEqual(p.imagen_src, "https://ejemplo.com/x.jpg")
+
+    def test_upload_png_se_convierte_a_webp(self):
+        buf = BytesIO()
+        Image.new("RGB", (2000, 1000), "red").save(buf, "PNG")
+        p = Product(
+            categoria=self.cat, sku="MPG-W", nombre="W", slug="w",
+            precio_mayor=Decimal("1"),
+        )
+        p.imagen.save("foto.png", ContentFile(buf.getvalue()), save=True)
+        p.refresh_from_db()
+        self.assertTrue(p.imagen.name.endswith(".webp"))
+        with Image.open(p.imagen.path) as img:
+            self.assertEqual(img.format, "WEBP")
+            self.assertLessEqual(max(img.size), 1600)

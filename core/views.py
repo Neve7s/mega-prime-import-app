@@ -4,6 +4,10 @@ from django.shortcuts import render
 from catalog.models import Category, Product
 
 
+def health(request: HttpRequest) -> HttpResponse:
+    return HttpResponse("ok")
+
+
 def home(request: HttpRequest) -> HttpResponse:
     return render(request, "core/home.html", {
         "productos": Product.objects.filter(activo=True).select_related("categoria"),

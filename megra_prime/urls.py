@@ -13,5 +13,5 @@ urlpatterns = [
     path("", include("core.urls")),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# /media/ siempre servido por Django (en prod: volumen persistente).
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -9,16 +9,15 @@
 <h2 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Colección Insignia &amp; Especificaciones</h2>
 <p class="font-body-md text-body-md text-on-surface-variant mt-space-xs">Materiales listos para despacho mayorista con fichas técnicas descargables para memorias descriptivas.</p>
 </div>
-<!-- Filter Bar -->
 </div>
 
-{% for cat in categorias %}<button class="catalog-filter bg-surface-container-lowest hover:bg-surface-container text-on-surface px-space-md py-2 rounded font-label-sm text-label-sm uppercase tracking-wider transition-colors" data-category="{{ cat.slug }}">{{ cat.nombre }}</button>{% endfor %}<!-- Products Grid -->
+{% for cat in categorias %}{% endfor %}<!-- Products Grid -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter" id="products-grid">
 {% for product in productos %}
 {% include "catalog/_card.html" with product=product %}
 {% empty %}<p class="font-body-md">Sin productos publicados.</p>{% endfor %}
 
-<script>window.MPI_PRODUCTS = window.MPI_PRODUCTS || {};{% for product in productos %}window.MPI_PRODUCTS["{{ product.sku }}"] = {nombre: "{{ product.nombre|escapejs }}", precio: {{ product.precio_mayor }}};{% endfor %}</script>
+<script>{% load l10n %}window.MPI_PRODUCTS = window.MPI_PRODUCTS || {};{% for product in productos %}window.MPI_PRODUCTS["{{ product.sku }}"] = {nombre: "{{ product.nombre|escapejs }}", precio: {{ product.precio_mayor|unlocalize }}};{% endfor %}</script>
 
 </div>
 </div>

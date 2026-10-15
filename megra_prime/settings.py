@@ -81,8 +81,35 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "megra_prime.wsgi.application"
 
-# DB: SQLite dev, Postgres prod via env (Coolify)
-if os.environ.get("POSTGRES_DB"):
+# DB: DATABASE_URL (prod Coolify) > POSTGRES_* (local) > SQLite.
+# Ej: DATABASE_URL=postgres://megra_prime:CLAVE@db:5432/megra_prime
+import urllib.parse as _up
+
+
+def _db_from_url(url: str) -> dict:
+    u = _up.urlparse(url)
+    if u.scheme in ("postgres", "postgresql"):
+        cfg = {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": (_up.unquote(u.path or "") or "/")[1:],
+            "USER": _up.unquote(u.username or ""),
+            "PASSWORD": _up.unquote(u.password or ""),
+            "HOST": u.hostname or "",
+            "PORT": str(u.port or ""),
+            "CONN_MAX_AGE": 60,
+        }
+        qs = _up.parse_qs(u.query)
+        if "sslmode" in qs:
+            cfg["OPTIONS"] = {"sslmode": qs["sslmode"][0]}
+        return cfg
+    if u.scheme == "sqlite":
+        return {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / (u.path.lstrip("/") or "db.sqlite3")}
+    raise ValueError(f"DATABASE_URL no soportada: {u.scheme}")
+
+
+if os.environ.get("DATABASE_URL"):
+    DATABASES = {"default": _db_from_url(os.environ["DATABASE_URL"])}
+elif os.environ.get("POSTGRES_DB"):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -91,6 +118,7 @@ if os.environ.get("POSTGRES_DB"):
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
             "HOST": os.environ.get("POSTGRES_HOST", "db"),
             "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+            "CONN_MAX_AGE": 60,
         }
     }
 else:
@@ -100,6 +128,9 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+
+if not DEBUG and SECRET_KEY.startswith("django-insecure-"):
+    raise ValueError("En producción define DJANGO_SECRET_KEY seguro (ver .env.example).")
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

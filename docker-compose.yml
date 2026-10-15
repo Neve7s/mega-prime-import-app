@@ -1,6 +1,38 @@
 services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-megra_prime}
+      POSTGRES_USER: ${POSTGRES_USER:-megra_prime}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-megra_prime_local}
+    volumes:
+      # PG18 exige montar /var/lib/postgresql (no el subdir data).
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-megra_prime}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   web:
     build: .
-    ports:
-      - "8080:80"
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DJANGO_DEBUG: "0"
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?requerido}
+      DATABASE_URL: postgres://${POSTGRES_USER:-megra_prime}:${POSTGRES_PASSWORD:-megra_prime_local}@db:5432/${POSTGRES_DB:-megra_prime}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost}
+      WHATSAPP_NUMBER: ${WHATSAPP_NUMBER:-593963796222}
+    ports:
+      - "8080:8000"
+    volumes:
+      # Persistente: imágenes subidas (logos, productos) sobreviven redeploys.
+      - media:/app/media
+
+volumes:
+  pgdata:
+  media:

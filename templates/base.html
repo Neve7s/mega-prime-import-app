@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}Mega Prime Import ECU{% endblock %}</title>
+  <title>{% block title %}{{ site_settings.meta_title|default:"MEGA PRIME IMPORT | Acabados, Interiorismo y Maquinaria Pro" }}{% endblock %}</title>
+  <meta name="description" content="{{ site_settings.meta_description|default:'Importadores directos de porcelanatos gran formato. Cotización B2B en 48h.' }}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -19,11 +20,15 @@
 <body class="bg-[#f9f9ff] text-[#151c27]" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   <header class="bg-[#080d13] text-white">
     <div class="max-w-[1440px] mx-auto px-6 py-4 flex items-center justify-between">
-      <a href="{% url 'core:home' %}" class="font-grotesk font-bold tracking-tight">MEGA PRIME IMPORT</a>
+      <a href="{% url 'core:home' %}" class="flex items-center gap-3 font-grotesk font-bold tracking-tight">
+        {% if site_settings.logo %}<img src="{{ site_settings.logo.url }}" alt="{{ site_settings.site_name }}" class="h-8 w-auto object-contain brightness-0 invert" />{% endif %}
+        <span>{{ site_settings.site_name|default:"MEGA PRIME IMPORT LGM" }}</span>
+      </a>
       <nav class="flex items-center gap-4 text-sm">
+        <span class="hidden md:inline text-white/60 text-xs uppercase tracking-widest">{{ site_settings.tagline|default:"Hub Logístico & Distribución Mayorista" }} • {{ site_settings.cities|default:"Ambato, Ecuador" }}</span>
         <a href="{% url 'core:home' %}#catalogo" class="hover:text-[#fe932c]">Catálogo</a>
         <a href="{% url 'core:home' %}#cotizador" class="hover:text-[#fe932c]">Cotizador</a>
-        <span id="cart-badge" class="bg-[#fe932c] text-black px-2 py-1 rounded text-xs font-bold">0</span>
+        <span id="cart-badge" class="bg-[#fe932c] text-black px-2 py-1 rounded text-xs font-bold">{{ cart_count|default:0 }}</span>
         {% if user.is_authenticated %}
           <span class="text-white/70">{{ user.username }}</span>
           <a href="{% url 'admin:index' %}" class="underline">Gestión</a>
@@ -35,9 +40,17 @@
   </header>
   <main>{% block content %}{% endblock %}</main>
   <footer class="bg-[#080d13] text-white/70 mt-16">
-    <div class="max-w-[1440px] mx-auto px-6 py-8 text-sm flex flex-col md:flex-row justify-between gap-4">
-      <span>Mega Prime Import ECU — Lima | Callao | Arequipa</span>
-      <span>WhatsApp cotizaciones — checkout sin pago online</span>
+    <div class="max-w-[1440px] mx-auto px-6 py-8 text-sm flex flex-col gap-2">
+      <div class="flex flex-col md:flex-row justify-between gap-4">
+        <span>{{ site_settings.footer_text|default:"Importación directa y distribución mayorista." }}</span>
+        <span>{{ site_settings.company_legal|default:"Ecuatoriana | MEGA PRIME IMPORT" }}</span>
+      </div>
+      <div class="flex flex-col md:flex-row gap-4 text-xs text-white/50">
+        <span>{{ site_settings.email|default:"ventas@megaprimeimport.com" }}</span>
+        <span>{{ site_settings.phone_display|default:"+593 96 379 6222" }}</span>
+        <span>{{ site_settings.schedule|default:"Lunes a Sábado 8:00 AM – 6:30 PM" }}</span>
+        <span>{{ site_settings.address|default:"Bodega Ambato" }}</span>
+      </div>
     </div>
   </footer>
   {% block extra_js %}{% endblock %}

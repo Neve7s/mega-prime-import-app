@@ -29,11 +29,8 @@
         <a href="{% url 'core:home' %}#catalogo" class="hover:text-[#fe932c]">Catálogo</a>
         <a href="{% url 'core:home' %}#cotizador" class="hover:text-[#fe932c]">Cotizador</a>
         <a href="{% url 'cart:carrito' %}" class="hover:text-[#fe932c]">Carrito <span id="cart-badge" class="bg-[#fe932c] text-black px-2 py-1 rounded text-xs font-bold">0</span></a>
-        {% if user.is_authenticated %}
-          <span class="text-white/70">{{ user.username }}</span>
-          <a href="{% url 'admin:index' %}" class="underline">Gestión</a>
-        {% else %}
-          <a href="{% url 'accounts:login' %}" class="underline">Ingresar</a>
+        {% if user.is_authenticated and user.is_staff %}
+          <a href="{% url 'panel:dashboard' %}" class="bg-[#fe932c] text-black px-3 py-1 rounded font-bold">Mi panel</a>
         {% endif %}
       </nav>
     </div>

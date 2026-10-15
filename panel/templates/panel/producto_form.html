@@ -2,7 +2,7 @@
 {% block title %}{% if obj %}Editar{% else %}Nuevo{% endif %} producto — Panel{% endblock %}
 {% block content %}
 <h1 class="text-2xl font-bold">{% if obj %}Editar {{ obj.sku }}{% else %}Nuevo producto{% endif %}</h1>
-<form method="post" enctype="multipart/form-data" class="panel-form mt-4 max-w-5xl">{% csrf_token %}
+<form method="post" enctype="multipart/form-data" class="panel-form mt-4 w-full">{% csrf_token %}
   <div class="bg-white border rounded-xl p-5">
     {% include "panel/_form_sections.html" with form=form sections=sections %}
   </div>

@@ -16,7 +16,11 @@ if _env_file.exists():
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-dev-only-megra-prime")
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = [h for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,megaprimeimport.com,www.megaprimeimport.com").split(",") if h]
+ALLOWED_HOSTS = [h for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h]
+# Loopback siempre permitido: lo usa el healthcheck interno del contenedor.
+for _h in ("localhost", "127.0.0.1", "[::1]"):
+    if _h not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_h)
 if DEBUG and "testserver" not in ALLOWED_HOSTS:
     ALLOWED_HOSTS += ["testserver"]
 

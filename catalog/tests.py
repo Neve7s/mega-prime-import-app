@@ -31,6 +31,29 @@ class ProductTest(TestCase):
         )
         self.assertEqual(p.imagen_src, "https://ejemplo.com/x.jpg")
 
+    def test_catalogo_completo_con_filtros(self):
+        Product.objects.create(
+            categoria=self.cat, sku="MPG-CALA-120", nombre="Calacatta Imperial",
+            slug="calacatta-imperial", precio_mayor=Decimal("68.50"),
+        )
+        resp = self.client.get("/catalogo/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Catálogo completo")
+        resp = self.client.get("/catalogo/", {"q": "CALA"})
+        self.assertContains(resp, "MPG-CALA-120")
+        resp = self.client.get("/catalogo/", {"categoria": "porcelanato"})
+        self.assertContains(resp, "MPG-CALA-120")
+
+    def test_grid_htmx_devuelve_parcial(self):
+        Product.objects.create(
+            categoria=self.cat, sku="MPG-NERO-160", nombre="Titanium Nero",
+            slug="titanium-nero", precio_mayor=Decimal("124.00"),
+        )
+        resp = self.client.get("/catalogo/", {"q": "NERO"}, HTTP_HX_REQUEST="true")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "MPG-NERO-160")
+        self.assertNotContains(resp, "Catálogo completo")
+
     def test_detalle_usa_mismo_header_que_index(self):
         p = Product.objects.create(
             categoria=self.cat, sku="MPG-D", nombre="D", slug="d",

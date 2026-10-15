@@ -1,0 +1,49 @@
+{% extends "base_landing.html" %}
+{% block title %}Catálogo completo — {{ site_settings.site_name|default:"MEGA PRIME" }}{% endblock %}
+{% block content %}
+<section class="w-full pt-32 lg:pt-36 pb-space-xl bg-surface min-h-screen">
+<div class="max-w-[1440px] mx-auto px-margin md:px-margin-md lg:px-margin-lg">
+  <div class="font-label-sm text-label-sm uppercase tracking-widest text-secondary font-bold">Catálogo mayorista</div>
+  <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Catálogo completo</h1>
+  <p class="font-body-md text-body-md text-on-surface-variant mt-1">Filtra por línea, busca por nombre o SKU y agrega a tu cotización.</p>
+
+  <form hx-get="{% url 'catalog:catalogo' %}" hx-target="#catalogo-grid" hx-swap="innerHTML" hx-trigger="change, keyup changed delay:300ms from:#filtro-q" hx-push-url="true"
+        class="mt-6 bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-space-md flex flex-col lg:flex-row gap-space-sm lg:items-end shadow-sm">
+    <div class="flex flex-col gap-1 flex-1">
+      <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold" for="filtro-q">Buscar</label>
+      <input id="filtro-q" name="q" value="{{ q }}" placeholder="Nombre o SKU..." class="bg-surface border border-outline-variant rounded px-space-md py-2.5 font-body-sm" />
+    </div>
+    <div class="flex flex-col gap-1">
+      <span class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Línea</span>
+      <div class="flex flex-wrap gap-2">
+        <label class="cursor-pointer"><input type="radio" name="categoria" value="" class="peer sr-only" {% if not categoria %}checked{% endif %} /><span class="inline-block px-space-md py-2 rounded font-label-sm text-label-sm uppercase tracking-wider bg-surface border border-outline-variant peer-checked:bg-primary peer-checked:text-on-primary transition-colors">Todas</span></label>
+        {% for cat in categorias %}
+        <label class="cursor-pointer"><input type="radio" name="categoria" value="{{ cat.slug }}" class="peer sr-only" {% if categoria == cat.slug %}checked{% endif %} /><span class="inline-block px-space-md py-2 rounded font-label-sm text-label-sm uppercase tracking-wider bg-surface border border-outline-variant peer-checked:bg-primary peer-checked:text-on-primary transition-colors">{{ cat.nombre }}</span></label>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold" for="filtro-stock">Stock</label>
+      <select id="filtro-stock" name="stock" class="bg-surface border border-outline-variant rounded px-space-md py-2.5 font-body-sm">
+        <option value="">Todo</option>
+        <option value="si" {% if stock == "si" %}selected{% endif %}>En stock</option>
+      </select>
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold" for="filtro-orden">Orden</label>
+      <select id="filtro-orden" name="orden" class="bg-surface border border-outline-variant rounded px-space-md py-2.5 font-body-sm">
+        <option value="">Destacados</option>
+        <option value="precio_asc" {% if orden == "precio_asc" %}selected{% endif %}>Precio menor</option>
+        <option value="precio_desc" {% if orden == "precio_desc" %}selected{% endif %}>Precio mayor</option>
+        <option value="nombre" {% if orden == "nombre" %}selected{% endif %}>Nombre A–Z</option>
+      </select>
+    </div>
+  </form>
+  <p class="font-body-sm text-body-sm text-on-surface-variant mt-4"><span id="catalogo-count">{{ productos|length }}</span> producto(s)</p>
+
+  <div id="catalogo-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mt-4">
+    {% include "catalog/_grid.html" with productos=productos %}
+  </div>
+</div>
+</section>
+{% endblock %}

@@ -6,26 +6,48 @@
   <title>{% block title %}Panel — MEGA PRIME{% endblock %}</title>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>body { font-family: 'IBM Plex Sans', sans-serif; } h1,h2,h3 { font-family: 'Archivo', sans-serif; }</style>
+  <style>
+    body { font-family: 'IBM Plex Sans', sans-serif; }
+    h1, h2, h3 { font-family: 'Archivo', sans-serif; }
+    .nav-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; color: #d4d4d8; }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .nav-item.active { background: rgba(212,175,55,0.15); color: #D4AF37; }
+    .nav-section { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: #71717a; padding: 0.9rem 0.75rem 0.3rem; }
+  </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-[#f4f4f5]">
 <div class="flex min-h-screen">
-  <aside class="w-60 bg-[#080d13] text-white flex flex-col shrink-0">
-    <div class="px-5 py-5 font-bold tracking-tight border-b border-white/10">MEGA PRIME <span class="text-[#fe932c]">Panel</span></div>
-    <nav class="flex flex-col p-3 gap-1 text-sm">
-      <a class="px-3 py-2 rounded hover:bg-white/10" href="{% url 'panel:dashboard' %}">📊 Tablero</a>
-      <a class="px-3 py-2 rounded hover:bg-white/10" href="{% url 'panel:pedidos' %}">🧾 Punto de venta</a>
-      <a class="px-3 py-2 rounded hover:bg-white/10" href="{% url 'panel:codigos' %}">🔑 Códigos WhatsApp</a>
-      <a class="px-3 py-2 rounded hover:bg-white/10" href="{% url 'panel:productos' %}">📦 Productos</a>
-      <a class="px-3 py-2 rounded hover:bg-white/10" href="{% url 'panel:calculadora' %}">🧮 Calculadora</a>
-      <a class="px-3 py-2 rounded hover:bg-white/10" href="{% url 'panel:ajustes' %}">⚙️ Ajustes del sitio</a>
+  <aside class="w-60 bg-[#0A0A0B] text-white flex flex-col shrink-0">
+    <div class="px-5 py-5 border-b border-white/10">
+      <div class="font-bold tracking-tight text-lg">MEGA PRIME</div>
+      <div class="text-[11px] uppercase tracking-widest text-[#D4AF37]">Panel de tienda</div>
+    </div>
+    <nav class="flex flex-col px-3 pb-3 text-sm">
+      <div class="nav-section">Inicio</div>
+      <a class="nav-item" href="{% url 'panel:dashboard' %}">📊 Tablero</a>
+      <div class="nav-section">Tienda</div>
+      <a class="nav-item" href="{% url 'panel:pedidos' %}">🧾 Punto de venta</a>
+      <a class="nav-item" href="{% url 'panel:codigos' %}">🔑 Códigos WhatsApp</a>
+      <a class="nav-item" href="{% url 'panel:productos' %}">📦 Productos</a>
+      <a class="nav-item" href="{% url 'panel:calculadora' %}">🧮 Calculadora</a>
+      <div class="nav-section">Sistema</div>
+      <a class="nav-item" href="{% url 'panel:ajustes' %}">⚙️ Ajustes del sitio</a>
     </nav>
     <div class="mt-auto p-3 border-t border-white/10 text-sm flex flex-col gap-1">
-      <a class="px-3 py-2 rounded hover:bg-white/10" target="_blank" href="{% url 'core:home' %}">🌐 Ver sitio</a>
-      <a class="px-3 py-2 rounded hover:bg-white/10" href="{% url 'panel:salir' %}">Salir ({{ user.username }})</a>
+      <a class="nav-item" target="_blank" href="{% url 'core:home' %}">🌐 Ver sitio</a>
+      <a class="nav-item" href="{% url 'panel:salir' %}">↩ Salir ({{ user.username }})</a>
     </div>
   </aside>
-  <main class="flex-1 p-6 max-w-6xl">{% block content %}{% endblock %}</main>
+  <div class="flex-1 flex flex-col min-w-0">
+    <header class="bg-white border-b px-6 py-3 flex items-center gap-4 sticky top-0 z-10">
+      <form method="get" action="{% url 'panel:productos' %}" class="flex-1 max-w-md">
+        <input name="q" placeholder="🔍 Buscar SKU o producto..." class="w-full bg-gray-100 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#D4AF37]" />
+      </form>
+      <span class="ml-auto text-sm text-gray-500">{{ user.username }}</span>
+      <span class="w-8 h-8 rounded-full bg-[#0A0A0B] text-[#D4AF37] flex items-center justify-center font-bold text-sm">{{ user.username|slice:":1"|upper }}</span>
+    </header>
+    <main class="p-6">{% block content %}{% endblock %}</main>
+  </div>
 </div>
 </body>
 </html>

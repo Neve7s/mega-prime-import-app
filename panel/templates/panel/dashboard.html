@@ -1,14 +1,84 @@
 {% extends "panel/base_panel.html" %}
 {% block title %}Tablero — Panel{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold">Tablero</h1>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-  <div class="bg-white rounded-xl border p-5"><div class="text-3xl font-bold">{{ n_productos }}</div><div class="text-sm text-gray-500">Productos activos</div></div>
-  <div class="bg-white rounded-xl border p-5"><div class="text-3xl font-bold">{{ n_pedidos_abiertos }}</div><div class="text-sm text-gray-500">Pedidos abiertos</div></div>
-  <div class="bg-white rounded-xl border p-5"><div class="text-3xl font-bold">{{ n_codigos }}</div><div class="text-sm text-gray-500">Códigos vigentes</div></div>
+<div class="flex items-center justify-between">
+  <h1 class="text-2xl font-bold">Tablero</h1>
+  <span class="text-xs text-gray-500 uppercase tracking-widest">megaprimeimport.com</span>
 </div>
-<h2 class="font-bold mt-6">Últimos pedidos</h2>
-<div class="bg-white rounded-xl border mt-2 divide-y">
-{% for p in ultimos %}<a class="block px-4 py-3 hover:bg-gray-50" href="{% url 'panel:pedido_detalle' p.codigo %}"><strong>{{ p.codigo }}</strong> · {{ p.nombre_completo }} · USD {{ p.total }} · {{ p.get_estado_display }}</a>{% empty %}<p class="px-4 py-3 text-sm text-gray-500">Sin pedidos aún.</p>{% endfor %}
+
+<!-- KPI cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-4">
+  <div class="bg-white rounded-xl border p-5 border-l-4 border-l-[#D4AF37]">
+    <div class="text-3xl font-bold">{{ n_pedidos_abiertos }}</div>
+    <div class="text-sm text-gray-500">Pedidos abiertos</div>
+  </div>
+  <div class="bg-white rounded-xl border p-5 border-l-4 border-l-[#b45309]">
+    <div class="text-3xl font-bold">USD {{ ingresos }}</div>
+    <div class="text-sm text-gray-500">Ingresos acumulados</div>
+  </div>
+  <div class="bg-white rounded-xl border p-5 border-l-4 border-l-[#0A0A0B]">
+    <div class="text-3xl font-bold">{{ n_productos }}</div>
+    <div class="text-sm text-gray-500">Productos activos</div>
+  </div>
+  <div class="bg-white rounded-xl border p-5 border-l-4 border-l-green-600">
+    <div class="text-3xl font-bold">{{ n_codigos }}</div>
+    <div class="text-sm text-gray-500">Códigos vigentes</div>
+  </div>
+</div>
+
+<!-- Charts row -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mt-4">
+  <div class="bg-white rounded-xl border p-5">
+    <h2 class="font-bold text-sm uppercase tracking-wider text-gray-500">Pedidos por estado</h2>
+    <div class="flex items-center gap-5 mt-4">
+      <div class="w-32 h-32 rounded-full shrink-0" style="background: conic-gradient({{ dona }}); -webkit-mask: radial-gradient(circle, transparent 55%, black 56%); mask: radial-gradient(circle, transparent 55%, black 56%);"></div>
+      <div class="flex flex-col gap-2 text-sm">
+        {% for s in por_estado %}
+        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm" style="background: {{ s.color }}"></span>{{ s.label }} <strong>{{ s.n }}</strong> <span class="text-gray-400">{{ s.pct }}%</span></div>
+        {% empty %}<p class="text-gray-400">Sin pedidos.</p>{% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border p-5">
+    <h2 class="font-bold text-sm uppercase tracking-wider text-gray-500">Pedidos últimos 7 días</h2>
+    <div class="flex items-end gap-2 h-36 mt-4">
+      {% for d in por_dia %}
+      <div class="flex-1 flex flex-col items-center gap-1">
+        <span class="text-xs font-bold">{% if d.n %}{{ d.n }}{% endif %}</span>
+        <div class="w-full rounded-t bg-gradient-to-t from-[#b45309] to-[#D4AF37]" style="height: {% widthratio d.n max_dia 120 %}px; min-height: 4px;"></div>
+        <span class="text-[11px] text-gray-400">{{ d.dia }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border p-5">
+    <h2 class="font-bold text-sm uppercase tracking-wider text-gray-500">Stock bajo (&lt; 100)</h2>
+    <div class="mt-3 flex flex-col gap-3">
+      {% for p in stock_bajo %}
+      <div><div class="flex justify-between text-sm"><span class="font-semibold">{{ p.sku }}</span><span class="text-gray-500">{{ p.stock_cantidad }}</span></div>
+      <div class="h-2 bg-gray-100 rounded mt-1"><div class="h-2 rounded bg-[#b45309]" style="width: {% widthratio p.stock_cantidad 100 100 %}%;"></div></div></div>
+      {% empty %}<p class="text-sm text-gray-400">Stock saludable.</p>{% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Tables row -->
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-4">
+  <div class="bg-white rounded-xl border p-5">
+    <h2 class="font-bold text-sm uppercase tracking-wider text-gray-500">Últimos pedidos</h2>
+    <div class="mt-2 divide-y text-sm">
+      {% for p in ultimos %}
+      <a class="flex justify-between py-2 hover:bg-gray-50" href="{% url 'panel:pedido_detalle' p.codigo %}"><span><strong>{{ p.codigo }}</strong> · {{ p.nombre_completo }}</span><span class="font-bold">USD {{ p.total }}</span></a>
+      {% empty %}<p class="py-2 text-gray-400">Sin pedidos aún.</p>{% endfor %}
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border p-5">
+    <h2 class="font-bold text-sm uppercase tracking-wider text-gray-500">Más pedidos (por líneas)</h2>
+    <div class="mt-2 divide-y text-sm">
+      {% for t in top_productos %}
+      <div class="flex justify-between py-2"><span>{{ t.nombre_snapshot }}</span><span class="font-bold">{{ t.qty }} líneas</span></div>
+      {% empty %}<p class="py-2 text-gray-400">Sin datos aún.</p>{% endfor %}
+    </div>
+  </div>
 </div>
 {% endblock %}

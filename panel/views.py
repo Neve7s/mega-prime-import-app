@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from calculator.models import HSCode, TaxRule
 from calculator.services import estimate
-from cart.models import Order, SaleCode
+from cart.models import Order, OrderItem, SaleCode
 from catalog.models import Product
 from core.models import SiteSettings
 
@@ -15,10 +15,47 @@ from .forms import CalculadoraForm, OrderEstadoForm, ProductForm, SaleCodeForm, 
 
 @staff_only
 def dashboard(request):
+    from datetime import timedelta
+    from django.db.models import Count, Sum
+    from django.utils import timezone
+
+    hoy = timezone.now().date()
+    ultimos7 = [(hoy - timedelta(days=i)) for i in range(6, -1, -1)]
+    por_dia = []
+    max_dia = 0
+    for d in ultimos7:
+        n = Order.objects.filter(created_at__date=d).exclude(estado=Order.CANCELADO).count()
+        max_dia = max(max_dia, n)
+        por_dia.append({"dia": d.strftime("%d/%m"), "n": n})
+
+    por_estado_qs = Order.objects.values("estado").annotate(n=Count("id"))
+    total_ped = sum(r["n"] for r in por_estado_qs) or 1
+    colores = {Order.RECIBIDO: "#D4AF37", Order.PREPARACION: "#b45309",
+               Order.LISTO: "#0ea5e9", Order.ENTREGADO: "#16a34a", Order.CANCELADO: "#9ca3af"}
+    labels = dict(Order.ESTADOS)
+    por_estado = [{"label": labels[r["estado"]], "n": r["n"],
+                   "pct": round(r["n"] * 100 / total_ped),
+                   "color": colores.get(r["estado"], "#6b7280")} for r in por_estado_qs]
+    segmentos = []
+    acc = 0
+    for s in por_estado:
+        segmentos.append(f"{s['color']} {acc}% {acc + s['pct']}%")
+        acc += s["pct"]
+
+    top_productos = (OrderItem.objects.exclude(order__estado=Order.CANCELADO)
+                     .values("sku_snapshot", "nombre_snapshot")
+                     .annotate(qty=Count("id")).order_by("-qty")[:5])
+    ingresos = (Order.objects.exclude(estado=Order.CANCELADO)
+                .aggregate(t=Sum("total"))["t"] or 0)
     ctx = {
         "n_productos": Product.objects.filter(activo=True).count(),
         "n_pedidos_abiertos": Order.objects.exclude(estado__in=[Order.ENTREGADO, Order.CANCELADO]).count(),
         "n_codigos": SaleCode.objects.filter(estado=SaleCode.EMITIDO).count(),
+        "ingresos": ingresos,
+        "por_dia": por_dia, "max_dia": max_dia or 1,
+        "por_estado": por_estado, "dona": ", ".join(segmentos) or "#e5e7eb 0% 100%",
+        "top_productos": top_productos,
+        "stock_bajo": Product.objects.filter(activo=True, stock_cantidad__lt=100).order_by("stock_cantidad")[:5],
         "ultimos": Order.objects.all()[:5],
     }
     return render(request, "panel/dashboard.html", ctx)

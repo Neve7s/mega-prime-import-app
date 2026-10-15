@@ -18,7 +18,8 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-dev-only-megra
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 ALLOWED_HOSTS = [h for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h]
 # Loopback siempre permitido: lo usa el healthcheck interno del contenedor.
-for _h in ("localhost", "127.0.0.1", "[::1]"):
+# .sslip.io: links temporales de Coolify (preview). Inofensivo.
+for _h in ("localhost", "127.0.0.1", "[::1]", ".sslip.io"):
     if _h not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(_h)
 if DEBUG and "testserver" not in ALLOWED_HOSTS:

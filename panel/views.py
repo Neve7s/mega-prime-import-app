@@ -180,4 +180,4 @@ def calculadora(request):
 
 def salir(request):
     logout(request)
-    return redirect("panel:login")
+    return redirect("core:home")

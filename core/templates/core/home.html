@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Mega Prime Import ECU — Acabados y Herramientas por Mayor{% endblock %}
+{% block content %}
+<section class="bg-[#080d13] text-white">
+  <div class="max-w-[1440px] mx-auto px-6 py-16">
+    <p class="text-xs uppercase tracking-widest text-[#ffb77d]">Hub Logístico &amp; Distribución Mayorista</p>
+    <h1 class="font-grotesk text-4xl md:text-6xl font-bold leading-tight mt-4">Excelencia en cada acabado,<br />potencia en cada herramienta.</h1>
+    <p class="mt-4 max-w-2xl text-white/80">Importadores directos de porcelanatos de gran formato, perfiles, grifería y maquinaria de corte para contratistas y arquitectos.</p>
+    <div class="mt-6 flex gap-3">
+      <a href="#catalogo" class="bg-[#fe932c] text-black font-bold px-5 py-3 rounded">Explorar Catálogo 2025</a>
+      <a href="#cotizador" class="border border-white/30 px-5 py-3 rounded">Cotizar por mayor</a>
+    </div>
+  </div>
+</section>
+<section id="catalogo" class="max-w-[1440px] mx-auto px-6 py-12">
+  <h2 class="font-grotesk text-2xl font-bold">Catálogo 2025</h2>
+  <p class="text-sm text-gray-600">Grid dinámico HTMX (Task 5). Por ahora estático.</p>
+  <div id="catalog-grid"><p class="text-sm text-gray-500">Sin productos aún — ver Task 4.</p></div>
+</section>
+<section id="cotizador" class="max-w-[1440px] mx-auto px-6 py-12">
+  <h2 class="font-grotesk text-2xl font-bold">Cotizador / Calculadora impuestos</h2>
+  <p class="text-sm text-gray-600">Widget HTMX (Task 9).</p>
+  <div id="calc-widget"><p class="text-sm text-gray-500">Próximamente.</p></div>
+</section>
+{% endblock %}

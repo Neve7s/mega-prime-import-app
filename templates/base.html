@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Mega Prime Import ECU{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    h1, h2, h3, .font-grotesk { font-family: 'Space Grotesk', sans-serif; }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-[#f9f9ff] text-[#151c27]" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  <header class="bg-[#080d13] text-white">
+    <div class="max-w-[1440px] mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="{% url 'core:home' %}" class="font-grotesk font-bold tracking-tight">MEGA PRIME IMPORT</a>
+      <nav class="flex items-center gap-4 text-sm">
+        <a href="{% url 'core:home' %}#catalogo" class="hover:text-[#fe932c]">Catálogo</a>
+        <a href="{% url 'core:home' %}#cotizador" class="hover:text-[#fe932c]">Cotizador</a>
+        <span id="cart-badge" class="bg-[#fe932c] text-black px-2 py-1 rounded text-xs font-bold">0</span>
+        {% if user.is_authenticated %}
+          <span class="text-white/70">{{ user.username }}</span>
+          <a href="{% url 'admin:index' %}" class="underline">Gestión</a>
+        {% else %}
+          <a href="{% url 'accounts:login' %}" class="underline">Ingresar</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+  <footer class="bg-[#080d13] text-white/70 mt-16">
+    <div class="max-w-[1440px] mx-auto px-6 py-8 text-sm flex flex-col md:flex-row justify-between gap-4">
+      <span>Mega Prime Import ECU — Lima | Callao | Arequipa</span>
+      <span>WhatsApp cotizaciones — checkout sin pago online</span>
+    </div>
+  </footer>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

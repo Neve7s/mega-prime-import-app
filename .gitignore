@@ -15,3 +15,8 @@ DESIGN.md
 # Local / sistema
 .env
 node_modules/
+db.sqlite3
+media/
+staticfiles/
+__pycache__/
+*.pyc

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Ingresar — Mega Prime{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto px-6 py-16">
+  <h1 class="font-grotesk text-2xl font-bold">Ingresar</h1>
+  <p class="text-sm text-gray-600 mt-1">Solo personal autorizado. Las cuentas las crea el administrador.</p>
+  <form method="post" class="mt-6 flex flex-col gap-4 bg-white border p-6 rounded">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="bg-[#1e232a] text-white py-2 rounded font-bold">Entrar</button>
+  </form>
+</div>
+{% endblock %}

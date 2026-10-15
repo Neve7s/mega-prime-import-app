@@ -26,7 +26,6 @@ services:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?requerido}
       DATABASE_URL: postgres://${POSTGRES_USER:-megra_prime}:${POSTGRES_PASSWORD:-megra_prime_local}@db:5432/${POSTGRES_DB:-megra_prime}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost}
-      WHATSAPP_NUMBER: ${WHATSAPP_NUMBER:-593963796222}
     ports:
       - "8080:8000"
     volumes:

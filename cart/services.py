@@ -84,8 +84,14 @@ def crear_pedido(datos: dict, items: list[dict], sale: SaleCode) -> tuple[Order 
 
 
 def wa_compartir_codigo(sale: SaleCode) -> str:
-    """Link wa.me para enviar el código al cliente."""
-    numero = getattr(settings, "WHATSAPP_NUMBER", "")
+    """Link wa.me para enviar el código al cliente. El número manda desde Ajustes."""
+    numero = ""
+    try:
+        from core.models import SiteSettings
+
+        numero = SiteSettings.get_solo().whatsapp_number or ""
+    except Exception:
+        numero = getattr(settings, "WHATSAPP_NUMBER", "") or ""
     msg = (
         f"Hola, tu código de compra MEGA PRIME es *{sale.codigo}*.\n"
         f"Úsalo en tu carrito web junto a tus datos para procesar el pedido.\n"

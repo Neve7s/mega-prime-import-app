@@ -5,11 +5,32 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# .env local (stdlib, sin dependencias). En Coolify se usan variables de entorno reales.
+_env_file = BASE_DIR / ".env"
+if _env_file.exists():
+    for _line in _env_file.read_text(encoding="utf-8").splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith("#") and "=" in _line:
+            _k, _v = _line.split("=", 1)
+            os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
+
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-dev-only-megra-prime")
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = [h for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h]
+ALLOWED_HOSTS = [h for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,megaprimeimport.com,www.megaprimeimport.com").split(",") if h]
 if DEBUG and "testserver" not in ALLOWED_HOSTS:
     ALLOWED_HOSTS += ["testserver"]
+
+CSRF_TRUSTED_ORIGINS = [
+    o
+    for o in os.environ.get(
+        "DJANGO_CSRF_TRUSTED_ORIGINS", "https://megaprimeimport.com,https://www.megaprimeimport.com"
+    ).split(",")
+    if o
+]
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 INSTALLED_APPS = [
     "django.contrib.admin",

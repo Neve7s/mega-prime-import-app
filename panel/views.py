@@ -431,6 +431,22 @@ def calculadora(request):
     def _q2(v):
         return str(Decimal(str(v)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
+    def _pricing_items(items):
+        normalized = []
+        for item in items:
+            item = dict(item)
+            legacy_margin = item.pop("margen_pct", None)
+            item.pop("cant_caja", None)
+            for key in ("compet1", "compet2", "compet3"):
+                if legacy_margin not in (None, ""):
+                    item[key] = str(legacy_margin)
+                elif item.get(key) in (None, ""):
+                    item[key] = "35"
+                else:
+                    item[key] = str(item[key])
+            normalized.append(item)
+        return normalized
+
     # Datos para el selector de embarques (gastos redondeados a 2 dec. para mostrar).
     embarques_ui = {
         key: {"nombre": e["nombre"], "tasas": e["tasas"],
@@ -449,18 +465,17 @@ def calculadora(request):
                            ("flete_intl", "flete_local", "gasto_admin", "bodegaje",
                             "devolucion", "comision_banco", "descarga", "agente",
                             "otros_unit")}
-        defaults_items = [{"nombre": "", "cant": "1", "cant_caja": "1",
-                           "valor_unit": "", "margen_pct": "35",
-                           "compet1": "", "compet2": "", "compet3": "",
+        defaults_items = [{"nombre": "", "cant": "1", "valor_unit": "",
+                           "compet1": "35", "compet2": "35", "compet3": "35",
                            "seguro_pct": "", "advalorem_pct": "",
                            "fondinfa_pct": "", "iva_pct": ""}]
     else:
         seed = embarques[sel]
         defaults_tasas = dict(seed["tasas"])
         defaults_gastos = {k: _q2(v) for k, v in seed["gastos"].items()}
-        defaults_items = seed["items"] or [{
-            "nombre": "", "cant": "1", "cant_caja": "1", "valor_unit": "",
-            "margen_pct": "35", "compet1": "", "compet2": "", "compet3": "",
+        defaults_items = _pricing_items(seed["items"]) or [{
+            "nombre": "", "cant": "1", "valor_unit": "",
+            "compet1": "35", "compet2": "35", "compet3": "35",
             "seguro_pct": "", "advalorem_pct": "", "fondinfa_pct": "", "iva_pct": "",
         }]
     override_keys = ("seguro_pct", "advalorem_pct", "fondinfa_pct", "iva_pct")
@@ -470,8 +485,8 @@ def calculadora(request):
         gastos = {k: _num(request.POST.get(k, v), v) for k, v in defaults_gastos.items()}
         nombres = request.POST.getlist("nombre")
         posted = {k: request.POST.getlist(k) for k in
-                  ("cant", "cant_caja", "valor_unit", "margen_pct", "compet1",
-                   "compet2", "compet3") + tuple(f"ov_{k}" for k in override_keys)}
+                  ("cant", "valor_unit", "compet1", "compet2", "compet3")
+                  + tuple(f"ov_{k}" for k in override_keys)}
 
         def _raw(key, i, d=""):
             lst = posted.get(key, [])
@@ -490,12 +505,10 @@ def calculadora(request):
             items.append({
                 "nombre": nombre.strip() or f"Producto {i+1}",
                 "cant": _num(_raw("cant", i), 0),
-                "cant_caja": _num(_raw("cant_caja", i), 1) or 1,
                 "valor_unit": _num(_raw("valor_unit", i), 0),
-                "margen_pct": _num(_raw("margen_pct", i), 35),
-                "compet1": _num(_raw("compet1", i), 0),
-                "compet2": _num(_raw("compet2", i), 0),
-                "compet3": _num(_raw("compet3", i), 0),
+                "compet1": _num(_raw("compet1", i), 35),
+                "compet2": _num(_raw("compet2", i), 35),
+                "compet3": _num(_raw("compet3", i), 35),
                 # Override por producto: None/vacío = usa tasa general.
                 "seguro_pct": _ov("seguro_pct", i),
                 "advalorem_pct": _ov("advalorem_pct", i),
@@ -512,9 +525,7 @@ def calculadora(request):
 
         items_raw = [{"nombre": n,
                       "cant": _rl("cant", i),
-                      "cant_caja": _rl("cant_caja", i),
                       "valor_unit": _rl("valor_unit", i),
-                      "margen_pct": _rl("margen_pct", i),
                       "compet1": _rl("compet1", i),
                       "compet2": _rl("compet2", i),
                       "compet3": _rl("compet3", i),
@@ -587,8 +598,8 @@ def calculadora_guardar(request):
         if not isinstance(items_input, list) or len(items_input) > 500:
             raise ValueError("El embarque admite hasta 500 productos.")
         items = []
-        numeric_defaults = {"cant": "0", "cant_caja": "1", "valor_unit": "",
-                            "margen_pct": "35", "compet1": "", "compet2": "", "compet3": "",
+        numeric_defaults = {"cant": "0", "valor_unit": "",
+                            "compet1": "35", "compet2": "35", "compet3": "35",
                             "seguro_pct": "", "advalorem_pct": "", "fondinfa_pct": "",
                             "iva_pct": ""}
         for row_number, item in enumerate(items_input, start=1):
@@ -599,8 +610,6 @@ def calculadora_guardar(request):
             for key, default in numeric_defaults.items():
                 clean_item[key] = clean_number(item.get(key), f"{key} del producto {row_number}",
                                                default, allow_blank=default == "")
-            if clean_item["margen_pct"] and Decimal(clean_item["margen_pct"]) >= 100:
-                raise ValueError(f"El margen del producto {row_number} debe ser menor a 100%.")
             items.append(clean_item)
         name = str(payload.get("nombre") or "").strip()[:100]
         if not name:
@@ -718,20 +727,21 @@ def calculadora_reporte(request):
         if not (nombre or str(it.get("cant") or "").strip()
                 or str(it.get("valor_unit") or "").strip()):
             continue
-        items.append({
+        item = {
             "nombre": nombre or f"Producto {i + 1}",
             "cant": _num(it.get("cant"), 0),
-            "cant_caja": _num(it.get("cant_caja"), 1) or Decimal(1),
             "valor_unit": _num(it.get("valor_unit"), 0),
-            "margen_pct": _num(it.get("margen_pct"), 35),
-            "compet1": _num(it.get("compet1"), 0),
-            "compet2": _num(it.get("compet2"), 0),
-            "compet3": _num(it.get("compet3"), 0),
+            "compet1": _num(it.get("compet1"), 35),
+            "compet2": _num(it.get("compet2"), 35),
+            "compet3": _num(it.get("compet3"), 35),
             "seguro_pct": _ov(it.get("seguro_pct")),
             "advalorem_pct": _ov(it.get("advalorem_pct")),
             "fondinfa_pct": _ov(it.get("fondinfa_pct")),
             "iva_pct": _ov(it.get("iva_pct")),
-        })
+        }
+        if it.get("margen_pct") not in (None, ""):
+            item["margen_pct"] = _num(it.get("margen_pct"), 35)
+        items.append(item)
     if not items:
         return JsonResponse({"error": "Sin productos."}, status=400)
     calc = calculate_shipment(items, gastos, tasas)

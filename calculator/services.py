@@ -21,8 +21,12 @@ def _to_pct(value, default):
 def calculate_shipment(items, gastos, tasas) -> dict:
     """Réplica exacta de COSTOS ROMA.xlsx (hojas Teja Roma / Español).
 
-    items: [{nombre, cant, cant_caja, valor_unit, margen_pct, compet1, compet2, compet3,
+    items: [{nombre, cant, valor_unit, compet1, compet2, compet3,
              seguro_pct?, advalorem_pct?, fondinfa_pct?, iva_pct?}]
+      - compet1/2/3 son recargos (%) para mayorista, frecuente y eventual.
+        Se calculan sobre el costo unitario: precio sin IVA = costo * (1 + recargo).
+      - margen_pct solo se reconoce al leer embarques antiguos; esos datos usaban
+        compet1/2/3 como precios de referencia y un margen único.
       - Los 4 *_pct por item son OVERRIDES opcionales: None/""/ausente = usa
         la tasa general. Permite que un producto tenga su propio arancel
         (ej. ad-valorem 0% por partida exonerada) sin afectar al resto.
@@ -42,10 +46,9 @@ def calculate_shipment(items, gastos, tasas) -> dict:
       Los totales del resumen son la SUMA de los rubros por item.
       Sin overrides, el resultado es idéntico al cálculo global anterior.
       valor_total_i = fob_i + tributos_i + locales prorrateados_i
-      costo_caja_i = valor_total_i / cant_i            (=T/B en Excel)
-      costo_unit_i = costo_caja_i / cant_caja_i        (=U/C en Excel)
-      pvp_sin_i = costo_caja_i / (1 - margen)         (=U/(1-X) en Excel)
-      pvp_con_i = pvp_sin_i * (1 + iva_pvp)
+      costo_unit_i = valor_total_i / cant_i
+      precio_sin_iva = costo_unit_i * (1 + recargo_pct / 100)
+      precio_con_iva = precio_sin_iva * (1 + iva_pvp / 100)
     """
     def D(v):
         return Decimal(str(v)) if not isinstance(v, Decimal) else v
@@ -71,18 +74,21 @@ def calculate_shipment(items, gastos, tasas) -> dict:
     total_fob = Decimal("0")
     for it in items:
         cant = D(it.get("cant", 0))
-        cant_caja = D(it.get("cant_caja", 1)) or Decimal("1")
         valor_unit = D(it.get("valor_unit", 0))
         fob = cant * valor_unit
+        legacy_margin = it.get("margen_pct")
+        def _client_margin(key):
+            value = legacy_margin if legacy_margin is not None else it.get(key)
+            return _to_pct(value, Decimal("35"))
         total_cant += cant
         total_fob += fob
         norm.append({
             "nombre": (it.get("nombre") or "").strip() or "Producto",
-            "cant": cant, "cant_caja": cant_caja, "valor_unit": valor_unit,
+            "cant": cant, "valor_unit": valor_unit,
             "fob": fob,
-            "margen_pct": D(it.get("margen_pct", 35)),
-            "compet1": D(it.get("compet1") or 0), "compet2": D(it.get("compet2") or 0),
-            "compet3": D(it.get("compet3") or 0),
+            "compet1": _client_margin("compet1"),
+            "compet2": _client_margin("compet2"),
+            "compet3": _client_margin("compet3"),
             # Overrides por item (None = usa tasa general). Se resuelven abajo.
             "seguro_pct_raw": it.get("seguro_pct", None),
             "advalorem_pct_raw": it.get("advalorem_pct", None),
@@ -161,12 +167,16 @@ def calculate_shipment(items, gastos, tasas) -> dict:
         otros_i = otros_unit * it["cant"]
         adicionales_i = (isd_i + agente_i + flete_local_i + bodegaje_i
                          + devolucion_i + admin_i + descarga_i + otros_i)
-        valor_total = (fob_i + advalorem_i + flete_i + seguro_i + fondinfa_i + adicionales_i)
-        costo_caja = valor_total / it["cant"] if it["cant"] else Decimal("0")
-        costo_unit = costo_caja / it["cant_caja"] if it["cant_caja"] else costo_caja
-        margen = it["margen_pct"] / Decimal("100")
-        pvp_sin = costo_caja / (Decimal("1") - margen) if margen < 1 else Decimal("0")
-        pvp_con = pvp_sin * (Decimal("1") + iva_pvp_pct / Decimal("100"))
+        iva_i = it["_iva"]
+        valor_total = (fob_i + advalorem_i + flete_i + seguro_i + fondinfa_i
+                       + iva_i + adicionales_i)
+        costo_unit = valor_total / it["cant"] if it["cant"] else Decimal("0")
+        precios = {}
+        for index in range(1, 4):
+            precio_sin = costo_unit * (Decimal("1") + it[f"compet{index}"] / Decimal("100"))
+            precios[f"comp{index}_sin"] = _q(precio_sin)
+            precios[f"comp{index}_con"] = _q(
+                precio_sin * (Decimal("1") + iva_pvp_pct / Decimal("100")))
         out_items.append({
             **{k: v for k, v in it.items() if not k.startswith("_")},
             "seguro_pct_raw": None, "advalorem_pct_raw": None,
@@ -183,8 +193,8 @@ def calculate_shipment(items, gastos, tasas) -> dict:
             "descarga": _q(descarga_i), "otros": _q(otros_i),
             "adicionales": _q(adicionales_i),
             "valor_total": _q(valor_total),
-            "costo_caja": _q(costo_caja), "costo_unit": _q(costo_unit),
-            "pvp_sin": _q(pvp_sin), "pvp_con": _q(pvp_con),
+            "costo_unit": _q(costo_unit),
+            **precios,
         })
 
     resumen = {

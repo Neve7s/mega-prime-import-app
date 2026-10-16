@@ -58,11 +58,11 @@ class ShipmentExcelTest(TestCase):
         # Suma de ratios = 100%
         suma_ratio = sum(i["ratio"] for i in r["items"])
         self.assertTrue(Decimal("99.99") <= suma_ratio <= Decimal("100.01"))
-        # PVP = costo_caja/(1-margen)*1.15
+        # El 35% heredado se interpreta como recargo sobre el costo unitario.
         primero = r["items"][0]
-        esperado = (primero["costo_caja"] / (Decimal("1") - Decimal("0.35"))
+        esperado = (primero["costo_unit"] * Decimal("1.35")
                     * Decimal("1.15")).quantize(Decimal("0.01"))
-        self.assertEqual(primero["pvp_con"], esperado)
+        self.assertEqual(primero["comp1_con"], esperado)
 
 
 class ShipmentOverrideTest(TestCase):
@@ -74,6 +74,32 @@ class ShipmentOverrideTest(TestCase):
             {"flete_intl": 0}, {"seguro_pct": 0, "advalorem_pct": 0,
                                 "fondinfa_pct": 0, "iva_pct": 0})
         self.assertEqual(result["resumen"]["fob"], Decimal("37.50"))
+
+    def test_recargos_por_cliente_son_porcentaje_sobre_costo(self):
+        result = calculate_shipment(
+            [{"nombre": "A", "cant": 2, "valor_unit": "10",
+              "compet1": 40, "compet2": 20, "compet3": 0}],
+            {}, {"seguro_pct": 0, "advalorem_pct": 0, "fondinfa_pct": 0,
+                 "iva_pct": 0, "iva_pvp_pct": 15})
+        item = result["items"][0]
+        self.assertEqual(item["costo_unit"], Decimal("10.00"))
+        self.assertEqual(item["comp1_sin"], Decimal("14.00"))
+        self.assertEqual(item["comp1_con"], Decimal("16.10"))
+        self.assertEqual(item["comp2_sin"], Decimal("12.00"))
+        self.assertEqual(item["comp2_con"], Decimal("13.80"))
+        self.assertEqual(item["comp3_sin"], Decimal("10.00"))
+        self.assertEqual(item["comp3_con"], Decimal("11.50"))
+
+    def test_costo_unitario_incluye_iva_pagado_en_importacion(self):
+        result = calculate_shipment(
+            [{"nombre": "A", "cant": 2, "valor_unit": "10", "compet1": 40}],
+            {}, {"seguro_pct": 0, "advalorem_pct": 0, "fondinfa_pct": 0,
+                 "iva_pct": 15, "iva_pvp_pct": 15})
+        item = result["items"][0]
+        self.assertEqual(item["valor_total"], Decimal("23.00"))
+        self.assertEqual(item["costo_unit"], Decimal("11.50"))
+        self.assertEqual(item["comp1_sin"], Decimal("16.10"))
+        self.assertEqual(item["comp1_con"], Decimal("18.52"))
 
     def _base(self):
         items = [
@@ -129,6 +155,39 @@ class ShipmentOverrideTest(TestCase):
 
 
 class ReporteXlsxTest(TestCase):
+    def test_endpoint_reporte_exporta_los_tres_precios_por_cliente(self):
+        import json
+        from io import BytesIO
+
+        from django.contrib.auth.models import User
+        from openpyxl import load_workbook
+
+        user = User.objects.create_user(
+            "report-margins", "report-margins-password", is_staff=True)
+        self.client.force_login(user)
+        payload = {
+            "embarque": "Márgenes",
+            "tasas": {"seguro_pct": 0, "advalorem_pct": 0, "fondinfa_pct": 0,
+                      "iva_pct": 0, "iva_pvp_pct": 15},
+            "gastos": {},
+            "items": [{"nombre": "Producto", "cant": 1, "valor_unit": 10,
+                       "compet1": 40, "compet2": 20, "compet3": 0}],
+        }
+        response = self.client.post(
+            "/webadmin/calculadora/reporte/", json.dumps(payload),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        ws = load_workbook(BytesIO(response.content))["Reporte"]
+        header_row = next(
+            row for row in ws.iter_rows()
+            if "PVP May. s/IGV" in [cell.value for cell in row])
+        headers = [cell.value for cell in header_row]
+        values = [cell.value for cell in ws[header_row[0].row + 1]]
+        self.assertEqual(values[headers.index("PVP May. s/IGV")], 14)
+        self.assertEqual(values[headers.index("PVP May. c/IGV")], 16.1)
+        self.assertEqual(values[headers.index("PVP Frec. s/IGV")], 12)
+        self.assertEqual(values[headers.index("PVP Event. s/IGV")], 10)
+
     def test_reporte_con_estilos_y_totales(self):
         import json
         from io import BytesIO
@@ -151,7 +210,7 @@ class ReporteXlsxTest(TestCase):
         found = False
         for row in ws.iter_rows():
             vals = [c.value for c in row]
-            if "PVP c/IVA" in vals:
+            if "PVP May. c/IGV" in vals:
                 found = True
                 self.assertEqual(row[0].fill.fgColor.rgb[-6:], "0A0A0B")
                 break
@@ -219,6 +278,9 @@ class PlantillaImportacionTest(TestCase):
         self.assertEqual(imported["gastos"]["comision_banco"], "25")
         self.assertEqual(imported["items"][0]["cant"], "10")
         self.assertEqual(imported["items"][0]["valor_unit"], "8.5")
+        self.assertEqual(imported["items"][0]["compet1"], "35")
+        self.assertEqual(imported["items"][0]["compet2"], "35")
+        self.assertEqual(imported["items"][0]["compet3"], "35")
 
 
 class SavedShipmentViewTest(TestCase):
@@ -260,6 +322,13 @@ class SavedShipmentViewTest(TestCase):
         page = self.client.get(f"/webadmin/calculadora/?embarque=guardado-{saved.pk}")
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, 'value="Compra de prueba"')
+        self.assertContains(page, "May %")
+        self.assertContains(page, "May $")
+        self.assertContains(page, "Frec %")
+        self.assertContains(page, "Frec $")
+        self.assertContains(page, "Event %")
+        self.assertContains(page, "Event $")
+        self.assertNotContains(page, "C/Caja")
 
         payload["embarque_key"] = f"guardado-{saved.pk}"
         payload["nombre"] = "Compra actualizada"

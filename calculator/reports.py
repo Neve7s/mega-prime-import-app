@@ -46,7 +46,6 @@ DETALLE_COLS = [
     ("#", 4, None),
     ("Producto", 34, "left"),
     ("Cant", 10, "num"),
-    ("C/Caja", 9, "num"),
     ("V. Unit FOB", 12, "money"),
     ("FOB", 13, "money"),
     ("Ratio %", 9, "pct"),
@@ -60,14 +59,16 @@ DETALLE_COLS = [
     ("Fondinfa", 11, "money"),
     ("Adicionales", 12, "money"),
     ("V. Total", 13, "money"),
-    ("Costo Caja", 12, "money"),
     ("Costo Unit", 12, "money"),
-    ("Margen %", 9, "pct"),
-    ("PVP s/IVA", 12, "money"),
-    ("PVP c/IVA", 12, "money"),
-    ("Compet 1", 12, "money"),
-    ("Compet 2", 12, "money"),
-    ("Compet 3", 12, "money"),
+    ("May. recargo %", 12, "pct"),
+    ("PVP May. s/IGV", 14, "money"),
+    ("PVP May. c/IGV", 14, "money"),
+    ("Frec. recargo %", 12, "pct"),
+    ("PVP Frec. s/IGV", 14, "money"),
+    ("PVP Frec. c/IGV", 14, "money"),
+    ("Event. recargo %", 12, "pct"),
+    ("PVP Event. s/IGV", 14, "money"),
+    ("PVP Event. c/IGV", 14, "money"),
     ("Régimen", 10, "center"),
 ]
 
@@ -197,17 +198,16 @@ def build_reporte_xlsx(calc, tasas, gastos, embarque_nombre="Embarque"):
     for i, it in enumerate(calc["items"], start=1):
         esp = bool(it.get("especial"))
         vals = [
-            i, it["nombre"], float(it["cant"]), float(it["cant_caja"]),
-            float(it["valor_unit"]), float(it["fob"]),
+            i, it["nombre"], float(it["cant"]), float(it["valor_unit"]), float(it["fob"]),
             float(it["ratio"]) / 100,
             float(it["advalorem_pct_eff"]) / 100, float(it["seguro_pct_eff"]) / 100,
             float(it["fondinfa_pct_eff"]) / 100, float(it["iva_pct_eff"]) / 100,
             float(it["advalorem"]), float(it["flete"]), float(it["seguro"]),
             float(it["fondinfa"]), float(it["adicionales"]), float(it["valor_total"]),
-            float(it["costo_caja"]), float(it["costo_unit"]),
-            float(it["margen_pct"]) / 100,
-            float(it["pvp_sin"]), float(it["pvp_con"]),
-            float(it["compet1"]), float(it["compet2"]), float(it["compet3"]),
+            float(it["costo_unit"]),
+            float(it["compet1"]) / 100, float(it["comp1_sin"]), float(it["comp1_con"]),
+            float(it["compet2"]) / 100, float(it["comp2_sin"]), float(it["comp2_con"]),
+            float(it["compet3"]) / 100, float(it["comp3_sin"]), float(it["comp3_con"]),
             "Especial" if esp else "General",
         ]
         banda = FILL_BANDA if (i % 2 == 0 and not esp) else None
@@ -240,7 +240,7 @@ def build_reporte_xlsx(calc, tasas, gastos, embarque_nombre="Embarque"):
             else:
                 c.alignment = CENTER
                 c.font = FONT_BODY
-        for j in (21, 22):  # PVP destacados en verde
+        for j in (19, 20, 22, 23, 25, 26):
             ws.cell(row=row, column=j).font = FONT_VERDE
         ws.row_dimensions[row].height = 16
         row += 1
@@ -256,7 +256,7 @@ def build_reporte_xlsx(calc, tasas, gastos, embarque_nombre="Embarque"):
         cc.fill = FILL_NEGRO
         cc.border = BORDER_ALL
     col_letter = {j: get_column_letter(j) for j in range(1, nd + 1)}
-    for j in (6, 12, 13, 14, 15, 16, 17, 18, 19):
+    for j in (5, 11, 12, 13, 14, 15, 16, 17):
         L = col_letter[j]
         cc = ws.cell(row=row, column=j)
         cc.value = "=SUM(%s%d:%s%d)" % (L, first_data, L, row - 1)

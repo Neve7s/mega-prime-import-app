@@ -258,22 +258,27 @@
     <button type="button" id="add-row" class="calc-btn calc-btn--ghost calc-btn--add">＋ Agregar producto</button>
     </div>
   </div>
-  <p class="text-[11px] text-gray-400 mb-2">Ingrese <b>CANT</b> y <b>PRECIO FOB unit.</b> → el <b>FOB total</b> (Cant × Precio) se calcula solo. Todo se recalcula al escribir. ⚙ o click derecho = impuestos propios del producto.</p>
+  <p class="text-[11px] text-gray-400 mb-2">Ingrese <b>CANT</b> y <b>PRECIO FOB unit.</b>; el FOB total se calcula solo. Configure el recargo por cliente; cada monto muestra <b>sin IVA / con IVA</b>.</p>
   <div class="overflow-x-auto">
   <table class="w-full text-xs" id="items-table">
     <colgroup>
-      <col /><col style="width:60px" /><col style="width:54px" /><col style="width:82px" /><col style="width:78px" /><col style="width:50px" />
-      <col style="width:62px" /><col style="width:62px" /><col style="width:62px" />
-      <col style="width:80px" /><col style="width:66px" /><col style="width:62px" />
-      <col style="width:68px" /><col style="width:68px" />
+      <col style="width:230px" /><col style="width:62px" /><col style="width:76px" /><col style="width:76px" />
+      <col style="width:82px" /><col style="width:72px" />
+      <col style="width:50px" /><col style="width:112px" />
+      <col style="width:50px" /><col style="width:112px" />
+      <col style="width:50px" /><col style="width:112px" />
       <col style="width:64px" /><col style="width:26px" />
     </colgroup>
     <thead><tr class="text-left text-[10px] uppercase text-gray-400 border-b">
       <th class="p-1">Producto</th>
-      <th class="p-1 text-right">Cant</th><th class="p-1 text-right">C/Caja</th><th class="p-1 text-right" title="Precio unitario FOB en USD — INGRESE EL PRECIO AQUÍ">Precio FOB u.</th><th class="p-1 text-right" title="FOB total = Cant × Precio FOB u. (se calcula solo)">FOB tot.</th><th class="p-1 text-right">Marg%</th>
-      <th class="p-1 text-right">Comp 1</th><th class="p-1 text-right">Comp 2</th><th class="p-1 text-right">Comp 3</th>
-      <th class="p-1 text-right">V. Total</th><th class="p-1 text-right">C. Caja</th><th class="p-1 text-right">C. Unit</th>
-      <th class="p-1 text-right">PVP s/IVA</th><th class="p-1 text-right">PVP c/IVA</th>
+      <th class="p-1 text-right">Cant</th><th class="p-1 text-right" title="Precio unitario FOB en USD">P. FOB U.</th><th class="p-1 text-right" title="FOB total = Cant × Precio FOB u.">FOB tot.</th>
+      <th class="p-1 text-right">Costo total</th><th class="p-1 text-right">Costo unit.</th>
+      <th class="p-1 text-right" title="Recargo sobre el costo para cliente mayorista">May %</th>
+      <th class="p-1 text-right" title="Precio mayorista: sin IVA / con IVA">May $</th>
+      <th class="p-1 text-right" title="Recargo sobre el costo para cliente frecuente">Frec %</th>
+      <th class="p-1 text-right" title="Precio frecuente: sin IVA / con IVA">Frec $</th>
+      <th class="p-1 text-right" title="Recargo sobre el costo para cliente eventual">Eve %</th>
+      <th class="p-1 text-right" title="Precio eventual: sin IVA / con IVA">Event $</th>
       <th class="p-1"></th><th class="p-1"></th>
     </tr></thead>
     <tbody id="items-body" class="panel-form">
@@ -281,18 +286,16 @@
       <tr class="border-b item-row hover:bg-gray-50" title="Click derecho = impuestos propios">
         <td><input name="nombre" value="{{ it.nombre }}" placeholder="Producto..." required /></td>
         <td><input name="cant" type="number" step="0.01" min="0" value="{{ it.cant }}" placeholder="0" required /></td>
-        <td><input name="cant_caja" type="number" step="0.01" min="1" value="{{ it.cant_caja }}" placeholder="1" required /></td>
         <td><input name="valor_unit" type="number" step="0.01" min="0" value="{{ it.valor_unit }}" placeholder="Precio → ej. 10.92" title="Precio unitario FOB en USD" required style="background:#FFFBEB;border-color:#FDE68A;" /></td>
         <td class="p-1 text-right font-bold whitespace-nowrap text-sky-700" data-c="fob_total" title="FOB total = Cant × Precio">–</td>
-        <td><input name="margen_pct" type="number" step="0.01" min="0" max="99" value="{{ it.margen_pct }}" /></td>
-        <td><input name="compet1" type="number" step="0.01" min="0" value="{{ it.compet1 }}" /></td>
-        <td><input name="compet2" type="number" step="0.01" min="0" value="{{ it.compet2 }}" /></td>
-        <td><input name="compet3" type="number" step="0.01" min="0" value="{{ it.compet3 }}" /></td>
         <td class="p-1 text-right font-bold whitespace-nowrap" data-c="valor_total">–</td>
-        <td class="p-1 text-right font-bold whitespace-nowrap" data-c="costo_caja">–</td>
         <td class="p-1 text-right whitespace-nowrap" data-c="costo_unit">–</td>
-        <td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="pvp_sin">–</td>
-        <td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="pvp_con">–</td>
+        <td><input name="compet1" type="number" step="0.01" min="0" value="{{ it.compet1|default:'35' }}" title="Recargo porcentual sobre el costo para clientes mayoristas" /></td>
+        <td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="comp1_precios">–</td>
+        <td><input name="compet2" type="number" step="0.01" min="0" value="{{ it.compet2|default:'35' }}" title="Recargo porcentual sobre el costo para clientes frecuentes" /></td>
+        <td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="comp2_precios">–</td>
+        <td><input name="compet3" type="number" step="0.01" min="0" value="{{ it.compet3|default:'35' }}" title="Recargo porcentual sobre el costo para clientes eventuales" /></td>
+        <td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="comp3_precios">–</td>
         <td class="p-1 whitespace-nowrap">
           <button type="button" class="tax-btn text-xs font-bold bg-gray-100 border rounded px-1.5 py-0.5 hover:bg-gray-200" title="Impuestos propios (vacío = general)">⚙</button>
           <span class="tax-badge text-[9px] font-bold px-1 py-0.5 rounded bg-gray-100 text-gray-500">GEN</span>
@@ -300,7 +303,7 @@
         <td class="p-1"><button type="button" class="rm-row text-red-400 font-bold px-1">×</button></td>
       </tr>
       <tr class="tax-row" hidden>
-        <td colspan="16" class="p-2 bg-amber-50/60 border-b">
+        <td colspan="14" class="p-2 bg-amber-50/60 border-b">
           <span class="text-[10px] font-bold uppercase text-amber-700">Impuestos propios <span class="font-normal normal-case text-gray-400">(vacío = general)</span></span>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-1">
             <label class="text-[11px] text-gray-500">Ad-Valorem %<input name="ov_advalorem_pct" type="number" step="0.01" min="0" value="{{ it.advalorem_pct }}" placeholder="{{ tasas.advalorem_pct }}" /></label>
@@ -356,15 +359,15 @@
     rows.forEach(function(row){
       var taxRow = row.nextElementSibling;
       var cant = num(cell(row, 'cant').value, 0);
-      var cc = num(cell(row, 'cant_caja').value, 1) || 1;
       var vu = num(cell(row, 'valor_unit').value, 0);
       var fob = cant * vu;
       totalCant += cant; totalFob += fob;
       items.push({row: row, taxRow: taxRow,
         nombre: cell(row, 'nombre').value.trim() || 'Producto',
-        cant: cant, cc: cc, vu: vu, fob: fob,
-        margen: num(cell(row, 'margen_pct').value, 35),
-        c1: num(cell(row, 'compet1').value, 0), c2: num(cell(row, 'compet2').value, 0), c3: num(cell(row, 'compet3').value, 0),
+        cant: cant, vu: vu, fob: fob,
+        c1: num(cell(row, 'compet1').value, 35),
+        c2: num(cell(row, 'compet2').value, 35),
+        c3: num(cell(row, 'compet3').value, 35),
         sPct: ovNum(taxRow, 'ov_seguro_pct'),
         aPct: ovNum(taxRow, 'ov_advalorem_pct'),
         fPct: ovNum(taxRow, 'ov_fondinfa_pct'),
@@ -395,12 +398,13 @@
       var adic = G.com * it.ratio + G.age * it.ratio + G.local * it.ratio + G.bod * it.ratio
                + G.dev * it.ratio + G.admin * it.ratio + G.des * it.ratio + G.otros * it.cant;
       it.adic = adic;
-      it.vTotal = it.fob + it.adv + it.flete + it.seg + it.fon + adic;
-      it.cCaja = it.cant ? it.vTotal / it.cant : 0;
-      it.cUnit = it.cc ? it.cCaja / it.cc : it.cCaja;
-      var m = it.margen / 100;
-      it.pvpSin = m < 1 ? it.cCaja / (1 - m) : 0;
-      it.pvpCon = it.pvpSin * (1 + T.ivaPvp / 100);
+      it.vTotal = it.fob + it.adv + it.flete + it.seg + it.fon + it.iva + adic;
+      it.cUnit = it.cant ? it.vTotal / it.cant : 0;
+      [it.c1, it.c2, it.c3].forEach(function(margen, index){
+        var precioSin = it.cUnit * (1 + margen / 100);
+        it['comp' + (index + 1) + 'Sin'] = precioSin;
+        it['comp' + (index + 1) + 'Con'] = precioSin * (1 + T.ivaPvp / 100);
+      });
     });
     return {error: null, T: T, G: G, items: items,
       resumen: {cant: totalCant, fob: totalFob, flete: G.flete, seg: sSeg, adv: sAdv,
@@ -426,8 +430,12 @@
     c.items.forEach(function(it){
       var setC = function(k, v){ var el = it.row.querySelector('[data-c="' + k + '"]'); if (el) el.textContent = fmt(v); };
       setC('fob_total', it.fob);
-      setC('valor_total', it.vTotal); setC('costo_caja', it.cCaja); setC('costo_unit', it.cUnit);
-      setC('pvp_sin', it.pvpSin); setC('pvp_con', it.pvpCon);
+      setC('valor_total', it.vTotal); setC('costo_unit', it.cUnit);
+      for (var i = 1; i <= 3; i++){
+        var priceCell = it.row.querySelector('[data-c="comp' + i + '_precios"]');
+        if (priceCell) priceCell.textContent =
+          fmt(it['comp' + i + 'Sin']) + ' / ' + fmt(it['comp' + i + 'Con']);
+      }
       var badge = it.row.querySelector('.tax-badge');
       if (badge){
         badge.textContent = it.especial ? 'ESP' : 'GEN';
@@ -455,21 +463,19 @@
     return '<tr class="border-b item-row hover:bg-gray-50" title="Click derecho = impuestos propios">'
       + '<td><input name="nombre" placeholder="Producto..." required value="' + esc(it.nombre || '') + '" /></td>'
       + '<td><input name="cant" type="number" step="0.01" min="0" value="' + g('cant', '1') + '" placeholder="0" required /></td>'
-      + '<td><input name="cant_caja" type="number" step="0.01" min="1" value="' + g('cant_caja', '1') + '" placeholder="1" required /></td>'
       + '<td><input name="valor_unit" type="number" step="0.01" min="0" value="' + g('valor_unit', '') + '" placeholder="Precio → ej. 10.92" title="Precio unitario FOB en USD" required style="background:#FFFBEB;border-color:#FDE68A;" /></td>'
       + '<td class="p-1 text-right font-bold whitespace-nowrap text-sky-700" data-c="fob_total" title="FOB total = Cant x Precio">–</td>'
-      + '<td><input name="margen_pct" type="number" step="0.01" min="0" max="99" value="' + g('margen_pct', '35') + '" /></td>'
-      + '<td><input name="compet1" type="number" step="0.01" min="0" value="' + g('compet1') + '" /></td>'
-      + '<td><input name="compet2" type="number" step="0.01" min="0" value="' + g('compet2') + '" /></td>'
-      + '<td><input name="compet3" type="number" step="0.01" min="0" value="' + g('compet3') + '" /></td>'
       + '<td class="p-1 text-right font-bold whitespace-nowrap" data-c="valor_total">–</td>'
-      + '<td class="p-1 text-right font-bold whitespace-nowrap" data-c="costo_caja">–</td>'
       + '<td class="p-1 text-right whitespace-nowrap" data-c="costo_unit">–</td>'
-      + '<td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="pvp_sin">–</td>'
-      + '<td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="pvp_con">–</td>'
+      + '<td><input name="compet1" type="number" step="0.01" min="0" value="' + g('margen_pct', g('compet1', '35')) + '" title="Recargo porcentual sobre el costo para clientes mayoristas" /></td>'
+      + '<td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="comp1_precios">–</td>'
+      + '<td><input name="compet2" type="number" step="0.01" min="0" value="' + g('margen_pct', g('compet2', '35')) + '" title="Recargo porcentual sobre el costo para clientes frecuentes" /></td>'
+      + '<td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="comp2_precios">–</td>'
+      + '<td><input name="compet3" type="number" step="0.01" min="0" value="' + g('margen_pct', g('compet3', '35')) + '" title="Recargo porcentual sobre el costo para clientes eventuales" /></td>'
+      + '<td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="comp3_precios">–</td>'
       + '<td class="p-1 whitespace-nowrap"><button type="button" class="tax-btn text-xs font-bold bg-gray-100 border rounded px-1.5 py-0.5 hover:bg-gray-200" title="Impuestos propios (vacío = general)">⚙</button> <span class="tax-badge text-[9px] font-bold px-1 py-0.5 rounded bg-gray-100 text-gray-500">GEN</span></td>'
       + '<td class="p-1"><button type="button" class="rm-row text-red-400 font-bold px-1">×</button></td></tr>'
-      + '<tr class="tax-row" hidden><td colspan="16" class="p-2 bg-amber-50/60 border-b">'
+      + '<tr class="tax-row" hidden><td colspan="14" class="p-2 bg-amber-50/60 border-b">'
       + '<span class="text-[10px] font-bold uppercase text-amber-700">Impuestos propios <span class="font-normal normal-case text-gray-400">(vacío = general)</span></span>'
       + '<div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-1">'
       + '<label class="text-[11px] text-gray-500">Ad-Valorem %<input name="ov_advalorem_pct" type="number" step="0.01" min="0" value="' + esc((it || {}).advalorem_pct) + '" /></label>'
@@ -494,7 +500,7 @@
       setVal('t_iva_pvp', TASAS_GENERALES.iva_pvp_pct);
       ['g_flete_intl','g_flete_local','g_admin','g_bodegaje','g_devol','g_comision','g_descarga','g_agente','g_otros']
         .forEach(function(id){ setVal(id, '0'); });
-      body.innerHTML = rowHtml({nombre: '', cant: '1', cant_caja: '1', valor_unit: '', margen_pct: '35'});
+      body.innerHTML = rowHtml({nombre: '', cant: '1', valor_unit: ''});
       syncPlaceholders(); render(); save();
       return;
     }
@@ -609,8 +615,8 @@
       var tx = row.nextElementSibling;
       var v = function(n){ var el = row.querySelector('input[name="' + n + '"]'); return el ? el.value : ''; };
       var o = function(n){ var el = tx ? tx.querySelector('input[name="' + n + '"]') : null; return el ? el.value : ''; };
-      payload.items.push({nombre: v('nombre'), cant: v('cant'), cant_caja: v('cant_caja'),
-        valor_unit: v('valor_unit'), margen_pct: v('margen_pct'),
+      payload.items.push({nombre: v('nombre'), cant: v('cant'),
+        valor_unit: v('valor_unit'),
         compet1: v('compet1'), compet2: v('compet2'), compet3: v('compet3'),
         seguro_pct: o('ov_seguro_pct'), advalorem_pct: o('ov_advalorem_pct'),
         fondinfa_pct: o('ov_fondinfa_pct'), iva_pct: o('ov_iva_pct')});
@@ -669,7 +675,7 @@
       Object.keys(expenseIds).forEach(function(key){ setVal(expenseIds[key], result.gastos[key]); });
       var html = '';
       result.items.forEach(function(item){ html += rowHtml(item); });
-      body.innerHTML = html || rowHtml({nombre: '', cant: '1', cant_caja: '1', valor_unit: '', margen_pct: '35'});
+      body.innerHTML = html || rowHtml({nombre: '', cant: '1', valor_unit: ''});
       syncPlaceholders(); render(); save();
       status.textContent = 'Plantilla importada: ' + result.items.length + ' productos.';
     } catch (err) {

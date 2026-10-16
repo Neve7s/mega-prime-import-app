@@ -68,6 +68,13 @@ class ShipmentExcelTest(TestCase):
 class ShipmentOverrideTest(TestCase):
     """Override de impuestos por producto: vacío = tasa general."""
 
+    def test_fob_es_cantidad_por_precio_unitario(self):
+        result = calculate_shipment(
+            [{"nombre": "A", "cant": 3, "valor_unit": "12.50"}],
+            {"flete_intl": 0}, {"seguro_pct": 0, "advalorem_pct": 0,
+                                "fondinfa_pct": 0, "iva_pct": 0})
+        self.assertEqual(result["resumen"]["fob"], Decimal("37.50"))
+
     def _base(self):
         items = [
             {"nombre": "A", "cant": 100, "cant_caja": 1, "valor_unit": "10", "margen_pct": 35},
@@ -172,3 +179,124 @@ class ReporteXlsxTest(TestCase):
                     ws.iter_rows(min_row=1, max_row=100, max_col=2)
                     if row[0].value == "GRAN TOTAL GN+GL")
         self.assertAlmostEqual(gran, 133689.92, places=2)
+
+
+class PlantillaImportacionTest(TestCase):
+    def test_plantilla_tiene_solo_gastos_y_productos(self):
+        from io import BytesIO
+
+        from openpyxl import load_workbook
+
+        from .excel_templates import build_plantilla_xlsx
+
+        workbook = load_workbook(BytesIO(build_plantilla_xlsx()))
+        self.assertEqual(workbook.sheetnames, ["Gastos", "Productos"])
+        self.assertEqual(
+            [cell.value for cell in workbook["Productos"][1]],
+            ["Producto", "Cantidad", "Precio FOB unitario USD"])
+        self.assertEqual(
+            [cell.value for cell in workbook["Gastos"][1]],
+            ["Servicio", "Valor USD"])
+
+    def test_importa_gastos_cantidad_y_precio(self):
+        from io import BytesIO
+
+        from openpyxl import load_workbook
+
+        from .excel_templates import build_plantilla_xlsx, read_plantilla_xlsx
+
+        workbook = load_workbook(BytesIO(build_plantilla_xlsx()))
+        workbook["Gastos"]["B2"] = 1200
+        workbook["Gastos"]["B4"] = 25
+        workbook["Productos"]["A2"] = "Piedra"
+        workbook["Productos"]["B2"] = 10
+        workbook["Productos"]["C2"] = 8.5
+        output = BytesIO()
+        workbook.save(output)
+
+        imported = read_plantilla_xlsx(BytesIO(output.getvalue()))
+        self.assertEqual(imported["gastos"]["flete_intl"], "1200")
+        self.assertEqual(imported["gastos"]["comision_banco"], "25")
+        self.assertEqual(imported["items"][0]["cant"], "10")
+        self.assertEqual(imported["items"][0]["valor_unit"], "8.5")
+
+
+class SavedShipmentViewTest(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+
+        self.user = User.objects.create_user(
+            username="shipment-staff", password="test-password", is_staff=True)
+        self.client.force_login(self.user)
+        self.tasas = {
+            "seguro_pct": "1", "advalorem_pct": "20", "fondinfa_pct": "0.5",
+            "iva_pct": "15", "iva_pvp_pct": "15",
+        }
+        self.gastos = {
+            "flete_intl": "0", "flete_local": "0", "gasto_admin": "0",
+            "bodegaje": "0", "devolucion": "0", "comision_banco": "0",
+            "descarga": "0", "agente": "0", "otros_unit": "0",
+        }
+
+    def test_guarda_y_carga_embarque_vacio(self):
+        import json
+
+        from .models import SavedShipment
+
+        payload = {
+            "nombre": "Compra de prueba", "embarque_key": "nuevo",
+            "tasas": self.tasas, "gastos": self.gastos,
+            "items": [{"nombre": "", "cant": "1", "cant_caja": "1",
+                       "valor_unit": "", "margen_pct": "35"}],
+        }
+        response = self.client.post(
+            "/webadmin/calculadora/guardar/", json.dumps(payload),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        saved = SavedShipment.objects.get()
+        self.assertEqual(saved.nombre, "Compra de prueba")
+        self.assertEqual(response.json()["key"], f"guardado-{saved.pk}")
+
+        page = self.client.get(f"/webadmin/calculadora/?embarque=guardado-{saved.pk}")
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'value="Compra de prueba"')
+
+        payload["embarque_key"] = f"guardado-{saved.pk}"
+        payload["nombre"] = "Compra actualizada"
+        response = self.client.post(
+            "/webadmin/calculadora/guardar/", json.dumps(payload),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(SavedShipment.objects.count(), 1)
+        saved.refresh_from_db()
+        self.assertEqual(saved.nombre, "Compra actualizada")
+
+    def test_plantilla_descarga_y_subida(self):
+        from io import BytesIO
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from openpyxl import load_workbook
+
+        from .excel_templates import build_plantilla_xlsx
+
+        response = self.client.get("/webadmin/calculadora/plantilla/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("spreadsheetml.sheet", response["Content-Type"])
+
+        workbook = load_workbook(BytesIO(build_plantilla_xlsx()))
+        workbook["Gastos"]["B2"] = 750
+        workbook["Productos"]["A2"] = "Piedra"
+        workbook["Productos"]["B2"] = 4
+        workbook["Productos"]["C2"] = 12
+        workbook_data = BytesIO()
+        workbook.save(workbook_data)
+        response = self.client.post(
+            "/webadmin/calculadora/importar/",
+            {"archivo": SimpleUploadedFile(
+                "plantilla.xlsx", workbook_data.getvalue(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["items"][0]["cant"], "4")
+        self.assertEqual(response.json()["items"][0]["valor_unit"], "12")
+        self.assertEqual(response.json()["gastos"]["flete_intl"], "750")

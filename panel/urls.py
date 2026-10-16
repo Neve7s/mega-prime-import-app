@@ -28,4 +28,7 @@ urlpatterns = [
     path("ajustes/", views.ajustes, name="ajustes"),
     path("calculadora/", views.calculadora, name="calculadora"),
     path("calculadora/reporte/", views.calculadora_reporte, name="calculadora_reporte"),
+    path("calculadora/guardar/", views.calculadora_guardar, name="calculadora_guardar"),
+    path("calculadora/plantilla/", views.calculadora_plantilla, name="calculadora_plantilla"),
+    path("calculadora/importar/", views.calculadora_importar, name="calculadora_importar"),
 ]

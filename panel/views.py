@@ -3,7 +3,7 @@ from urllib.parse import quote
 from django.contrib.auth import logout
 from django.shortcuts import get_object_or_404, redirect, render
 
-from calculator.models import TaxRule
+from calculator.models import SavedShipment, TaxRule
 from cart.models import Order, OrderItem, SaleCode
 from catalog.models import Category, Product, TipoProducto
 from core.models import SiteSettings
@@ -411,6 +411,16 @@ def calculadora(request):
     from calculator.seed_embarques import EMBARQUES
     from calculator.services import calculate_shipment
 
+    embarques = dict(EMBARQUES)
+    saved_embarques = SavedShipment.objects.all()
+    for saved in saved_embarques:
+        embarques[f"guardado-{saved.pk}"] = {
+            "nombre": saved.nombre,
+            "tasas": saved.tasas,
+            "gastos": saved.gastos,
+            "items": saved.items,
+        }
+
     def _num(v, default=0):
         try:
             s = str(v).strip().replace(",", "")
@@ -426,10 +436,10 @@ def calculadora(request):
         key: {"nombre": e["nombre"], "tasas": e["tasas"],
               "gastos": {k: _q2(v) for k, v in e["gastos"].items()},
               "items": e["items"]}
-        for key, e in EMBARQUES.items()
+        for key, e in embarques.items()
     }
     sel = request.GET.get("embarque", "roma")
-    if sel not in EMBARQUES and sel != "nuevo":
+    if sel not in embarques and sel != "nuevo":
         sel = "roma"
     if sel == "nuevo":
         # Embarque en blanco: tasas generales, gastos en 0 y una fila vacía.
@@ -440,15 +450,19 @@ def calculadora(request):
                             "devolucion", "comision_banco", "descarga", "agente",
                             "otros_unit")}
         defaults_items = [{"nombre": "", "cant": "1", "cant_caja": "1",
-                           "valor_unit": "0", "margen_pct": "35",
+                           "valor_unit": "", "margen_pct": "35",
                            "compet1": "", "compet2": "", "compet3": "",
                            "seguro_pct": "", "advalorem_pct": "",
                            "fondinfa_pct": "", "iva_pct": ""}]
     else:
-        seed = EMBARQUES[sel]
+        seed = embarques[sel]
         defaults_tasas = dict(seed["tasas"])
         defaults_gastos = {k: _q2(v) for k, v in seed["gastos"].items()}
-        defaults_items = seed["items"]
+        defaults_items = seed["items"] or [{
+            "nombre": "", "cant": "1", "cant_caja": "1", "valor_unit": "",
+            "margen_pct": "35", "compet1": "", "compet2": "", "compet3": "",
+            "seguro_pct": "", "advalorem_pct": "", "fondinfa_pct": "", "iva_pct": "",
+        }]
     override_keys = ("seguro_pct", "advalorem_pct", "fondinfa_pct", "iva_pct")
 
     if request.method == "POST":
@@ -513,12 +527,139 @@ def calculadora(request):
         return render(request, "panel/calculadora.html",
                       {"tasas": tasas_raw, "gastos": gastos_raw, "items_raw": items_raw,
                        "calc": calc, "rule": TaxRule.get_active(),
-                       "embarques_ui": embarques_ui, "embarque_sel": sel})
+                       "embarques_ui": embarques_ui, "embarque_sel": sel,
+                       "embarques_opciones": embarques_ui.items(),
+                       "embarque_nombre": ("Nuevo embarque" if sel == "nuevo"
+                                           else embarques[sel]["nombre"] if sel in embarques else "")})
     rule = TaxRule.get_active()
     return render(request, "panel/calculadora.html",
                   {"tasas": defaults_tasas, "gastos": defaults_gastos,
                    "items_raw": defaults_items, "calc": None, "rule": rule,
-                   "embarques_ui": embarques_ui, "embarque_sel": sel})
+                   "embarques_ui": embarques_ui, "embarque_sel": sel,
+                   "embarques_opciones": embarques_ui.items(),
+                   "embarque_nombre": ("Nuevo embarque" if sel == "nuevo"
+                                       else embarques[sel]["nombre"] if sel in embarques else "")})
+
+
+@staff_only
+def calculadora_guardar(request):
+    import json
+    from decimal import Decimal, InvalidOperation
+    from django.http import JsonResponse
+
+    if request.method != "POST":
+        return JsonResponse({"error": "Solo POST."}, status=405)
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({"error": "JSON inválido."}, status=400)
+    if not isinstance(payload, dict):
+        return JsonResponse({"error": "Los datos del embarque no son válidos."}, status=400)
+
+    def clean_number(value, label, default="0", allow_blank=False):
+        raw = str(value if value is not None else "").strip()
+        if not raw and allow_blank:
+            return ""
+        raw = raw or str(default)
+        try:
+            number = Decimal(raw.replace(",", "."))
+        except (InvalidOperation, ValueError):
+            raise ValueError(f"{label} debe ser numérico.") from None
+        if not number.is_finite() or number < 0:
+            raise ValueError(f"{label} no puede ser negativo.")
+        return format(number, "f")
+
+    try:
+        rates_input = payload.get("tasas", {})
+        expenses_input = payload.get("gastos", {})
+        if not isinstance(rates_input, dict) or not isinstance(expenses_input, dict):
+            raise ValueError("Las tasas y los gastos no son válidos.")
+        rate_defaults = {"seguro_pct": "1", "advalorem_pct": "20",
+                         "fondinfa_pct": "0.5", "iva_pct": "15", "iva_pvp_pct": "15"}
+        expense_defaults = {"flete_intl": "0", "flete_local": "0", "gasto_admin": "0",
+                            "bodegaje": "0", "devolucion": "0", "comision_banco": "0",
+                            "descarga": "0", "agente": "0", "otros_unit": "0"}
+        tasas = {key: clean_number(rates_input.get(key), key, default)
+                 for key, default in rate_defaults.items()}
+        gastos = {key: clean_number(expenses_input.get(key), key, default)
+                  for key, default in expense_defaults.items()}
+        items_input = payload.get("items", [])
+        if not isinstance(items_input, list) or len(items_input) > 500:
+            raise ValueError("El embarque admite hasta 500 productos.")
+        items = []
+        numeric_defaults = {"cant": "0", "cant_caja": "1", "valor_unit": "",
+                            "margen_pct": "35", "compet1": "", "compet2": "", "compet3": "",
+                            "seguro_pct": "", "advalorem_pct": "", "fondinfa_pct": "",
+                            "iva_pct": ""}
+        for row_number, item in enumerate(items_input, start=1):
+            if not isinstance(item, dict):
+                raise ValueError(f"Los datos del producto {row_number} no son válidos.")
+            name = str(item.get("nombre") or "").strip()[:200]
+            clean_item = {"nombre": name}
+            for key, default in numeric_defaults.items():
+                clean_item[key] = clean_number(item.get(key), f"{key} del producto {row_number}",
+                                               default, allow_blank=default == "")
+            if clean_item["margen_pct"] and Decimal(clean_item["margen_pct"]) >= 100:
+                raise ValueError(f"El margen del producto {row_number} debe ser menor a 100%.")
+            items.append(clean_item)
+        name = str(payload.get("nombre") or "").strip()[:100]
+        if not name:
+            raise ValueError("Ingrese un nombre para el embarque.")
+    except ValueError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+
+    key = str(payload.get("embarque_key") or "")
+    if key.startswith("guardado-") and key[9:].isdigit():
+        shipment = get_object_or_404(SavedShipment, pk=int(key[9:]))
+        shipment.nombre = name
+        shipment.tasas = tasas
+        shipment.gastos = gastos
+        shipment.items = items
+        shipment.save()
+    else:
+        shipment = SavedShipment.objects.create(
+            nombre=name, tasas=tasas, gastos=gastos, items=items)
+    return JsonResponse({
+        "key": f"guardado-{shipment.pk}",
+        "nombre": shipment.nombre,
+        "message": "Embarque guardado correctamente.",
+    })
+
+
+@staff_only
+def calculadora_plantilla(request):
+    from django.http import HttpResponse
+
+    if request.method != "GET":
+        return HttpResponse("Solo GET.", status=405)
+    from calculator.excel_templates import build_plantilla_xlsx
+
+    response = HttpResponse(
+        build_plantilla_xlsx(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = 'attachment; filename="plantilla-embarque.xlsx"'
+    return response
+
+
+@staff_only
+def calculadora_importar(request):
+    from django.http import JsonResponse
+    from calculator.excel_templates import read_plantilla_xlsx
+
+    if request.method != "POST":
+        return JsonResponse({"error": "Solo POST."}, status=405)
+    upload = request.FILES.get("archivo")
+    if upload is None:
+        return JsonResponse({"error": "Seleccione una plantilla Excel."}, status=400)
+    if upload.size > 5 * 1024 * 1024:
+        return JsonResponse({"error": "El archivo no puede superar 5 MB."}, status=400)
+    if not upload.name.lower().endswith(".xlsx"):
+        return JsonResponse({"error": "Suba un archivo .xlsx."}, status=400)
+    try:
+        imported = read_plantilla_xlsx(upload)
+    except ValueError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    return JsonResponse(imported)
 
 
 @staff_only

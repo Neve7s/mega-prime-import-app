@@ -60,3 +60,20 @@ class QuoteLog(models.Model):
         ordering = ["-created_at"]
         verbose_name = "Cotización calculadora"
         verbose_name_plural = "Cotizaciones calculadora"
+
+
+class SavedShipment(models.Model):
+    nombre = models.CharField(max_length=100)
+    tasas = models.JSONField(default=dict)
+    gastos = models.JSONField(default=dict)
+    items = models.JSONField(default=list)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at", "-id"]
+        verbose_name = "Embarque guardado"
+        verbose_name_plural = "Embarques guardados"
+
+    def __str__(self) -> str:
+        return self.nombre

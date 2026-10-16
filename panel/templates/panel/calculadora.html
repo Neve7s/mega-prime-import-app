@@ -38,7 +38,6 @@
 <div class="bg-white border rounded-xl px-4 py-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
   <div>
     <h1 class="text-xl font-bold leading-tight">Calculadora de impuestos</h1>
-    <p class="text-xs text-gray-500">Réplica COSTOS ROMA.xlsx · prorrateo por cantidad · vacío en ⚙ = usa el general</p>
   </div>
   <div class="flex items-end gap-2 panel-form" id="tasas-box">
     <label class="text-[10px] font-bold text-gray-500 uppercase">Seguro %<input id="t_seguro" type="number" step="0.01" min="0" value="{{ tasas.seguro_pct }}" /></label>
@@ -78,7 +77,11 @@
 <div class="bg-white border rounded-xl px-4 py-3 mt-3">
   <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
     <h2 class="font-bold text-xs uppercase tracking-wide">Reporte del embarque <span class="font-normal normal-case text-gray-400">(se actualiza solo)</span></h2>
-    <button type="button" id="btn-reporte" class="bg-[#0A0A0B] text-[#D4AF37] text-xs font-bold px-4 py-2 rounded-lg">⬇ Descargar reporte</button>
+    <div class="flex flex-wrap items-center gap-2">
+      <input id="embarque-nombre" type="text" maxlength="100" value="{{ embarque_nombre }}" placeholder="Nombre del embarque" aria-label="Nombre del embarque" class="border rounded-lg px-2 py-1.5 text-xs" />
+      <button type="button" id="btn-guardar" class="bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg">Guardar embarque</button>
+      <button type="button" id="btn-reporte" class="bg-[#0A0A0B] text-[#D4AF37] text-xs font-bold px-4 py-2 rounded-lg">⬇ Descargar reporte</button>
+    </div>
   </div>
   <div id="calc-error" class="hidden text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-2"></div>
   <div class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-2 text-center">
@@ -102,19 +105,26 @@
     <div class="flex items-center gap-2 panel-form">
       <label class="text-[10px] font-bold uppercase text-gray-400">Embarque
         <select id="embarque-sel" style="min-width:150px">
-          <option value="roma" {% if embarque_sel == "roma" %}selected{% endif %}>Teja Roma (15 ítems)</option>
-          <option value="espanol" {% if embarque_sel == "espanol" %}selected{% endif %}>Teja Español (21 ítems)</option>
+          {% for key, embarque in embarques_opciones %}
+          <option value="{{ key }}" {% if embarque_sel == key %}selected{% endif %}>{{ embarque.nombre }}</option>
+          {% endfor %}
           <option value="nuevo" {% if embarque_sel == "nuevo" %}selected{% endif %}>➕ Nuevo embarque (vacío)</option>
         </select>
       </label>
       <button type="button" id="add-row" class="text-xs font-bold bg-gray-100 border rounded-lg px-3 py-1.5 hover:bg-gray-200">+ Agregar</button>
     </div>
   </div>
-  <p class="text-[11px] text-gray-400 mb-2">Edite directo en la tabla — todo se recalcula al escribir. ⚙ o click derecho = impuestos propios del producto.</p>
+  <div class="flex flex-wrap items-center gap-2 mb-2">
+    <a href="{% url 'panel:calculadora_plantilla' %}" class="text-xs font-bold text-sky-700 underline">⬇ Descargar plantilla Excel</a>
+    <label for="excel-file" class="text-xs font-bold bg-gray-100 border rounded-lg px-3 py-1.5 cursor-pointer">Subir plantilla Excel</label>
+    <input id="excel-file" type="file" accept=".xlsx" class="hidden" />
+    <span id="import-status" class="text-xs text-gray-500" role="status" aria-live="polite"></span>
+  </div>
+  <p class="text-[11px] text-gray-400 mb-2">Ingrese <b>CANT</b> y <b>PRECIO FOB unit.</b> → el <b>FOB total</b> (Cant × Precio) se calcula solo. Todo se recalcula al escribir. ⚙ o click derecho = impuestos propios del producto.</p>
   <div class="overflow-x-auto">
   <table class="w-full text-xs" id="items-table">
     <colgroup>
-      <col /><col style="width:60px" /><col style="width:54px" /><col style="width:68px" /><col style="width:50px" />
+      <col /><col style="width:60px" /><col style="width:54px" /><col style="width:82px" /><col style="width:78px" /><col style="width:50px" />
       <col style="width:62px" /><col style="width:62px" /><col style="width:62px" />
       <col style="width:80px" /><col style="width:66px" /><col style="width:62px" />
       <col style="width:68px" /><col style="width:68px" />
@@ -122,7 +132,7 @@
     </colgroup>
     <thead><tr class="text-left text-[10px] uppercase text-gray-400 border-b">
       <th class="p-1">Producto</th>
-      <th class="p-1 text-right">Cant</th><th class="p-1 text-right">C/Caja</th><th class="p-1 text-right">V. FOB</th><th class="p-1 text-right">Marg%</th>
+      <th class="p-1 text-right">Cant</th><th class="p-1 text-right">C/Caja</th><th class="p-1 text-right" title="Precio unitario FOB en USD — INGRESE EL PRECIO AQUÍ">Precio FOB u.</th><th class="p-1 text-right" title="FOB total = Cant × Precio FOB u. (se calcula solo)">FOB tot.</th><th class="p-1 text-right">Marg%</th>
       <th class="p-1 text-right">Comp 1</th><th class="p-1 text-right">Comp 2</th><th class="p-1 text-right">Comp 3</th>
       <th class="p-1 text-right">V. Total</th><th class="p-1 text-right">C. Caja</th><th class="p-1 text-right">C. Unit</th>
       <th class="p-1 text-right">PVP s/IVA</th><th class="p-1 text-right">PVP c/IVA</th>
@@ -132,9 +142,10 @@
     {% for it in items_raw %}
       <tr class="border-b item-row hover:bg-gray-50" title="Click derecho = impuestos propios">
         <td><input name="nombre" value="{{ it.nombre }}" placeholder="Producto..." required /></td>
-        <td><input name="cant" type="number" step="0.01" min="0" value="{{ it.cant }}" required /></td>
-        <td><input name="cant_caja" type="number" step="0.01" min="1" value="{{ it.cant_caja }}" required /></td>
-        <td><input name="valor_unit" type="number" step="0.01" min="0" value="{{ it.valor_unit }}" required /></td>
+        <td><input name="cant" type="number" step="0.01" min="0" value="{{ it.cant }}" placeholder="0" required /></td>
+        <td><input name="cant_caja" type="number" step="0.01" min="1" value="{{ it.cant_caja }}" placeholder="1" required /></td>
+        <td><input name="valor_unit" type="number" step="0.01" min="0" value="{{ it.valor_unit }}" placeholder="Precio → ej. 10.92" title="Precio unitario FOB en USD" required style="background:#FFFBEB;border-color:#FDE68A;" /></td>
+        <td class="p-1 text-right font-bold whitespace-nowrap text-sky-700" data-c="fob_total" title="FOB total = Cant × Precio">–</td>
         <td><input name="margen_pct" type="number" step="0.01" min="0" max="99" value="{{ it.margen_pct }}" /></td>
         <td><input name="compet1" type="number" step="0.01" min="0" value="{{ it.compet1 }}" /></td>
         <td><input name="compet2" type="number" step="0.01" min="0" value="{{ it.compet2 }}" /></td>
@@ -151,7 +162,7 @@
         <td class="p-1"><button type="button" class="rm-row text-red-400 font-bold px-1">×</button></td>
       </tr>
       <tr class="tax-row" hidden>
-        <td colspan="15" class="p-2 bg-amber-50/60 border-b">
+        <td colspan="16" class="p-2 bg-amber-50/60 border-b">
           <span class="text-[10px] font-bold uppercase text-amber-700">Impuestos propios <span class="font-normal normal-case text-gray-400">(vacío = general)</span></span>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-1">
             <label class="text-[11px] text-gray-500">Ad-Valorem %<input name="ov_advalorem_pct" type="number" step="0.01" min="0" value="{{ it.advalorem_pct }}" placeholder="{{ tasas.advalorem_pct }}" /></label>
@@ -276,6 +287,7 @@
     set('r_locales', R.locales); set('r_gran', R.gran); set('r_imp', R.imp);
     c.items.forEach(function(it){
       var setC = function(k, v){ var el = it.row.querySelector('[data-c="' + k + '"]'); if (el) el.textContent = fmt(v); };
+      setC('fob_total', it.fob);
       setC('valor_total', it.vTotal); setC('costo_caja', it.cCaja); setC('costo_unit', it.cUnit);
       setC('pvp_sin', it.pvpSin); setC('pvp_con', it.pvpCon);
       var badge = it.row.querySelector('.tax-badge');
@@ -304,9 +316,10 @@
     var g = function(k, d){ return esc(it[k] !== undefined && it[k] !== '' ? it[k] : (d !== undefined ? d : '')); };
     return '<tr class="border-b item-row hover:bg-gray-50" title="Click derecho = impuestos propios">'
       + '<td><input name="nombre" placeholder="Producto..." required value="' + esc(it.nombre || '') + '" /></td>'
-      + '<td><input name="cant" type="number" step="0.01" min="0" value="' + g('cant', '1') + '" required /></td>'
-      + '<td><input name="cant_caja" type="number" step="0.01" min="1" value="' + g('cant_caja', '1') + '" required /></td>'
-      + '<td><input name="valor_unit" type="number" step="0.01" min="0" value="' + g('valor_unit', '0') + '" required /></td>'
+      + '<td><input name="cant" type="number" step="0.01" min="0" value="' + g('cant', '1') + '" placeholder="0" required /></td>'
+      + '<td><input name="cant_caja" type="number" step="0.01" min="1" value="' + g('cant_caja', '1') + '" placeholder="1" required /></td>'
+      + '<td><input name="valor_unit" type="number" step="0.01" min="0" value="' + g('valor_unit', '') + '" placeholder="Precio → ej. 10.92" title="Precio unitario FOB en USD" required style="background:#FFFBEB;border-color:#FDE68A;" /></td>'
+      + '<td class="p-1 text-right font-bold whitespace-nowrap text-sky-700" data-c="fob_total" title="FOB total = Cant x Precio">–</td>'
       + '<td><input name="margen_pct" type="number" step="0.01" min="0" max="99" value="' + g('margen_pct', '35') + '" /></td>'
       + '<td><input name="compet1" type="number" step="0.01" min="0" value="' + g('compet1') + '" /></td>'
       + '<td><input name="compet2" type="number" step="0.01" min="0" value="' + g('compet2') + '" /></td>'
@@ -318,7 +331,7 @@
       + '<td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="pvp_con">–</td>'
       + '<td class="p-1 whitespace-nowrap"><button type="button" class="tax-btn text-xs font-bold bg-gray-100 border rounded px-1.5 py-0.5 hover:bg-gray-200" title="Impuestos propios (vacío = general)">⚙</button> <span class="tax-badge text-[9px] font-bold px-1 py-0.5 rounded bg-gray-100 text-gray-500">GEN</span></td>'
       + '<td class="p-1"><button type="button" class="rm-row text-red-400 font-bold px-1">×</button></td></tr>'
-      + '<tr class="tax-row" hidden><td colspan="15" class="p-2 bg-amber-50/60 border-b">'
+      + '<tr class="tax-row" hidden><td colspan="16" class="p-2 bg-amber-50/60 border-b">'
       + '<span class="text-[10px] font-bold uppercase text-amber-700">Impuestos propios <span class="font-normal normal-case text-gray-400">(vacío = general)</span></span>'
       + '<div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-1">'
       + '<label class="text-[11px] text-gray-500">Ad-Valorem %<input name="ov_advalorem_pct" type="number" step="0.01" min="0" value="' + esc((it || {}).advalorem_pct) + '" /></label>'
@@ -332,21 +345,24 @@
   // ── Cargar embarque completo del Excel (tasas + gastos + productos) ──
   var EMBARQUES = {};
   try { EMBARQUES = JSON.parse(document.getElementById('embarques-data').textContent); } catch (e) { EMBARQUES = {}; }
+  var EMBARQUE_INICIAL = '{{ embarque_sel|escapejs }}';
   function setVal(id, v){ var el = document.getElementById(id); if (el) el.value = v; }
   var TASAS_GENERALES = {seguro_pct: '1', advalorem_pct: '20', fondinfa_pct: '0.5', iva_pct: '15', iva_pvp_pct: '15'};
   function cargarEmbarque(key){
     if (key === 'nuevo') {
+      setVal('embarque-nombre', 'Nuevo embarque');
       setVal('t_seguro', TASAS_GENERALES.seguro_pct); setVal('t_adval', TASAS_GENERALES.advalorem_pct);
       setVal('t_fond', TASAS_GENERALES.fondinfa_pct); setVal('t_iva', TASAS_GENERALES.iva_pct);
       setVal('t_iva_pvp', TASAS_GENERALES.iva_pvp_pct);
       ['g_flete_intl','g_flete_local','g_admin','g_bodegaje','g_devol','g_comision','g_descarga','g_agente','g_otros']
         .forEach(function(id){ setVal(id, '0'); });
-      body.innerHTML = rowHtml({nombre: '', cant: '1', cant_caja: '1', valor_unit: '0', margen_pct: '35'});
+      body.innerHTML = rowHtml({nombre: '', cant: '1', cant_caja: '1', valor_unit: '', margen_pct: '35'});
       syncPlaceholders(); render(); save();
       return;
     }
     var E = EMBARQUES[key];
     if (!E) return;
+    setVal('embarque-nombre', E.nombre);
     setVal('t_seguro', E.tasas.seguro_pct); setVal('t_adval', E.tasas.advalorem_pct);
     setVal('t_fond', E.tasas.fondinfa_pct); setVal('t_iva', E.tasas.iva_pct);
     setVal('t_iva_pvp', E.tasas.iva_pvp_pct);
@@ -361,6 +377,9 @@
     syncPlaceholders(); render(); save();
   }
   document.getElementById('embarque-sel').addEventListener('change', function(){
+    var url = new URL(window.location.href);
+    url.searchParams.set('embarque', this.value);
+    window.history.replaceState(null, '', url);
     cargarEmbarque(this.value);
   });
 
@@ -409,6 +428,8 @@
     var st = null;
     try { st = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { st = null; }
     if (!st || !st.items || !st.items.length) return false;
+    if (EMBARQUE_INICIAL === 'nuevo' || EMBARQUE_INICIAL.indexOf('guardado-') === 0) return false;
+    if (st.embarqueKey && st.embarqueKey !== EMBARQUE_INICIAL) return false;
     setVal('t_seguro', st.tasas.seguro_pct); setVal('t_adval', st.tasas.advalorem_pct);
     setVal('t_fond', st.tasas.fondinfa_pct); setVal('t_iva', st.tasas.iva_pct);
     setVal('t_iva_pvp', st.tasas.iva_pvp_pct);
@@ -436,7 +457,9 @@
     var gv = function(id){ var el = document.getElementById(id); return el ? el.value : ''; };
     var sel = document.getElementById('embarque-sel');
     var payload = {
-      embarque: sel ? sel.options[sel.selectedIndex].text : 'Embarque',
+      embarque: gv('embarque-nombre') || 'Embarque',
+      nombre: gv('embarque-nombre'),
+      embarque_key: sel ? sel.value : 'roma',
       tasas: {seguro_pct: gv('t_seguro'), advalorem_pct: gv('t_adval'), fondinfa_pct: gv('t_fond'),
               iva_pct: gv('t_iva'), iva_pvp_pct: gv('t_iva_pvp')},
       gastos: {flete_intl: gv('g_flete_intl'), flete_local: gv('g_flete_local'), gasto_admin: gv('g_admin'),
@@ -456,6 +479,68 @@
     });
     return payload;
   }
+  document.getElementById('btn-guardar').addEventListener('click', async function(){
+    var btn = this, old = btn.textContent, payload = collectState();
+    if (!payload.nombre.trim()){ alert('Ingrese un nombre para el embarque.'); return; }
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    try {
+      var response = await fetch('{% url "panel:calculadora_guardar" %}', {
+        method: 'POST', credentials: 'same-origin',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+        body: JSON.stringify(payload)
+      });
+      var result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'No se pudo guardar el embarque.');
+      var select = document.getElementById('embarque-sel');
+      var option = select.querySelector('option[value="' + result.key + '"]');
+      if (!option){ option = document.createElement('option'); option.value = result.key; select.insertBefore(option, select.lastElementChild); }
+      option.textContent = result.nombre;
+      select.value = result.key;
+      var url = new URL(window.location.href);
+      url.searchParams.set('embarque', result.key);
+      window.history.replaceState(null, '', url);
+      payload.nombre = result.nombre;
+      EMBARQUES[result.key] = {nombre: result.nombre, tasas: payload.tasas, gastos: payload.gastos, items: payload.items};
+      save();
+      alert(result.message);
+    } catch (err) {
+      alert(err && err.message ? err.message : 'No se pudo guardar el embarque.');
+    } finally {
+      btn.disabled = false; btn.textContent = old;
+    }
+  });
+  document.getElementById('excel-file').addEventListener('change', async function(){
+    var input = this, file = input.files && input.files[0];
+    if (!file) return;
+    var status = document.getElementById('import-status');
+    var form = new FormData();
+    form.append('archivo', file);
+    status.textContent = 'Importando…';
+    try {
+      var response = await fetch('{% url "panel:calculadora_importar" %}', {
+        method: 'POST', credentials: 'same-origin',
+        headers: {'X-CSRFToken': getCookie('csrftoken')}, body: form
+      });
+      var result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'No se pudo importar el archivo.');
+      var expenseIds = {
+        flete_intl: 'g_flete_intl', flete_local: 'g_flete_local', gasto_admin: 'g_admin',
+        bodegaje: 'g_bodegaje', devolucion: 'g_devol', comision_banco: 'g_comision',
+        descarga: 'g_descarga', agente: 'g_agente', otros_unit: 'g_otros'
+      };
+      Object.keys(expenseIds).forEach(function(key){ setVal(expenseIds[key], result.gastos[key]); });
+      var html = '';
+      result.items.forEach(function(item){ html += rowHtml(item); });
+      body.innerHTML = html || rowHtml({nombre: '', cant: '1', cant_caja: '1', valor_unit: '', margen_pct: '35'});
+      syncPlaceholders(); render(); save();
+      status.textContent = 'Plantilla importada: ' + result.items.length + ' productos.';
+    } catch (err) {
+      status.textContent = '';
+      alert(err && err.message ? err.message : 'No se pudo importar el archivo.');
+    } finally {
+      input.value = '';
+    }
+  });
   document.getElementById('btn-reporte').addEventListener('click', async function(){
     if (!lastCalc || lastCalc.error){ alert(lastCalc && lastCalc.error ? lastCalc.error : 'Sin datos.'); return; }
     var btn = this, old = btn.textContent;

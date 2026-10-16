@@ -2,13 +2,15 @@
 <div class="flex flex-col gap-space-sm">
 <div class="relative w-full aspect-square rounded-lg overflow-hidden bg-surface-container">
 <a href="{% url 'catalog:detalle' product.slug %}"><img class="w-full h-full object-cover" alt="{{ product.nombre }}" loading="lazy" src="{{ product.imagen_src }}" /></a>
-<span class="absolute top-2 left-2 bg-secondary text-on-secondary px-2 py-0.5 rounded font-label-sm text-label-sm font-bold uppercase">{{ product.origen|default:'' }}</span>
+{% if product.badge %}<span class="absolute top-2 left-2 bg-secondary-container text-primary px-2 py-0.5 rounded font-label-sm text-label-sm font-bold uppercase">{{ product.badge }}</span>
+{% elif product.origen %}<span class="absolute top-2 left-2 bg-secondary text-on-secondary px-2 py-0.5 rounded font-label-sm text-label-sm font-bold uppercase">{{ product.origen }}</span>{% endif %}
 <span class="absolute top-2 right-2 bg-primary text-on-primary px-2 py-0.5 rounded font-label-sm text-label-sm font-bold uppercase">Stock: {{ product.stock_cantidad|floatformat:0 }} {{ product.get_unidad_display }}</span>
 </div>
 <div>
-<span class="font-label-sm text-label-sm uppercase text-secondary font-bold tracking-wider">SKU: {{ product.sku }}</span>
+<span class="font-label-sm text-label-sm uppercase text-secondary font-bold tracking-wider">SKU: {{ product.sku }}{% if product.tipo %} · {{ product.tipo.nombre }}{% endif %}</span>
 <a href="{% url 'catalog:detalle' product.slug %}"><h4 class="font-headline-sm text-headline-sm font-bold text-primary mt-0.5 hover:underline">{{ product.nombre }}</h4></a>
 <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">USD {{ product.precio_mayor }} / {{ product.get_unidad_display }}</p>
+{% if product.colores %}<p class="flex items-center gap-1.5 mt-1.5">{% for c in product.colores %}<span title="{{ c.nombre }}" class="inline-block w-4 h-4 rounded-full border border-outline-variant" style="background:{{ c.hex }}"></span>{% endfor %}</p>{% endif %}
 </div>
 <div class="bg-surface-container-low p-space-sm rounded flex flex-col gap-1 text-body-sm font-body-sm text-on-surface">
 {% for k, v in product.ficha_tecnica.items %}<div class="flex justify-between"><span class="text-on-surface-variant">{{ k }}:</span><span class="font-semibold">{{ v }}</span></div>{% endfor %}

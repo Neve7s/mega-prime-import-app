@@ -1,0 +1,22 @@
+{% extends "panel/base_panel.html" %}
+{% block title %}Categorías — Panel{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between">
+  <div>
+    <h1 class="text-2xl font-bold">Categorías</h1>
+    <p class="text-sm text-gray-500">Aparecen solas en los filtros del catálogo, en el orden indicado.</p>
+  </div>
+  <a class="bg-[#1e232a] text-white px-4 py-2 rounded font-bold text-sm" href="{% url 'panel:categoria_nueva' %}">+ Nueva</a>
+</div>
+<div class="bg-white rounded-xl border mt-4 divide-y">
+{% for c in categorias %}
+<div class="px-4 py-3 flex items-center justify-between gap-3">
+  <div><strong>{{ c.nombre }}</strong> <span class="text-xs text-gray-500">/{{ c.slug }} · orden {{ c.orden }} · {{ c.n_productos }} producto(s)</span></div>
+  <div class="flex gap-3 shrink-0 text-sm">
+    <a class="underline" href="{% url 'panel:categoria_editar' c.pk %}">Editar</a>
+    <a class="underline text-red-600" href="{% url 'panel:categoria_eliminar' c.pk %}">Eliminar</a>
+  </div>
+</div>
+{% empty %}<p class="px-4 py-3 text-sm text-gray-500">Sin categorías. Crea la primera.</p>{% endfor %}
+</div>
+{% endblock %}

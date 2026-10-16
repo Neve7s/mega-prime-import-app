@@ -5,7 +5,7 @@ from django.core.files.base import ContentFile
 from django.test import TestCase, override_settings
 from PIL import Image
 
-from .models import Category, Product
+from .models import Category, Product, TipoProducto
 
 import shutil
 import tempfile
@@ -46,6 +46,34 @@ class ProductTest(TestCase):
         self.assertContains(resp, "MPG-CALA-120")
         resp = self.client.get("/catalogo/", {"categoria": "porcelanato"})
         self.assertContains(resp, "MPG-CALA-120")
+
+    def test_seed_lineas_y_tipos(self):
+        for slug in ("tejas", "accesorios"):
+            self.assertTrue(Category.objects.filter(slug=slug).exists())
+        for slug in ("teja-roma", "teja-espanola", "teja-pvc", "cumbreros",
+                     "tornilleria", "perfiles", "selladores"):
+            self.assertTrue(TipoProducto.objects.filter(slug=slug).exists())
+
+    def test_filtro_y_busqueda_por_tipo_y_badge(self):
+        tipo = TipoProducto.objects.get(slug="teja-roma")
+        Product.objects.create(
+            categoria=self.cat, tipo=tipo, sku="MPG-R", nombre="Roma 7.2",
+            slug="roma-72", precio_mayor=Decimal("50"), badge="MÁS VENDIDO",
+        )
+        Product.objects.create(
+            categoria=self.cat, sku="MPG-X2", nombre="Otro",
+            slug="otro", precio_mayor=Decimal("10"),
+        )
+        resp = self.client.get("/catalogo/", {"tipo": "teja-roma"})
+        self.assertContains(resp, "MPG-R")
+        self.assertNotContains(resp, "MPG-X2")
+        resp = self.client.get("/catalogo/", {"q": "roma"})
+        self.assertContains(resp, "MPG-R")
+        html = self.client.get("/catalogo/").content.decode()
+        self.assertIn("Teja Roma", html)  # filtro automático
+        self.assertIn("MÁS VENDIDO", html)  # badge visible
+        det = self.client.get("/catalogo/producto/roma-72/").content.decode()
+        self.assertIn("Teja Roma", det)
 
     def test_grid_htmx_devuelve_parcial(self):
         Product.objects.create(

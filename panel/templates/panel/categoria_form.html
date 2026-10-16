@@ -1,0 +1,28 @@
+{% extends "panel/base_panel.html" %}
+{% block title %}{% if obj %}Editar{% else %}Nueva{% endif %} categoría — Panel{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold">{% if obj %}Editar {{ obj.nombre }}{% else %}Nueva categoría{% endif %}</h1>
+<p class="text-sm text-gray-500">El slug se genera solo desde el nombre — puedes ajustarlo. Aparece al instante en los filtros del catálogo.</p>
+<form method="post" class="panel-form mt-4 max-w-xl">{% csrf_token %}
+  {% include "panel/_form.html" with form=form %}
+  <div class="flex gap-2 mt-4">
+    <button class="bg-[#0A0A0B] text-[#D4AF37] px-8 py-2.5 rounded-lg font-bold">Guardar categoría</button>
+    <a class="px-4 py-2.5 rounded-lg border font-bold text-sm self-center" href="{% url 'panel:categorias' %}">Cancelar</a>
+  </div>
+</form>
+<script>
+(function(){
+  var nom = document.querySelector('input[name="nombre"]');
+  var slug = document.querySelector('input[name="slug"]');
+  if (!nom || !slug) return;
+  function slugify(s){
+    return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+  nom.addEventListener('input', function(){
+    if (!slug.dataset.tocado) slug.value = slugify(nom.value);
+  });
+  slug.addEventListener('input', function(){ slug.dataset.tocado = '1'; });
+})();
+</script>
+{% endblock %}

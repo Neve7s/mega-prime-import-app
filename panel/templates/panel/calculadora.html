@@ -342,7 +342,7 @@
       ['g_flete_intl','g_flete_local','g_admin','g_bodegaje','g_devol','g_comision','g_descarga','g_agente','g_otros']
         .forEach(function(id){ setVal(id, '0'); });
       body.innerHTML = rowHtml({nombre: '', cant: '1', cant_caja: '1', valor_unit: '0', margen_pct: '35'});
-      syncPlaceholders(); render();
+      syncPlaceholders(); render(); save();
       return;
     }
     var E = EMBARQUES[key];
@@ -358,7 +358,7 @@
     var html = '';
     E.items.forEach(function(it){ html += rowHtml(it); });
     body.innerHTML = html;
-    syncPlaceholders(); render();
+    syncPlaceholders(); render(); save();
   }
   document.getElementById('embarque-sel').addEventListener('change', function(){
     cargarEmbarque(this.value);
@@ -366,7 +366,7 @@
 
   document.getElementById('add-row').addEventListener('click', function(){
     body.insertAdjacentHTML('beforeend', blankRow());
-    syncPlaceholders(); render();
+    syncPlaceholders(); render(); save();
   });
   body.addEventListener('click', function(e){
     if (e.target && e.target.classList.contains('rm-row')) {
@@ -374,7 +374,7 @@
         var row = e.target.closest('tr');
         var tx = row.nextElementSibling;
         if (tx && tx.classList.contains('tax-row')) tx.remove();
-        row.remove(); render();
+        row.remove(); render(); save();
       }
       return;
     }
@@ -392,8 +392,40 @@
     if (tx && tx.classList.contains('tax-row')) tx.hidden = !tx.hidden;
   });
   document.getElementById('calc-app').addEventListener('input', function(){
-    syncPlaceholders(); render();
+    syncPlaceholders(); render(); save();
   });
+
+  // ── Autoguardado: todo sobrevive al refrescar (incluye overrides ESP) ──
+  var SAVE_KEY = 'megaprime-calc-v1';
+  function save(){
+    try {
+      var st = collectState();
+      var sel = document.getElementById('embarque-sel');
+      st.embarqueKey = sel ? sel.value : 'roma';
+      localStorage.setItem(SAVE_KEY, JSON.stringify(st));
+    } catch (e) {}
+  }
+  function restore(){
+    var st = null;
+    try { st = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { st = null; }
+    if (!st || !st.items || !st.items.length) return false;
+    setVal('t_seguro', st.tasas.seguro_pct); setVal('t_adval', st.tasas.advalorem_pct);
+    setVal('t_fond', st.tasas.fondinfa_pct); setVal('t_iva', st.tasas.iva_pct);
+    setVal('t_iva_pvp', st.tasas.iva_pvp_pct);
+    setVal('g_flete_intl', st.gastos.flete_intl); setVal('g_flete_local', st.gastos.flete_local);
+    setVal('g_admin', st.gastos.gasto_admin); setVal('g_bodegaje', st.gastos.bodegaje);
+    setVal('g_devol', st.gastos.devolucion); setVal('g_comision', st.gastos.comision_banco);
+    setVal('g_descarga', st.gastos.descarga); setVal('g_agente', st.gastos.agente);
+    setVal('g_otros', st.gastos.otros_unit);
+    var sel = document.getElementById('embarque-sel');
+    if (sel && st.embarqueKey && sel.querySelector('option[value="' + st.embarqueKey + '"]')) {
+      sel.value = st.embarqueKey;
+    }
+    var html = '';
+    st.items.forEach(function(it){ html += rowHtml(it); });
+    body.innerHTML = html;
+    return true;
+  }
 
   // ── Descargar reporte (.xlsx presentable, generado en el servidor) ──
   function getCookie(name){
@@ -466,6 +498,8 @@
     }
   });
 
+  syncPlaceholders();
+  restore();
   syncPlaceholders();
   render();
 })();

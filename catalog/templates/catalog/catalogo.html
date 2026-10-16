@@ -5,7 +5,7 @@
 <div class="max-w-[1440px] mx-auto px-margin md:px-margin-md lg:px-margin-lg">
   <div class="font-label-sm text-label-sm uppercase tracking-widest text-secondary font-bold">Catálogo mayorista</div>
   <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Catálogo completo</h1>
-  <p class="font-body-md text-body-md text-on-surface-variant mt-1">Filtra por línea, busca por nombre o SKU y agrega a tu cotización.</p>
+  <p class="font-body-md text-body-md text-on-surface-variant mt-1">Filtra por línea y tipo, busca por nombre, SKU o familia y agrega a tu cotización.</p>
 
   <form hx-get="{% url 'catalog:catalogo' %}" hx-target="#catalogo-grid" hx-swap="innerHTML" hx-trigger="change, keyup changed delay:300ms from:#filtro-q" hx-push-url="true"
         class="mt-6 bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-space-md shadow-sm grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1.4fr_2fr_auto_auto] gap-space-md items-end">
@@ -19,6 +19,15 @@
         <label class="cursor-pointer"><input type="radio" name="categoria" value="" class="peer sr-only" {% if not categoria %}checked{% endif %} /><span class="inline-block px-space-md py-2 rounded-lg font-label-sm text-label-sm uppercase tracking-wider bg-surface border border-outline-variant peer-checked:bg-primary peer-checked:text-on-primary transition-colors">Todas</span></label>
         {% for cat in categorias %}
         <label class="cursor-pointer"><input type="radio" name="categoria" value="{{ cat.slug }}" class="peer sr-only" {% if categoria == cat.slug %}checked{% endif %} /><span class="inline-block px-space-md py-2 rounded-lg font-label-sm text-label-sm uppercase tracking-wider bg-surface border border-outline-variant peer-checked:bg-primary peer-checked:text-on-primary transition-colors">{{ cat.nombre }}</span></label>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <span class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Tipo</span>
+      <div class="flex flex-wrap items-center gap-2 h-11">
+        <label class="cursor-pointer"><input type="radio" name="tipo" value="" class="peer sr-only" {% if not tipo %}checked{% endif %} /><span class="inline-block px-space-md py-2 rounded-lg font-label-sm text-label-sm uppercase tracking-wider bg-surface border border-outline-variant peer-checked:bg-primary peer-checked:text-on-primary transition-colors">Todos</span></label>
+        {% for t in tipos %}
+        <label class="cursor-pointer"><input type="radio" name="tipo" value="{{ t.slug }}" class="peer sr-only" {% if tipo == t.slug %}checked{% endif %} /><span class="inline-block px-space-md py-2 rounded-lg font-label-sm text-label-sm uppercase tracking-wider bg-surface border border-outline-variant peer-checked:bg-primary peer-checked:text-on-primary transition-colors">{{ t.nombre }}</span></label>
         {% endfor %}
       </div>
     </div>

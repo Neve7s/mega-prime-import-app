@@ -9,12 +9,15 @@
   </div>
   <div class="flex flex-col gap-space-md">
     <div>
-      <span class="font-label-sm text-label-sm uppercase text-secondary font-bold tracking-wider">{{ product.categoria.nombre }} · SKU: {{ product.sku }}</span>
+      <span class="font-label-sm text-label-sm uppercase text-secondary font-bold tracking-wider">{{ product.categoria.nombre }}{% if product.tipo %} · {{ product.tipo.nombre }}{% endif %} · SKU: {{ product.sku }}</span>
+      {% if product.badge %}<span class="inline-block mt-1 bg-secondary-container text-primary px-2 py-0.5 rounded font-label-sm text-label-sm font-bold uppercase">{{ product.badge }}</span>{% endif %}
       <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight mt-1">{{ product.nombre }}</h1>
       <p class="font-headline-md text-headline-md font-bold text-secondary mt-2">USD {{ product.precio_mayor }} / {{ product.get_unidad_display }}</p>
       <p class="font-body-sm text-body-sm {% if product.en_stock %}text-green-700{% else %}text-error{% endif %} font-bold mt-1">{% if product.en_stock %}Stock: {{ product.stock_cantidad|floatformat:0 }} {{ product.get_unidad_display }}{% else %}Sin stock — cotizar disponibilidad{% endif %}</p>
     </div>
     {% if product.descripcion %}<p class="font-body-md text-body-md text-on-surface-variant">{{ product.descripcion }}</p>{% endif %}
+    {% if product.caracteristicas %}<ul class="flex flex-col gap-1">{% for t in product.caracteristicas %}<li class="font-body-sm text-body-sm text-on-surface flex items-start gap-2"><span class="text-secondary font-bold">✓</span>{{ t }}</li>{% endfor %}</ul>{% endif %}
+    {% if product.colores %}<div class="flex flex-wrap items-center gap-2">{% for c in product.colores %}<span class="inline-flex items-center gap-1.5 font-body-sm text-body-sm text-on-surface-variant border border-outline-variant rounded-full pl-1 pr-2.5 py-0.5"><span class="inline-block w-4 h-4 rounded-full" style="background:{{ c.hex }}"></span>{{ c.nombre }}</span>{% endfor %}</div>{% endif %}
     <div class="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-space-md">
       <h2 class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Ficha técnica</h2>
       {% for k, v in product.ficha_tecnica.items %}<div class="flex justify-between py-1.5 border-b border-outline-variant/20 font-body-sm text-body-sm"><span class="text-on-surface-variant">{{ k }}</span><span class="font-semibold">{{ v }}</span></div>{% endfor %}

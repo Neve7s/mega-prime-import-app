@@ -1,4 +1,11 @@
 {# Formulario por secciones en rejilla: sections = [{title, fields, full, wide}] #}
+<style>
+  .img-drop{display:flex;gap:12px;align-items:center;border:1.5px dashed #d4d4d8;border-radius:12px;padding:12px;background:#fafafa;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s;}
+  .img-drop:hover{border-color:#D4AF37;background:#fffdf5;}
+  .img-drop.dragging{border-color:#D4AF37;background:#fdf6e3;box-shadow:0 0 0 3px rgba(212,175,55,.25);}
+  .img-drop input[type="file"]{display:none;}
+  .img-drop .file-name{color:#0A0A0B;font-weight:600;}
+</style>
 <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
 {% for sec in sections %}
 <div class="bg-white border rounded-xl p-5 {% if sec.wide %}xl:col-span-2{% endif %}">
@@ -10,7 +17,27 @@
     <label class="text-xs font-bold uppercase tracking-wider text-gray-700" for="{{ field.id_for_label }}">
       {{ field.label }}{% if field.field.required %} *{% endif %}
     </label>
+    {% if field.field.widget.input_type == "file" %}
+    <label class="img-drop" data-drop for="{{ field.id_for_label }}">
+      <span data-prev class="shrink-0 w-28 h-20 flex items-center justify-center rounded-lg border bg-white overflow-hidden">
+        {% if field.value %}<img src="/media/{{ field.value }}" alt="actual" class="max-h-20 w-auto object-contain" />
+        {% else %}<span class="text-3xl">🖼</span>{% endif %}
+      </span>
+      <span>
+        <span class="block text-sm font-bold">{% if field.value %}Cambiar imagen{% else %}Subir imagen{% endif %} <span class="font-normal text-gray-400">— arrastra aquí o haz clic</span></span>
+        <span class="block text-xs text-gray-400 mt-0.5">JPG, PNG o WebP · se optimiza sola{% if field.value %} · actual: {{ field.value }}{% endif %}</span>
+        <span class="block text-xs file-name mt-0.5" data-fname></span>
+      </span>
+      <input type="file" name="{{ field.html_name }}" id="{{ field.id_for_label }}" accept="image/*" />
+    </label>
+    {% if field.value %}
+    <label class="text-xs text-gray-500 flex items-center gap-1.5 mt-1 cursor-pointer w-fit">
+      <input type="checkbox" name="{{ field.html_name }}-clear" class="accent-red-600 w-3.5 h-3.5" /> 🗑 Quitar imagen actual
+    </label>
+    {% endif %}
+    {% else %}
     {{ field }}
+    {% endif %}
     {% if field.help_text %}<p class="text-xs text-gray-400">{{ field.help_text }}</p>{% endif %}
     {% for e in field.errors %}<p class="text-xs font-semibold text-red-700">{{ e }}</p>{% endfor %}
   </div>
@@ -21,3 +48,42 @@
 {% endfor %}
 </div>
 {% for e in form.non_field_errors %}<p class="text-sm font-semibold text-red-700 bg-red-50 border border-red-200 rounded p-2 mt-3">{{ e }}</p>{% endfor %}
+<script>
+(function(){
+  document.querySelectorAll('[data-drop]').forEach(function(dz){
+    var input = dz.querySelector('input[type="file"]');
+    var prev = dz.querySelector('[data-prev]');
+    var fname = dz.querySelector('[data-fname]');
+    if (!input) return;
+    function showFile(f){
+      if (fname) fname.textContent = '📎 ' + f.name;
+      if (f.type && f.type.indexOf('image/') === 0 && prev) {
+        var rd = new FileReader();
+        rd.onload = function(ev){
+          prev.innerHTML = '';
+          var im = document.createElement('img');
+          im.src = ev.target.result;
+          im.className = 'max-h-20 w-auto object-contain';
+          prev.appendChild(im);
+        };
+        rd.readAsDataURL(f);
+      }
+    }
+    ['dragenter', 'dragover'].forEach(function(ev){
+      dz.addEventListener(ev, function(e){ e.preventDefault(); dz.classList.add('dragging'); });
+    });
+    ['dragleave', 'drop'].forEach(function(ev){
+      dz.addEventListener(ev, function(e){ e.preventDefault(); dz.classList.remove('dragging'); });
+    });
+    dz.addEventListener('drop', function(e){
+      if (e.dataTransfer && e.dataTransfer.files.length) {
+        input.files = e.dataTransfer.files;
+        showFile(e.dataTransfer.files[0]);
+      }
+    });
+    input.addEventListener('change', function(){
+      if (input.files.length) showFile(input.files[0]);
+    });
+  });
+})();
+</script>

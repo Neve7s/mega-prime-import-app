@@ -5,13 +5,14 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from calculator.models import TaxRule
 from cart.models import Order, OrderItem, SaleCode
-from catalog.models import Product
+from catalog.models import Category, Product, TipoProducto
 from core.models import SiteSettings
 
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 from .auth import staff_only
-from .forms import OrderEstadoForm, ProductForm, SaleCodeForm, SiteSettingsForm
+from .forms import (CategoryForm, OrderEstadoForm, ProductForm, SaleCodeForm,
+                    SiteSettingsForm, TipoForm)
 
 
 @staff_only
@@ -71,20 +72,150 @@ def productos(request):
     return render(request, "panel/productos.html", {"productos": prods[:100], "q": q})
 
 
+def _parse_colores(raw):
+    """Lista [{nombre, hex}] saneada (máx 20). Lo inválido se descarta."""
+    import json as _json
+    import re as _re
+
+    try:
+        data = _json.loads(raw or "[]")
+    except (ValueError, TypeError):
+        return []
+    out = []
+    if not isinstance(data, list):
+        return []
+    for it in data[:20]:
+        if not isinstance(it, dict):
+            continue
+        nombre = str(it.get("nombre") or "").strip()[:40]
+        hexv = str(it.get("hex") or "").strip()
+        if not nombre:
+            continue
+        if not _re.fullmatch(r"#[0-9a-fA-F]{6}", hexv):
+            continue
+        out.append({"nombre": nombre, "hex": hexv.upper()})
+    return out
+
+
+def _parse_caracteristicas(raw):
+    """Lista de textos saneada (máx 30, c/u máx 120)."""
+    import json as _json
+
+    try:
+        data = _json.loads(raw or "[]")
+    except (ValueError, TypeError):
+        return []
+    if not isinstance(data, list):
+        return []
+    return [str(t).strip()[:120] for t in data[:30] if str(t or "").strip()]
+
+
 @staff_only
 def producto_editar(request, pk=None):
+    import json as _json
+
     obj = get_object_or_404(Product, pk=pk) if pk else None
     form = ProductForm(request.POST or None, request.FILES or None, instance=obj)
     if request.method == "POST" and form.is_valid():
-        form.save()
+        prod = form.save()
+        prod.colores = _parse_colores(request.POST.get("colores_json", "[]"))
+        prod.caracteristicas = _parse_caracteristicas(
+            request.POST.get("caracteristicas_json", "[]"))
+        prod.save(update_fields=["colores", "caracteristicas"])
         return redirect("panel:productos")
     sections = [
-        {"wide": True, "title": "Datos básicos", "fields": ["categoria", "sku", "nombre", "slug", "descripcion"], "full": ["descripcion"]},
+        {"wide": True, "title": "Datos básicos", "fields": ["categoria", "tipo", "sku", "nombre", "slug", "badge", "descripcion"], "full": ["descripcion"]},
         {"wide": False, "title": "Precio y stock", "fields": ["precio_mayor", "unidad", "stock_cantidad", "en_stock"], "full": []},
         {"wide": False, "title": "Origen y visibilidad", "fields": ["origen", "destacado", "activo"], "full": []},
         {"wide": True, "title": "Imagen", "fields": ["imagen", "imagen_url"], "full": ["imagen", "imagen_url"]},
     ]
-    return render(request, "panel/producto_form.html", {"form": form, "obj": obj, "sections": sections})
+    if request.method == "POST":
+        # Re-pinta lo enviado (ya saneado) para no perder lo editado.
+        # Ojo: se pasan objetos, json_script serializa (no pre-serializar).
+        colores_init = _parse_colores(
+            request.POST.get("colores_json", "[]"))
+        caracteristicas_init = _parse_caracteristicas(
+            request.POST.get("caracteristicas_json", "[]"))
+    else:
+        colores_init = list(getattr(obj, "colores", None) or [])
+        caracteristicas_init = list(
+            getattr(obj, "caracteristicas", None) or [])
+    ctx = {"form": form, "obj": obj, "sections": sections,
+           "colores_init": colores_init,
+           "caracteristicas_init": caracteristicas_init}
+    return render(request, "panel/producto_form.html", ctx)
+
+
+@staff_only
+def categorias(request):
+    from django.db.models import Count
+
+    cats = Category.objects.annotate(n_productos=Count("productos")).all()
+    return render(request, "panel/categorias.html", {"categorias": cats})
+
+
+@staff_only
+def categoria_editar(request, pk=None):
+    obj = get_object_or_404(Category, pk=pk) if pk else None
+    form = CategoryForm(request.POST or None, instance=obj)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        return redirect("panel:categorias")
+    return render(request, "panel/categoria_form.html", {"form": form, "obj": obj})
+
+
+@staff_only
+def categoria_eliminar(request, pk):
+    from django.db.models import ProtectedError
+
+    obj = get_object_or_404(Category, pk=pk)
+    error = ""
+    if request.method == "POST":
+        try:
+            obj.delete()
+            return redirect("panel:categorias")
+        except ProtectedError:
+            error = ("No se puede eliminar: tiene %d producto(s) asociados. "
+                     "Muévelos a otra categoría primero."
+                     % obj.productos.count())
+    return render(request, "panel/categoria_eliminar.html",
+                  {"obj": obj, "error": error})
+
+
+@staff_only
+def tipos(request):
+    from django.db.models import Count
+
+    tipos = TipoProducto.objects.annotate(n_productos=Count("productos")).all()
+    return render(request, "panel/tipos.html", {"tipos": tipos})
+
+
+@staff_only
+def tipo_editar(request, pk=None):
+    obj = get_object_or_404(TipoProducto, pk=pk) if pk else None
+    form = TipoForm(request.POST or None, instance=obj)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        return redirect("panel:tipos")
+    return render(request, "panel/tipo_form.html", {"form": form, "obj": obj})
+
+
+@staff_only
+def tipo_eliminar(request, pk):
+    from django.db.models import ProtectedError
+
+    obj = get_object_or_404(TipoProducto, pk=pk)
+    error = ""
+    if request.method == "POST":
+        try:
+            obj.delete()
+            return redirect("panel:tipos")
+        except ProtectedError:
+            error = ("No se puede eliminar: tiene %d producto(s) asociados. "
+                     "Muévelos a otro tipo primero."
+                     % obj.productos.count())
+    return render(request, "panel/tipo_eliminar.html",
+                  {"obj": obj, "error": error})
 
 
 @staff_only

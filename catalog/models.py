@@ -16,6 +16,26 @@ class Category(models.Model):
         return self.nombre
 
 
+class TipoProducto(models.Model):
+    """Familia del producto (Teja Roma, Cumbreros, Tornillería…).
+
+    Eje de filtro y búsqueda junto a Categoría. Gestionable en el panel.
+    """
+
+    nombre = models.CharField(max_length=80)
+    slug = models.SlugField(unique=True)
+    descripcion = models.CharField(max_length=255, blank=True)
+    orden = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["orden", "nombre"]
+        verbose_name = "Tipo de producto"
+        verbose_name_plural = "Tipos de producto"
+
+    def __str__(self) -> str:
+        return self.nombre
+
+
 class Product(models.Model):
     UNIDAD_M2 = "m2"
     UNIDAD_UNID = "unid"
@@ -23,9 +43,20 @@ class Product(models.Model):
     UNIDADES = [(UNIDAD_M2, "m²"), (UNIDAD_UNID, "Unidad"), (UNIDAD_SET, "Set")]
 
     categoria = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="productos")
+    tipo = models.ForeignKey(TipoProducto, on_delete=models.PROTECT,
+                             related_name="productos", null=True, blank=True)
     sku = models.CharField(max_length=40, unique=True)
     nombre = models.CharField(max_length=160)
     slug = models.SlugField(unique=True)
+    badge = models.CharField(
+        max_length=40, blank=True, default="",
+        help_text="Etiqueta destacada, ej MÁS VENDIDO. Vacío = sin etiqueta.")
+    colores = models.JSONField(
+        default=list, blank=True,
+        help_text="Lista de {nombre, hex}, ej [{nombre: Rojo, hex: #8B2500}].")
+    caracteristicas = models.JSONField(
+        default=list, blank=True,
+        help_text="Lista de textos destacados del producto.")
     descripcion = models.TextField(blank=True)
     precio_mayor = models.DecimalField(max_digits=12, decimal_places=2)
     moneda = models.CharField(max_length=3, default="USD")

@@ -1,10 +1,17 @@
 from django.contrib import admin
 
-from .models import Category, Product, ProductImage
+from .models import Category, Product, ProductImage, TipoProducto
 
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
+    list_display = ("nombre", "slug", "orden")
+    list_editable = ("orden",)
+    prepopulated_fields = {"slug": ("nombre",)}
+
+
+@admin.register(TipoProducto)
+class TipoProductoAdmin(admin.ModelAdmin):
     list_display = ("nombre", "slug", "orden")
     list_editable = ("orden",)
     prepopulated_fields = {"slug": ("nombre",)}
@@ -17,8 +24,8 @@ class ProductImageInline(admin.TabularInline):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ("sku", "nombre", "categoria", "precio_mayor", "stock_cantidad", "en_stock", "activo")
-    list_filter = ("categoria", "en_stock", "activo", "destacado")
+    list_display = ("sku", "nombre", "categoria", "tipo", "precio_mayor", "stock_cantidad", "en_stock", "activo")
+    list_filter = ("categoria", "tipo", "en_stock", "activo", "destacado")
     search_fields = ("sku", "nombre")
     list_editable = ("precio_mayor", "stock_cantidad", "en_stock", "activo")
     prepopulated_fields = {"slug": ("nombre",)}

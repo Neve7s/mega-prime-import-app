@@ -8,7 +8,30 @@
   #calc-app input[type="number"]::-webkit-outer-spin-button,
   #calc-app input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   #calc-app input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
-  #tasas-box input[type="number"] { width: 68px; }
+  /* ── Botones de acción uniformes ── */
+  #calc-app .calc-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .35rem;
+    font-size: 12px; font-weight: 700; line-height: 1; white-space: nowrap;
+    padding: .55rem .85rem; border-radius: .55rem; border: 1px solid transparent;
+    cursor: pointer; transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  #calc-app .calc-btn--ghost { background: #fff; border-color: #e4e4e7; color: #3f3f46; }
+  #calc-app .calc-btn--ghost:hover { background: #f4f4f5; border-color: #d4d4d8; }
+  #calc-app .calc-btn--save { background: #047857; color: #fff; }
+  #calc-app .calc-btn--save:hover { background: #065f46; }
+  #calc-app .calc-btn--report { background: #0A0A0B; color: #D4AF37; }
+  #calc-app .calc-btn--report:hover { background: #27272a; }
+  #calc-app .calc-btn:disabled { opacity: .55; cursor: wait; }
+
+  /* ── Campos y títulos de configuración uniformes ── */
+  #calc-app .calc-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  #calc-app .calc-field > span {
+    font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+    color: #a1a1aa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #calc-app .calc-group-title {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #71717a;
+  }
   #items-table { table-layout: fixed; }
   #items-table input[type="number"] {
     width: 100%; min-width: 0; border: 1px solid transparent;
@@ -26,99 +49,214 @@
   #items-table input[name="nombre"]:focus { outline: none; border-color: #D4AF37; box-shadow: 0 0 0 2px rgba(212,175,55,.2); }
   /* Tasas y gastos: mismo estilo planilla, sin caja hasta editar */
   #tasas-box input[type="number"], #gastos-box input[type="number"] {
-    border: 1px solid transparent; background: transparent;
+    border: 1px solid transparent; background: transparent; width: 100%;
   }
   #tasas-box input[type="number"]:hover, #gastos-box input[type="number"]:hover { border-color: #e4e4e7; background: #fff; }
   #tasas-box input[type="number"]:focus, #gastos-box input[type="number"]:focus {
     outline: none; border-color: #D4AF37; background: #fff; box-shadow: 0 0 0 2px rgba(212,175,55,.2);
   }
+  #calc-app .calc-config { min-width: 0; }
+  #calc-app .calc-compact-field {
+    display: grid; grid-template-columns: minmax(0, 1fr) 76px; align-items: center;
+    gap: .3rem; min-width: 0; padding: .15rem 0; border-bottom: 1px solid #f0f0f1;
+  }
+  #calc-app .calc-compact-field > span {
+    min-width: 0; font-size: 10px; font-weight: 600; color: #71717a;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #calc-app .calc-config input[type="number"] {
+    height: 25px; border: 1px solid #e4e4e7; border-radius: .3rem;
+    background: #fff; padding: 2px 5px; font-size: 11px; line-height: 1;
+  }
+  #calc-app .calc-config input[type="number"]:hover { border-color: #d4d4d8; }
+  #calc-app .calc-config input[type="number"]:focus {
+    border-color: #D4AF37; box-shadow: 0 0 0 1px rgba(212,175,55,.16);
+  }
+  #calc-app .calc-rate-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .15rem .65rem; }
+  #calc-app .calc-expense-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: .5rem; }
+  #calc-app .calc-expense-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .15rem .65rem; }
+  #calc-app .calc-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 .75rem; }
+  #calc-app .calc-metric {
+    display: flex; align-items: baseline; justify-content: space-between; gap: .35rem;
+    min-width: 0; border-bottom: 1px solid #e4e4e7; background: transparent; padding: .2rem .1rem;
+  }
+  #calc-app .calc-metric-value { overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+  #calc-app .calc-metric-detail {
+    display: flex; align-items: baseline; justify-content: space-between; gap: .35rem;
+    min-width: 0; border-bottom: 1px solid #f0f0f1; background: transparent; padding: .2rem .1rem;
+  }
+  #calc-app .calc-metric-detail > span:first-child {
+    min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  #calc-app .calc-metric-detail > span:last-child { flex: 0 0 auto; }
+  #calc-app .calc-metric-total {
+    padding: .2rem .4rem; border: 0; border-radius: .25rem; background: #0A0A0B;
+  }
+  #calc-app .calc-metric-tax { background: #fffbeb; }
+  #calc-app .calc-overview-grid {
+    display: grid; grid-template-columns: minmax(0, 1fr); gap: .5rem; align-items: start;
+  }
+  #calc-app .calc-overview-grid > * { min-width: 0; }
+  #calc-app .calc-overview-grid > .calc-expense-panel { order: 1; }
+  #calc-app .calc-overview-grid > .calc-report-panel { order: 2; }
+  #calc-app .calc-config-panel { min-width: 0; }
+  #calc-app .calc-config-panel .calc-config-heading {
+    display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+    margin-bottom: .2rem;
+  }
+  #calc-app .product-actions {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end;
+    gap: .35rem; margin-left: auto;
+  }
+  #calc-app .product-actions .calc-btn {
+    min-height: 30px; padding: .42rem .65rem; font-size: 11px;
+  }
+  #calc-app .product-actions .calc-btn--template { color: #0369a1; border-color: #bae6fd; }
+  #calc-app .product-actions .calc-btn--template:hover { background: #f0f9ff; border-color: #7dd3fc; }
+  #calc-app .product-actions .calc-btn--upload { color: #047857; border-color: #a7f3d0; }
+  #calc-app .product-actions .calc-btn--upload:hover { background: #ecfdf5; border-color: #6ee7b7; }
+  #calc-app .product-actions .calc-btn--add { color: #3f3f46; border-color: #d4d4d8; }
+  #calc-app .product-actions .calc-btn--add:hover { background: #f4f4f5; border-color: #a1a1aa; }
+  #calc-app .calc-header-controls {
+    display: flex; flex-wrap: wrap; align-items: end; justify-content: flex-end; gap: .4rem;
+  }
+  #calc-app .calc-header-controls .calc-field { flex: 0 1 175px; }
+  #calc-app .calc-header-controls .calc-field > span { font-size: 9px; }
+  #calc-app .calc-header-controls input,
+  #calc-app .calc-header-controls select { height: 32px; padding: .3rem .5rem; font-size: 12px; }
+  #calc-app .calc-header-controls .calc-btn { height: 32px; padding: .45rem .65rem; font-size: 11px; }
+  #calc-app .calc-header-status { flex: 1 0 100%; text-align: right; min-height: 0; }
+  @media (min-width: 640px) {
+    #calc-app .calc-rate-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .25rem .65rem; }
+    #calc-app .calc-compact-field { grid-template-columns: minmax(0, 1fr) 64px; }
+    #calc-app .calc-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #calc-app .calc-header-status { flex-basis: auto; text-align: left; }
+  }
+  @media (min-width: 1024px) {
+    #calc-app .calc-rate-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    #calc-app .calc-overview-grid { grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); }
+    #calc-app .calc-expense-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+    #calc-app .calc-expense-fields { grid-template-columns: minmax(0, 1fr); }
+    #calc-app .calc-origin-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #calc-app .calc-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (min-width: 1280px) {
+    #calc-app .calc-overview-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: .65rem; }
+    #calc-app .calc-header-controls { flex-wrap: nowrap; }
+    #calc-app .calc-header-controls .calc-field { flex-basis: 165px; }
+    #calc-app .calc-header-controls .calc-field:first-child { flex-basis: 175px; }
+    #calc-app .calc-header-status { flex-basis: 0; }
+  }
 </style>
 
-<!-- ══ Encabezado: título + impuestos generales al otro lado ══ -->
-<div class="bg-white border rounded-xl px-4 py-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-  <div>
-    <h1 class="text-xl font-bold leading-tight">Calculadora de impuestos</h1>
-  </div>
-  <div class="flex items-end gap-2 panel-form" id="tasas-box">
-    <label class="text-[10px] font-bold text-gray-500 uppercase">Seguro %<input id="t_seguro" type="number" step="0.01" min="0" value="{{ tasas.seguro_pct }}" /></label>
-    <label class="text-[10px] font-bold text-gray-500 uppercase">Ad-Val %<input id="t_adval" type="number" step="0.01" min="0" value="{{ tasas.advalorem_pct }}" /></label>
-    <label class="text-[10px] font-bold text-gray-500 uppercase">Fondinfa %<input id="t_fond" type="number" step="0.01" min="0" value="{{ tasas.fondinfa_pct }}" /></label>
-    <label class="text-[10px] font-bold text-gray-500 uppercase" title="IVA de importación: se paga en aduana y SUMA al costo">IVA import. %<input id="t_iva" type="number" step="0.01" min="0" value="{{ tasas.iva_pct }}" /></label>
-    <label class="text-[10px] font-bold text-gray-500 uppercase" title="IVA de venta: se cobra al cliente en la factura, NO es costo">IVA venta %<input id="t_iva_pvp" type="number" step="0.01" min="0" value="{{ tasas.iva_pvp_pct }}" /></label>
-  </div>
-</div>
-
-<!-- ══ Gastos origen / destino compactos ══ -->
-<div class="bg-white border rounded-xl px-4 py-3 mt-3">
-  <div class="grid md:grid-cols-2 gap-x-6 gap-y-1 panel-form" id="gastos-box">
-    <div>
-      <div class="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-1">Origen</div>
-      <div class="grid grid-cols-2 gap-2">
-        <label class="text-[11px] text-gray-500">Flete intl<input id="g_flete_intl" type="number" step="0.01" min="0" value="{{ gastos.flete_intl }}" /></label>
-        <label class="text-[11px] text-gray-500">ISD / Comisión<input id="g_comision" type="number" step="0.01" min="0" value="{{ gastos.comision_banco }}" /></label>
-      </div>
+<!-- ══ Título y controles del embarque ══ -->
+<div class="bg-white border rounded-lg px-3 py-2">
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-2">
+    <div class="shrink-0">
+      <h1 class="text-lg font-bold leading-tight">Calculadora de impuestos</h1>
+      <p class="text-[10px] text-gray-400">Gestión y costos del embarque</p>
     </div>
-    <div>
-      <div class="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-1">Destino</div>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <label class="text-[11px] text-gray-500">Flete local<input id="g_flete_local" type="number" step="0.01" min="0" value="{{ gastos.flete_local }}" /></label>
-        <label class="text-[11px] text-gray-500">Bodegaje<input id="g_bodegaje" type="number" step="0.01" min="0" value="{{ gastos.bodegaje }}" /></label>
-        <label class="text-[11px] text-gray-500">Devolución<input id="g_devol" type="number" step="0.01" min="0" value="{{ gastos.devolucion }}" /></label>
-        <label class="text-[11px] text-gray-500">Admin<input id="g_admin" type="number" step="0.01" min="0" value="{{ gastos.gasto_admin }}" /></label>
-        <label class="text-[11px] text-gray-500">Descarga<input id="g_descarga" type="number" step="0.01" min="0" value="{{ gastos.descarga }}" /></label>
-        <label class="text-[11px] text-gray-500">Agente<input id="g_agente" type="number" step="0.01" min="0" value="{{ gastos.agente }}" /></label>
-        <label class="text-[11px] text-gray-500">Otros x und<input id="g_otros" type="number" step="0.01" min="0" value="{{ gastos.otros_unit }}" /></label>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ Resumen en vivo + descargar ══ -->
-<div class="bg-white border rounded-xl px-4 py-3 mt-3">
-  <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
-    <h2 class="font-bold text-xs uppercase tracking-wide">Reporte del embarque <span class="font-normal normal-case text-gray-400">(se actualiza solo)</span></h2>
-    <div class="flex flex-wrap items-center gap-2">
-      <input id="embarque-nombre" type="text" maxlength="100" value="{{ embarque_nombre }}" placeholder="Nombre del embarque" aria-label="Nombre del embarque" class="border rounded-lg px-2 py-1.5 text-xs" />
-      <button type="button" id="btn-guardar" class="bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg">Guardar embarque</button>
-      <button type="button" id="btn-reporte" class="bg-[#0A0A0B] text-[#D4AF37] text-xs font-bold px-4 py-2 rounded-lg">⬇ Descargar reporte</button>
-    </div>
-  </div>
-  <div id="calc-error" class="hidden text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-2"></div>
-  <div class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-2 text-center">
-    <div class="bg-gray-50 rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-gray-400 font-bold">FOB</div><div class="text-xs font-bold" id="r_fob">–</div></div>
-    <div class="bg-gray-50 rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-gray-400 font-bold">Flete</div><div class="text-xs font-bold" id="r_flete">–</div></div>
-    <div class="bg-gray-50 rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-gray-400 font-bold">Seguro</div><div class="text-xs font-bold" id="r_seguro">–</div></div>
-    <div class="bg-gray-50 rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-gray-400 font-bold">Ad-Val</div><div class="text-xs font-bold" id="r_adval">–</div></div>
-    <div class="bg-gray-50 rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-gray-400 font-bold">Fondinfa</div><div class="text-xs font-bold" id="r_fond">–</div></div>
-    <div class="bg-gray-50 rounded-lg px-1 py-1.5" title="IVA pagado en aduana: parte del costo"><div class="text-[9px] uppercase text-gray-400 font-bold">IVA imp.</div><div class="text-xs font-bold" id="r_iva">–</div></div>
-    <div class="bg-gray-50 rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-gray-400 font-bold">Total trib.</div><div class="text-xs font-bold" id="r_trib">–</div></div>
-    <div class="bg-gray-50 rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-gray-400 font-bold">Locales</div><div class="text-xs font-bold" id="r_locales">–</div></div>
-    <div class="bg-[#0A0A0B] rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-[#D4AF37] font-bold">Gran total</div><div class="text-xs font-bold text-[#D4AF37]" id="r_gran">–</div></div>
-    <div class="bg-amber-50 border border-amber-200 rounded-lg px-1 py-1.5"><div class="text-[9px] uppercase text-amber-600 font-bold">Imp+IVA</div><div class="text-xs font-bold" id="r_imp">–</div></div>
-  </div>
-</div>
-
-<!-- ══ Productos: tabla editable con resultados en vivo ══ -->
-<div class="bg-white border rounded-xl px-4 py-3 mt-3">
-  <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
-    <h2 class="font-bold text-xs uppercase tracking-wide">Productos</h2>
-    <div class="flex items-center gap-2 panel-form">
-      <label class="text-[10px] font-bold uppercase text-gray-400">Embarque
-        <select id="embarque-sel" style="min-width:150px">
+    <div class="calc-header-controls panel-form">
+      <label class="calc-field">
+        <span>Embarque</span>
+        <select id="embarque-sel">
           {% for key, embarque in embarques_opciones %}
           <option value="{{ key }}" {% if embarque_sel == key %}selected{% endif %}>{{ embarque.nombre }}</option>
           {% endfor %}
           <option value="nuevo" {% if embarque_sel == "nuevo" %}selected{% endif %}>➕ Nuevo embarque (vacío)</option>
         </select>
       </label>
-      <button type="button" id="add-row" class="text-xs font-bold bg-gray-100 border rounded-lg px-3 py-1.5 hover:bg-gray-200">+ Agregar</button>
+      <label class="calc-field">
+        <span>Nombre</span>
+        <input id="embarque-nombre" type="text" maxlength="100" value="{{ embarque_nombre }}" placeholder="Nombre del embarque" />
+      </label>
+      <button type="button" id="btn-guardar" class="calc-btn calc-btn--save">Guardar</button>
+      <button type="button" id="btn-reporte" class="calc-btn calc-btn--report">⬇ Reporte</button>
+      <span id="import-status" class="calc-header-status text-[10px] text-gray-500" role="status" aria-live="polite"></span>
     </div>
   </div>
-  <div class="flex flex-wrap items-center gap-2 mb-2">
-    <a href="{% url 'panel:calculadora_plantilla' %}" class="text-xs font-bold text-sky-700 underline">⬇ Descargar plantilla Excel</a>
-    <label for="excel-file" class="text-xs font-bold bg-gray-100 border rounded-lg px-3 py-1.5 cursor-pointer">Subir plantilla Excel</label>
-    <input id="excel-file" type="file" accept=".xlsx" class="hidden" />
-    <span id="import-status" class="text-xs text-gray-500" role="status" aria-live="polite"></span>
+</div>
+
+<!-- ══ Impuestos debajo del encabezado ══ -->
+<section class="calc-config-panel bg-white border rounded-lg px-2.5 py-1.5 mt-2" aria-label="Impuestos generales">
+  <label class="calc-compact-field"><span>Impuestos: </span></label>
+  <div class="calc-config panel-form border-t border-gray-100 pt-1" id="tasas-box">
+    <div class="calc-rate-grid">
+      <label class="calc-compact-field"><span>Seguro</span><input id="t_seguro" type="number" step="0.01" min="0" value="{{ tasas.seguro_pct }}" /></label>
+      <label class="calc-compact-field"><span>Ad-Valorem</span><input id="t_adval" type="number" step="0.01" min="0" value="{{ tasas.advalorem_pct }}" /></label>
+      <label class="calc-compact-field"><span>Fodinfa</span><input id="t_fond" type="number" step="0.01" min="0" value="{{ tasas.fondinfa_pct }}" /></label>
+      <label class="calc-compact-field" title="IVA de importación: se paga en aduana y suma al costo"><span>IVA importación</span><input id="t_iva" type="number" step="0.01" min="0" value="{{ tasas.iva_pct }}" /></label>
+      <label class="calc-compact-field" title="IVA de venta cobrado al cliente; no es costo"><span>IVA venta</span><input id="t_iva_pvp" type="number" step="0.01" min="0" value="{{ tasas.iva_pvp_pct }}" /></label>
+    </div>
+  </div>
+</section>
+
+<!-- ══ Gastos y reporte alineados ══ -->
+<div class="calc-overview-grid mt-2">
+<section class="calc-expense-panel calc-config-panel bg-white border rounded-lg px-2.5 py-1.5" aria-label="Gastos de origen y destino">
+  <div class="calc-expense-grid panel-form border-t border-gray-100 pt-1" id="gastos-box">
+    <section class="calc-config" aria-label="Gastos de origen">
+      <div class="flex items-center justify-between gap-2 mb-1">
+        <h3 class="calc-group-title">Gastos origen</h3>
+      </div>
+      <div class="calc-expense-fields">
+        <label class="calc-compact-field"><span>Flete internacional</span><input id="g_flete_intl" type="number" step="0.01" min="0" value="{{ gastos.flete_intl }}" /></label>
+        <label class="calc-compact-field"><span>ISD / Comisión</span><input id="g_comision" type="number" step="0.01" min="0" value="{{ gastos.comision_banco }}" /></label>
+      </div>
+    </section>
+    <section class="calc-config" aria-label="Gastos de destino">
+      <div class="flex items-center justify-between gap-2 mb-1">
+        <h3 class="calc-group-title">Gastos destino</h3>
+      </div>
+      <div class="calc-expense-fields calc-origin-fields">
+        <label class="calc-compact-field"><span>Flete local</span><input id="g_flete_local" type="number" step="0.01" min="0" value="{{ gastos.flete_local }}" /></label>
+        <label class="calc-compact-field"><span>Bodegaje</span><input id="g_bodegaje" type="number" step="0.01" min="0" value="{{ gastos.bodegaje }}" /></label>
+      </div>
+      <div class="calc-expense-fields calc-origin-fields">
+        <label class="calc-compact-field"><span>Devolución</span><input id="g_devol" type="number" step="0.01" min="0" value="{{ gastos.devolucion }}" /></label>
+        <label class="calc-compact-field"><span>Administración</span><input id="g_admin" type="number" step="0.01" min="0" value="{{ gastos.gasto_admin }}" /></label>
+      </div>
+      <div class="calc-expense-fields calc-origin-fields">  
+        <label class="calc-compact-field"><span>Descarga</span><input id="g_descarga" type="number" step="0.01" min="0" value="{{ gastos.descarga }}" /></label>
+        <label class="calc-compact-field"><span>Agente</span><input id="g_agente" type="number" step="0.01" min="0" value="{{ gastos.agente }}" /></label>
+      </div>
+      <div class="calc-expense-fields calc-origin-fields">  
+        <label class="calc-compact-field"><span>Otros por unidad</span><input id="g_otros" type="number" step="0.01" min="0" value="{{ gastos.otros_unit }}" /></label>
+      </div>
+    </section>
+  </div>
+</section>
+
+<div class="calc-report-panel bg-white border rounded-lg px-2.5 py-1.5">
+  <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-0.5">
+    <h2 class="font-bold text-xs uppercase tracking-wide">Reporte del embarque</h2>
+  </div>
+  <div id="calc-error" class="hidden text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-2 py-1 mb-1"></div>
+  <div class="calc-metrics">
+    <div class="calc-metric"><span class="text-[9px] uppercase tracking-wide text-gray-400 font-bold">FOB productos</span><span class="calc-metric-value text-[11px] font-bold text-gray-800" id="r_fob">–</span></div>
+    <div class="calc-metric"><span class="text-[9px] uppercase tracking-wide text-gray-400 font-bold">Tributos importación</span><span class="calc-metric-value text-[11px] font-bold text-sky-800" id="r_trib">–</span></div>
+    <div class="calc-metric"><span class="text-[9px] uppercase tracking-wide text-gray-400 font-bold">Gastos locales</span><span class="calc-metric-value text-[11px] font-bold text-amber-800" id="r_locales">–</span></div>
+    <div class="calc-metric calc-metric-total"><span class="text-[9px] uppercase tracking-wide text-[#D4AF37] font-bold">Gran total</span><span class="calc-metric-value text-[11px] font-bold text-[#D4AF37]" id="r_gran">–</span></div>
+    <div class="calc-metric-detail"><span class="text-[9px] uppercase text-gray-400 font-bold">Flete internacional</span><span class="calc-metric-value text-[10px] font-semibold" id="r_flete">–</span></div>
+    <div class="calc-metric-detail"><span class="text-[9px] uppercase text-gray-400 font-bold">Seguro</span><span class="calc-metric-value text-[10px] font-semibold" id="r_seguro">–</span></div>
+    <div class="calc-metric-detail"><span class="text-[9px] uppercase text-gray-400 font-bold">Ad-Valorem</span><span class="calc-metric-value text-[10px] font-semibold" id="r_adval">–</span></div>
+    <div class="calc-metric-detail"><span class="text-[9px] uppercase text-gray-400 font-bold">Fodinfa</span><span class="calc-metric-value text-[10px] font-semibold" id="r_fond">–</span></div>
+    <div class="calc-metric-detail" title="IVA pagado en aduana"><span class="text-[9px] uppercase text-gray-400 font-bold">IVA importación</span><span class="calc-metric-value text-[10px] font-semibold" id="r_iva">–</span></div>
+    <div class="calc-metric-detail calc-metric-tax"><span class="text-[9px] uppercase text-amber-700 font-bold">Aranceles + IVA</span><span class="calc-metric-value text-[10px] font-semibold text-amber-900" id="r_imp">–</span></div>
+  </div>
+</div>
+</div><!-- /calc-overview-grid -->
+
+<!-- ══ Productos: tabla editable con resultados en vivo ══ -->
+<div class="bg-white border rounded-xl px-4 py-3 mt-3">
+  <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+    <h2 class="font-bold text-xs uppercase tracking-wide">Productos</h2>
+    <div class="product-actions">
+    <a href="{% url 'panel:calculadora_plantilla' %}" class="calc-btn calc-btn--ghost calc-btn--template" title="Descargar plantilla Excel con gastos y productos">⬇ Plantilla Excel</a>
+    <label for="excel-file" class="calc-btn calc-btn--ghost calc-btn--upload cursor-pointer" title="Subir una plantilla Excel">⬆ Subir Excel</label>
+     <input id="excel-file" type="file" accept=".xlsx" class="hidden" />
+    <button type="button" id="add-row" class="calc-btn calc-btn--ghost calc-btn--add">＋ Agregar producto</button>
+    </div>
   </div>
   <p class="text-[11px] text-gray-400 mb-2">Ingrese <b>CANT</b> y <b>PRECIO FOB unit.</b> → el <b>FOB total</b> (Cant × Precio) se calcula solo. Todo se recalcula al escribir. ⚙ o click derecho = impuestos propios del producto.</p>
   <div class="overflow-x-auto">

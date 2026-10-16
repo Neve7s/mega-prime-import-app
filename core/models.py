@@ -1,4 +1,21 @@
+from django.core.validators import RegexValidator
 from django.db import models
+
+COLOR_HEX = RegexValidator(
+    regex=r"^#[0-9a-fA-F]{6}$",
+    message="Usa formato hexadecimal, ej #D4AF37.",
+)
+
+FUENTES = [
+    ("IBM Plex Sans", "IBM Plex Sans (actual texto)"),
+    ("Libre Franklin", "Libre Franklin (actual títulos)"),
+    ("Inter", "Inter"),
+    ("Barlow", "Barlow"),
+    ("Montserrat", "Montserrat"),
+    ("Poppins", "Poppins"),
+    ("Playfair Display", "Playfair Display"),
+    ("Oswald", "Oswald"),
+]
 
 
 class SiteSettings(models.Model):
@@ -69,6 +86,39 @@ class SiteSettings(models.Model):
         blank=True,
     )
 
+    color_primario = models.CharField(
+        max_length=7, default="#D4AF37", validators=[COLOR_HEX],
+        help_text="Dorado / acento principal: botones dorados y textos destacados.",
+    )
+    color_secundario = models.CharField(
+        max_length=7, default="#0A0A0B", validators=[COLOR_HEX],
+        help_text="Base oscura: botones negros, secciones oscuras y titulares.",
+    )
+    color_fondo = models.CharField(
+        max_length=7, default="#FAFAF8", validators=[COLOR_HEX],
+        help_text="Fondo principal de la página.",
+    )
+    color_tarjetas = models.CharField(
+        max_length=7, default="#FFFFFF", validators=[COLOR_HEX],
+        help_text="Fondo de tarjetas y secciones.",
+    )
+    color_texto = models.CharField(
+        max_length=7, default="#131313", validators=[COLOR_HEX],
+        help_text="Color del texto principal.",
+    )
+    color_acento = models.CharField(
+        max_length=7, default="#15803D", validators=[COLOR_HEX],
+        help_text="Acento verde: botones de WhatsApp y estados.",
+    )
+    fuente_cuerpo = models.CharField(
+        max_length=40, choices=FUENTES, default="IBM Plex Sans",
+        help_text="Tipografía del texto general.",
+    )
+    fuente_titulos = models.CharField(
+        max_length=40, choices=FUENTES, default="Libre Franklin",
+        help_text="Tipografía de títulos y encabezados.",
+    )
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -99,6 +149,18 @@ class SiteSettings(models.Model):
     @property
     def whatsapp_link(self) -> str:
         return f"https://wa.me/{self.whatsapp_number}"
+
+    @property
+    def fuentes_google_href(self) -> str:
+        """URL de Google Fonts con las 2 tipografías elegidas (sin duplicar)."""
+        fams = []
+        for f in (self.fuente_cuerpo, self.fuente_titulos):
+            if f and f not in fams:
+                fams.append(f)
+        qs = "&family=".join(
+            f.replace(" ", "+") + ":wght@400;500;600;700;800" for f in fams
+        )
+        return f"https://fonts.googleapis.com/css2?family={qs}&display=swap"
 
 
 class HeroStat(models.Model):

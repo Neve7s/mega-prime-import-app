@@ -1,12 +1,191 @@
 {% extends "panel/base_panel.html" %}
 {% block title %}Ajustes — Panel{% endblock %}
 {% block content %}
-<div class="flex items-center gap-4">
-  <h1 class="text-2xl font-bold">Ajustes del sitio</h1>
-  {% if form.instance.logo %}<img src="{{ form.instance.logo.url }}" alt="logo" class="h-10 w-auto bg-[#0A0A0B] rounded px-2 py-1" />{% endif %}
-  {% if ok %}<p class="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-1">Guardado ✓</p>{% endif %}
+<style>
+  .img-drop{display:flex;gap:12px;align-items:center;border:1.5px dashed #d4d4d8;border-radius:12px;padding:12px;background:#fafafa;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s;}
+  .img-drop:hover{border-color:#D4AF37;background:#fffdf5;}
+  .img-drop.dragging{border-color:#D4AF37;background:#fdf6e3;box-shadow:0 0 0 3px rgba(212,175,55,.25);}
+  .img-drop input[type="file"]{display:none;}
+  .img-drop .file-name{color:#0A0A0B;font-weight:600;}
+</style>
+<div class="flex flex-wrap items-center gap-3">
+  <div>
+    <h1 class="text-2xl font-bold">Contenido del sitio</h1>
+    <p class="text-sm text-gray-500">Edita por secciones — los cambios se ven al instante en la web.</p>
+  </div>
+  <div class="ml-auto flex items-center gap-2">
+    {% if form.instance.logo %}<img src="{{ form.instance.logo.url }}" alt="logo actual" class="h-10 w-auto rounded border bg-white px-2 py-1" title="Logo actual" />{% endif %}
+    {% if ok %}<p class="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-1">Guardado ✓</p>{% endif %}
+    <a target="_blank" href="{% url 'core:home' %}" class="text-sm font-bold bg-white border rounded-lg px-3 py-1.5 hover:bg-gray-50">🌐 Ver sitio</a>
+  </div>
 </div>
-<form method="post" enctype="multipart/form-data" class="panel-form mt-4 w-full">{% csrf_token %}
-{% include "panel/_form_sections.html" with form=form sections=sections %}
-<button class="mt-4 bg-[#0A0A0B] text-[#D4AF37] px-8 py-2.5 rounded-lg font-bold">Guardar ajustes</button></form>
+
+{# Subtabs #}
+<div class="flex flex-wrap gap-2 mt-4" role="tablist" aria-label="Secciones de ajustes">
+{% for tab in tabs %}
+  <button type="button" role="tab" data-tab="{{ tab.key }}"
+    class="aj-tab text-sm font-bold px-4 py-2 rounded-lg border transition-colors {% if tab.key == active_tab %}bg-[#0A0A0B] text-[#D4AF37] border-[#0A0A0B]{% else %}bg-white text-gray-600 border-gray-200 hover:border-[#D4AF37]{% endif %}"
+    aria-selected="{% if tab.key == active_tab %}true{% else %}false{% endif %}">{{ tab.icon }} {{ tab.title }}</button>
+{% endfor %}
+</div>
+
+<form method="post" enctype="multipart/form-data" class="panel-form mt-4">{% csrf_token %}
+{% for tab in tabs %}
+  <section data-panel="{{ tab.key }}" role="tabpanel" class="{% if tab.key != active_tab %}hidden{% endif %} bg-white border rounded-xl p-5">
+    <h2 class="font-bold">{{ tab.icon }} {{ tab.title }}</h2>
+    <p class="text-sm text-gray-500 mb-4">{{ tab.desc }}</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {% for field in form %}
+    {% if field.name in tab.fields %}
+      <div class="flex flex-col gap-1 {% if field.name in tab.full %}md:col-span-2{% endif %}">
+        <label class="text-xs font-bold uppercase tracking-wider text-gray-700" for="{{ field.id_for_label }}">
+          {{ field.label }}{% if field.field.required %} *{% endif %}
+        </label>
+        {% if field.field.widget.input_type == "file" %}
+        <label class="img-drop" data-drop for="{{ field.id_for_label }}">
+          <span data-prev class="shrink-0 w-28 h-20 flex items-center justify-center rounded-lg border bg-white overflow-hidden">
+            {% if field.value %}<img src="/media/{{ field.value }}" alt="actual" class="max-h-20 w-auto object-contain" />
+            {% else %}<span class="text-3xl">🖼</span>{% endif %}
+          </span>
+          <span>
+            <span class="block text-sm font-bold">{% if field.value %}Cambiar imagen{% else %}Subir imagen{% endif %} <span class="font-normal text-gray-400">— arrastra aquí o haz clic</span></span>
+            <span class="block text-xs text-gray-400 mt-0.5">{% if field.name == "logo" %}PNG sin fondo · se optimiza a 800px{% elif field.name == "hero_image" %}Foto ancha · se optimiza a 1920px{% else %}JPG, PNG o WebP{% endif %}{% if field.value %} · actual: {{ field.value }}{% endif %}</span>
+            <span class="block text-xs file-name mt-0.5" data-fname></span>
+          </span>
+          <input type="file" name="{{ field.html_name }}" id="{{ field.id_for_label }}" accept="image/*" />
+        </label>
+        {% if field.value %}
+        <label class="text-xs text-gray-500 flex items-center gap-1.5 mt-1 cursor-pointer w-fit">
+          <input type="checkbox" name="{{ field.html_name }}-clear" class="accent-red-600 w-3.5 h-3.5" /> 🗑 Quitar imagen actual
+        </label>
+        {% endif %}
+        {% endif %}
+        {% if field.field.widget.input_type != "file" %}
+        {% if field.name|slice:":6" == "color_" %}
+        <div class="flex items-center gap-2">
+          <input type="color" value="{{ field.value|default:'#000000' }}" data-color-for="{{ field.id_for_label }}" class="h-9 w-12 shrink-0 cursor-pointer rounded border border-gray-300 bg-white p-0.5" aria-label="Elegir {{ field.label }}" />
+          {{ field }}
+        </div>
+        {% else %}
+        {{ field }}
+        {% endif %}
+        {% endif %}
+        {% for name, hint in hints.items %}{% if name == field.name %}<p class="text-xs text-gray-400">📍 {{ hint }}</p>{% endif %}{% endfor %}
+        {% if field.name not in hints %}{% if field.help_text %}<p class="text-xs text-gray-400">{{ field.help_text }}</p>{% endif %}{% endif %}
+        {% for e in field.errors %}<p class="text-xs font-semibold text-red-700">{{ e }}</p>{% endfor %}
+      </div>
+    {% endif %}
+    {% endfor %}
+    </div>
+    {% if tab.key == "tema" %}
+    <h3 class="font-bold text-sm mt-6 mb-1">🎨 Paletas predefinidas</h3>
+    <p class="text-sm text-gray-500 mb-3">Un clic rellena los 6 colores y las 2 fuentes. Guarda cambios para aplicarla.</p>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+      {% for p in paletas %}
+      <button type="button" data-paleta="{{ forloop.counter0 }}"
+        class="text-sm font-bold text-white rounded-lg px-3 py-2.5 shadow"
+        style="background:linear-gradient(135deg, {{ p.colores.color_primario }} 0%, {{ p.colores.color_secundario }} 100%)">{{ p.nombre }}</button>
+      {% endfor %}
+    </div>
+    {{ paletas|json_script:"paletas-data" }}
+    {% endif %}
+  </section>
+{% endfor %}
+{% for e in form.non_field_errors %}<p class="text-sm font-semibold text-red-700 bg-red-50 border border-red-200 rounded p-2 mt-3">{{ e }}</p>{% endfor %}
+
+<div class="sticky bottom-0 mt-4 bg-[#f4f4f5]/95 backdrop-blur border-t py-3 flex items-center justify-end gap-2">
+  <span class="text-xs text-gray-400 mr-auto">Se guardan todas las secciones juntas.</span>
+  <button class="bg-[#0A0A0B] text-[#D4AF37] px-8 py-2.5 rounded-lg font-bold">💾 Guardar cambios</button>
+</div>
+</form>
+
+<script>
+(function(){
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.aj-tab'));
+  var panels = Array.prototype.slice.call(document.querySelectorAll('[data-panel]'));
+  function activate(key, push){
+    tabs.forEach(function(b){
+      var on = b.dataset.tab === key;
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+      b.className = 'aj-tab text-sm font-bold px-4 py-2 rounded-lg border transition-colors ' + (on ? 'bg-[#0A0A0B] text-[#D4AF37] border-[#0A0A0B]' : 'bg-white text-gray-600 border-gray-200 hover:border-[#D4AF37]');
+    });
+    panels.forEach(function(p){ p.classList.toggle('hidden', p.dataset.panel !== key); });
+    if (push !== false) { try { history.replaceState(null, '', '#tab-' + key); } catch (e) {} }
+  }
+  tabs.forEach(function(b){ b.addEventListener('click', function(){ activate(b.dataset.tab); }); });
+  var h = (location.hash || '').replace('#tab-', '');
+  if (h && document.querySelector('[data-panel="' + h + '"]')) activate(h, false);
+
+  // Dropzones de imagen: preview inmediata + nombre del archivo
+  document.querySelectorAll('[data-drop]').forEach(function(dz){
+    var input = dz.querySelector('input[type="file"]');
+    var prev = dz.querySelector('[data-prev]');
+    var fname = dz.querySelector('[data-fname]');
+    if (!input) return;
+    function showFile(f){
+      if (fname) fname.textContent = '📎 ' + f.name;
+      if (f.type && f.type.indexOf('image/') === 0 && prev) {
+        var rd = new FileReader();
+        rd.onload = function(ev){
+          prev.innerHTML = '';
+          var im = document.createElement('img');
+          im.src = ev.target.result;
+          im.className = 'max-h-20 w-auto object-contain';
+          prev.appendChild(im);
+        };
+        rd.readAsDataURL(f);
+      }
+    }
+    ['dragenter', 'dragover'].forEach(function(ev){
+      dz.addEventListener(ev, function(e){ e.preventDefault(); dz.classList.add('dragging'); });
+    });
+    ['dragleave', 'drop'].forEach(function(ev){
+      dz.addEventListener(ev, function(e){ e.preventDefault(); dz.classList.remove('dragging'); });
+    });
+    dz.addEventListener('drop', function(e){
+      if (e.dataTransfer && e.dataTransfer.files.length) {
+        input.files = e.dataTransfer.files;
+        showFile(e.dataTransfer.files[0]);
+      }
+    });
+    input.addEventListener('change', function(){
+      if (input.files.length) showFile(input.files[0]);
+    });
+  });
+
+  // Sincroniza swatch <-> hex en campos de color
+  function normHex(v){
+    v = String(v || '').trim();
+    if (/^[0-9a-fA-F]{6}$/.test(v)) v = '#' + v;
+    return /^#[0-9a-fA-F]{6}$/.test(v) ? v : null;
+  }
+  document.querySelectorAll('input[type="color"][data-color-for]').forEach(function(sw){
+    var txt = document.getElementById(sw.dataset.colorFor);
+    if (!txt) return;
+    sw.addEventListener('input', function(){ txt.value = sw.value; });
+    txt.addEventListener('input', function(){ var n = normHex(txt.value); if (n) sw.value = n; });
+  });
+  // Paletas predefinidas: rellenan colores + fuentes
+  var palData = document.getElementById('paletas-data');
+  var PALETAS = palData ? JSON.parse(palData.textContent) : [];
+  document.querySelectorAll('[data-paleta]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var p = PALETAS[parseInt(btn.dataset.paleta, 10)];
+      if (!p) return;
+      Object.keys(p.colores || {}).forEach(function(name){
+        var txt = document.querySelector('input[name="' + name + '"]');
+        if (txt) {
+          txt.value = p.colores[name];
+          txt.dispatchEvent(new Event('input', {bubbles: true}));
+        }
+      });
+      Object.keys(p.fuentes || {}).forEach(function(name){
+        var sel = document.querySelector('select[name="' + name + '"]');
+        if (sel) sel.value = p.fuentes[name];
+      });
+      activate('tema', false);
+    });
+  });
+})();
+</script>
 {% endblock %}

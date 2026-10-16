@@ -27,6 +27,61 @@ class PanelTest(TestCase):
         self.assertEqual(self.client.get("/webadmin/ajustes/").status_code, 200)
         self.assertEqual(self.client.get("/webadmin/calculadora/").status_code, 200)
 
+    def test_ajustes_subtabs_y_guardado(self):
+        self.client.force_login(self.staff)
+        html = self.client.get("/webadmin/ajustes/").content.decode()
+        for tab in ("marca", "portada", "contacto", "redes", "seo", "pie", "tema"):
+            self.assertIn('data-tab="%s"' % tab, html)
+        self.assertIn("Paletas predefinidas", html)
+        self.assertIn('data-drop', html)  # dropzones de imagen
+        resp = self.client.post("/webadmin/ajustes/", data={
+            "site_name": "MP", "meta_title": "T", "tagline": "S",
+            "company_legal": "E", "hero_city": "C", "hero_title": "HT",
+            "hero_cta_primary": "A", "hero_cta_secondary": "B",
+            "whatsapp_number": "593900000000", "phone_display": "+593",
+            "email": "v@v.com", "address": "D", "cities": "C",
+            "schedule": "H", "footer_text": "F",
+            "color_primario": "#D4AF37", "color_secundario": "#0A0A0B",
+            "color_fondo": "#FAFAF8", "color_tarjetas": "#FFFFFF",
+            "color_texto": "#131313", "color_acento": "#15803D",
+            "fuente_cuerpo": "Inter", "fuente_titulos": "Montserrat",
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("Guardado", resp.content.decode())
+        from core.models import SiteSettings
+        site = SiteSettings.get_solo()
+        self.assertEqual(site.fuente_titulos, "Montserrat")
+        self.assertEqual(site.color_primario, "#D4AF37")
+
+    def test_ajustes_sube_logo(self):
+        import io
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+
+        buf = io.BytesIO()
+        Image.new("RGB", (100, 60), (212, 175, 55)).save(buf, "PNG")
+        logo = SimpleUploadedFile("logo-test.png", buf.getvalue(), "image/png")
+        self.client.force_login(self.staff)
+        resp = self.client.post("/webadmin/ajustes/", data={
+            "site_name": "MP", "meta_title": "T", "tagline": "S",
+            "company_legal": "E", "hero_city": "C", "hero_title": "HT",
+            "hero_cta_primary": "A", "hero_cta_secondary": "B",
+            "whatsapp_number": "593900000000", "phone_display": "+593",
+            "email": "v@v.com", "address": "D", "cities": "C",
+            "schedule": "H", "footer_text": "F",
+            "color_primario": "#D4AF37", "color_secundario": "#0A0A0B",
+            "color_fondo": "#FAFAF8", "color_tarjetas": "#FFFFFF",
+            "color_texto": "#131313", "color_acento": "#15803D",
+            "fuente_cuerpo": "Inter", "fuente_titulos": "Inter",
+            "logo": logo,
+        })
+        self.assertEqual(resp.status_code, 200)
+        from core.models import SiteSettings
+        site = SiteSettings.get_solo()
+        self.assertTrue(bool(site.logo))
+        self.assertIn("logo-test", site.logo.name)
+
     def test_staff_crea_producto_desde_panel(self):
         from catalog.models import Category, Product
 

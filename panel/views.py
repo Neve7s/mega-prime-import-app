@@ -144,6 +144,111 @@ def codigo_detalle(request, codigo):
     return render(request, "panel/codigo_detalle.html", {"sale": sale, "wa": wa})
 
 
+AJUSTES_TABS = [
+    {"key": "marca", "icon": "🏷", "title": "Marca",
+     "desc": "Nombre, slogan, logo y razón social. Aparecen en el header y el footer de toda la web.",
+     "fields": ["site_name", "tagline", "logo", "company_legal"], "full": ["logo"]},
+    {"key": "portada", "icon": "🖼", "title": "Portada",
+     "desc": "La pantalla principal: ciudad, titular, botones, foto y cifras destacadas.",
+     "fields": ["hero_city", "hero_title", "hero_subtitle", "hero_cta_primary",
+                "hero_cta_secondary", "hero_spec_label", "hero_image",
+                "hero_telemetry_1_value", "hero_telemetry_1_label",
+                "hero_telemetry_2_value", "hero_telemetry_2_label"],
+     "full": ["hero_subtitle", "hero_image"]},
+    {"key": "contacto", "icon": "📞", "title": "Contacto",
+     "desc": "WhatsApp, teléfono, correo, dirección, ciudades y horario de atención.",
+     "fields": ["whatsapp_number", "whatsapp_default_message", "phone_display",
+                "email", "address", "cities", "schedule"],
+     "full": ["whatsapp_default_message", "address"]},
+    {"key": "redes", "icon": "🔗", "title": "Redes",
+     "desc": "Enlaces de los iconos de redes sociales del pie de página.",
+     "fields": ["facebook_url", "instagram_url", "tiktok_url"], "full": []},
+    {"key": "seo", "icon": "🔍", "title": "SEO",
+     "desc": "Título y descripción con los que la web aparece en Google.",
+     "fields": ["meta_title", "meta_description"], "full": ["meta_description"]},
+    {"key": "pie", "icon": "🧾", "title": "Pie de página",
+     "desc": "Texto descriptivo largo del footer.",
+     "fields": ["footer_text"], "full": ["footer_text"]},
+    {"key": "tema", "icon": "🎨", "title": "Tema",
+     "desc": "Colores, fondos y fuentes de toda la página. Elige una paleta o personaliza.",
+     "fields": ["color_primario", "color_secundario", "color_fondo",
+                "color_tarjetas", "color_texto", "color_acento",
+                "fuente_cuerpo", "fuente_titulos"], "full": []},
+]
+
+PALETAS_TEMA = [
+    {"nombre": "Dorado & Negro",
+     "colores": {"color_primario": "#D4AF37", "color_secundario": "#0A0A0B",
+                 "color_fondo": "#FAFAF8", "color_tarjetas": "#FFFFFF",
+                 "color_texto": "#131313", "color_acento": "#15803D"},
+     "fuentes": {"fuente_cuerpo": "IBM Plex Sans", "fuente_titulos": "Libre Franklin"}},
+    {"nombre": "Verde & Negro",
+     "colores": {"color_primario": "#16A34A", "color_secundario": "#0A0A0B",
+                 "color_fondo": "#F7FAF7", "color_tarjetas": "#FFFFFF",
+                 "color_texto": "#131313", "color_acento": "#0E7C66"},
+     "fuentes": {"fuente_cuerpo": "Inter", "fuente_titulos": "Montserrat"}},
+    {"nombre": "Azul & Negro",
+     "colores": {"color_primario": "#2563EB", "color_secundario": "#0A0A0B",
+                 "color_fondo": "#F7F9FC", "color_tarjetas": "#FFFFFF",
+                 "color_texto": "#131313", "color_acento": "#0E7490"},
+     "fuentes": {"fuente_cuerpo": "Inter", "fuente_titulos": "Inter"}},
+    {"nombre": "Rojo & Negro",
+     "colores": {"color_primario": "#DC2626", "color_secundario": "#0A0A0B",
+                 "color_fondo": "#FBF7F7", "color_tarjetas": "#FFFFFF",
+                 "color_texto": "#131313", "color_acento": "#B45309"},
+     "fuentes": {"fuente_cuerpo": "Barlow", "fuente_titulos": "Oswald"}},
+    {"nombre": "Oscuro & Blanco",
+     "colores": {"color_primario": "#D4AF37", "color_secundario": "#000000",
+                 "color_fondo": "#111214", "color_tarjetas": "#1C1E21",
+                 "color_texto": "#F5F5F4", "color_acento": "#34D399"},
+     "fuentes": {"fuente_cuerpo": "Inter", "fuente_titulos": "Montserrat"}},
+    {"nombre": "Café & Marrón",
+     "colores": {"color_primario": "#B45309", "color_secundario": "#1C1410",
+                 "color_fondo": "#FAF7F2", "color_tarjetas": "#FFFFFF",
+                 "color_texto": "#1C1410", "color_acento": "#047857"},
+     "fuentes": {"fuente_cuerpo": "Poppins", "fuente_titulos": "Playfair Display"}},
+]
+
+AJUSTES_HINTS = {
+    "site_name": "Header, footer y título de la pestaña del navegador.",
+    "tagline": "Slogan bajo el nombre, en el header.",
+    "logo": "Logo del header y footer. Recomendado: PNG sin fondo. Vacío = emblema dorado.",
+    "company_legal": "Línea “Empresa: …” del footer.",
+    "hero_city": "Línea superior de la portada.",
+    "hero_title": "Titular grande de la portada.",
+    "hero_subtitle": "Párrafo bajo el titular de la portada.",
+    "hero_cta_primary": "Botón principal de la portada.",
+    "hero_cta_secondary": "Botón secundario de la portada.",
+    "hero_spec_label": "Etiqueta técnica pequeña de la portada.",
+    "hero_image": "Foto grande de la portada.",
+    "hero_telemetry_1_value": "Cifra destacada 1 de la portada.",
+    "hero_telemetry_1_label": "Etiqueta de la cifra 1.",
+    "hero_telemetry_2_value": "Cifra destacada 2 de la portada.",
+    "hero_telemetry_2_label": "Etiqueta de la cifra 2.",
+    "whatsapp_number": "Todos los botones de WhatsApp. Solo dígitos con código país (ej 593963796222).",
+    "whatsapp_default_message": "Mensaje que llega pre-llenado en el chat.",
+    "phone_display": "“Línea Directa” del header.",
+    "email": "Botón de correo y sección de contacto.",
+    "address": "Dirección en contacto y pie del sitio.",
+    "cities": "Ciudades en header y contacto.",
+    "schedule": "Horario en contacto y CTA.",
+    "facebook_url": "Icono Facebook del footer. Vacío = se oculta.",
+    "instagram_url": "Icono Instagram del footer. Vacío = se oculta.",
+    "tiktok_url": "Icono TikTok del footer. Vacío = se oculta.",
+    "meta_title": "Título azul en resultados de Google.",
+    "meta_description": "Descripción gris bajo el título en Google.",
+    "footer_text": "Párrafo descriptivo del pie de página.",
+    "color_primario": "Botones dorados y textos destacados.",
+    "color_secundario": "Botones oscuros, secciones oscuras y titulares.",
+    "color_fondo": "Fondo principal de la página.",
+    "color_tarjetas": "Fondo de tarjetas y secciones.",
+    "color_texto": "Texto principal de la página.",
+    "color_acento": "Botones de WhatsApp y estados.",
+    "fuente_cuerpo": "Tipografía del texto general.",
+    "fuente_titulos": "Tipografía de títulos.",
+}
+
+
 @staff_only
 def ajustes(request):
     site = SiteSettings.get_solo()
@@ -152,15 +257,19 @@ def ajustes(request):
     if request.method == "POST" and form.is_valid():
         form.save()
         ok = True
-    sections = [
-        {"wide": False, "title": "Branding", "fields": ["site_name", "tagline", "logo", "hero_image", "company_legal"], "full": ["logo", "hero_image"]},
-        {"wide": False, "title": "SEO", "fields": ["meta_title", "meta_description"], "full": ["meta_description"]},
-        {"wide": True, "title": "Hero", "fields": ["hero_city", "hero_title", "hero_subtitle", "hero_cta_primary", "hero_cta_secondary", "hero_spec_label", "hero_telemetry_1_value", "hero_telemetry_1_label", "hero_telemetry_2_value", "hero_telemetry_2_label"], "full": ["hero_subtitle"]},
-        {"wide": True, "title": "Contacto / WhatsApp", "fields": ["whatsapp_number", "whatsapp_default_message", "phone_display", "email", "address", "cities", "schedule"], "full": ["whatsapp_default_message"]},
-        {"wide": False, "title": "Redes", "fields": ["facebook_url", "instagram_url", "tiktok_url"], "full": []},
-        {"wide": False, "title": "Footer", "fields": ["footer_text"], "full": ["footer_text"]},
-    ]
-    return render(request, "panel/ajustes.html", {"form": form, "ok": ok, "sections": sections})
+    # Pestaña activa: la pedida, o la primera con errores de validación.
+    active_tab = request.GET.get("tab", "marca")
+    if form.errors:
+        for tab in AJUSTES_TABS:
+            if any(f in form.errors for f in tab["fields"]):
+                active_tab = tab["key"]
+                break
+    if active_tab not in [t["key"] for t in AJUSTES_TABS]:
+        active_tab = "marca"
+    return render(request, "panel/ajustes.html",
+                  {"form": form, "ok": ok, "tabs": AJUSTES_TABS,
+                   "hints": AJUSTES_HINTS, "active_tab": active_tab,
+                   "paletas": PALETAS_TEMA})
 
 
 @staff_only

@@ -1,0 +1,100 @@
+{% load panel_ui %}{# Modal de alta rápida de categoría/tipo. Requiere un CSRF token en la página. #}
+<dialog id="alta-rapida" aria-labelledby="alta-rapida-title" class="panel-dialog max-w-md">
+  <form id="alta-rapida-form">
+    {% csrf_token %}
+    <div class="flex items-center justify-between gap-4 border-b border-gray-200 px-5 py-3">
+      <h3 id="alta-rapida-title" class="text-base font-bold text-gray-900">Nuevo</h3>
+      <button type="button" class="icon-btn" id="ar-cerrar" aria-label="Cerrar">{% icon "cerrar" %}</button>
+    </div>
+    <div class="flex flex-col gap-3 px-5 py-4 panel-form">
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-bold uppercase tracking-wider text-gray-700" for="ar-nombre">Nombre *</label>
+        <input id="ar-nombre" name="nombre" required maxlength="80" />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-bold uppercase tracking-wider text-gray-700" for="ar-desc">Descripción</label>
+        <input id="ar-desc" name="descripcion" maxlength="255" />
+      </div>
+      <p id="alta-rapida-error" role="alert" class="hidden text-sm font-semibold text-red-700"></p>
+    </div>
+    <div class="flex justify-end gap-2 border-t border-gray-200 bg-gray-50/60 px-5 py-3">
+      <button type="button" id="ar-cancelar" class="btn btn-secondary">Cancelar</button>
+      <button type="submit" class="btn btn-primary">Crear</button>
+    </div>
+  </form>
+</dialog>
+<script>
+(function(){
+  if (window.__altaRapidaInit) return;
+  window.__altaRapidaInit = true;
+
+  var dlg = document.getElementById('alta-rapida');
+  var form = document.getElementById('alta-rapida-form');
+  if (!dlg || !form || !dlg.showModal) return;
+  var title = document.getElementById('alta-rapida-title');
+  var err = document.getElementById('alta-rapida-error');
+  var nombre = document.getElementById('ar-nombre');
+  var target = null, selectId = null, valueKey = 'id';
+  var cfg = {
+    categoria: {url: "{% url 'panel:categoria_rapida' %}", titulo: 'Nueva categoría', select: 'id_categoria'},
+    tipo:      {url: "{% url 'panel:tipo_rapido' %}",      titulo: 'Nuevo tipo de producto', select: 'id_tipo'}
+  };
+  var csrfInput = form.querySelector('input[name=csrfmiddlewaretoken]');
+  var csrf = csrfInput ? csrfInput.value : '';
+
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-alta-rapida]');
+    if (!btn) return;
+    target = btn.getAttribute('data-alta-rapida');
+    if (!cfg[target]) return;
+    // data-alta-select: select destino; data-alta-value: 'id' o 'slug'
+    selectId = btn.getAttribute('data-alta-select') || cfg[target].select;
+    valueKey = btn.getAttribute('data-alta-value') || 'id';
+    title.textContent = cfg[target].titulo;
+    form.reset();
+    err.classList.add('hidden');
+    dlg.showModal();
+    nombre.focus();
+  });
+
+  document.getElementById('ar-cancelar').addEventListener('click', function(){ dlg.close(); });
+  document.getElementById('ar-cerrar').addEventListener('click', function(){ dlg.close(); });
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    err.classList.add('hidden');
+    fetch(cfg[target].url, {
+      method: 'POST',
+      headers: {'X-CSRFToken': csrf, 'X-Requested-With': 'fetch'},
+      body: new URLSearchParams(new FormData(form))
+    })
+    .then(function(r){ return r.json().then(function(d){ return {ok: r.ok, data: d}; }); })
+    .then(function(res){
+      if (!res.ok || !res.data.ok) {
+        var msg = 'No se pudo crear.';
+        if (res.data && res.data.errors) {
+          msg = Object.keys(res.data.errors).map(function(k){
+            return res.data.errors[k].join(' ');
+          }).join(' ');
+        }
+        err.textContent = msg;
+        err.classList.remove('hidden');
+        return;
+      }
+      var sel = document.getElementById(selectId);
+      if (sel) {
+        var opt = document.createElement('option');
+        opt.value = res.data[valueKey];
+        opt.textContent = res.data.nombre;
+        sel.appendChild(opt);
+        sel.value = opt.value;
+      }
+      dlg.close();
+    })
+    .catch(function(){
+      err.textContent = 'Error de conexión.';
+      err.classList.remove('hidden');
+    });
+  });
+})();
+</script>

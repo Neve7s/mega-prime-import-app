@@ -1,0 +1,67 @@
+{% comment %}Abre/cierra diálogos y carga la ficha de producto dentro de #dialogo-editar.{% endcomment %}
+<script>
+(function(){
+  if (window.__modalEditarInit) return;
+  window.__modalEditarInit = true;
+
+  var dialogoEditar = document.getElementById('dialogo-editar');
+  var cuerpo = document.getElementById('dialogo-editar-cuerpo');
+  var titulo = document.getElementById('dialogo-editar-titulo');
+
+  document.addEventListener('click', function(e){
+    var abrir = e.target.closest('[data-dialogo]');
+    if (abrir) {
+      var d = document.getElementById(abrir.getAttribute('data-dialogo'));
+      if (d && !d.open) d.showModal();
+      return;
+    }
+    var cerrar = e.target.closest('[data-cerrar]');
+    if (cerrar) {
+      var dialogo = cerrar.closest('dialog');
+      if (dialogo) dialogo.close();
+    }
+  });
+
+  document.querySelectorAll('dialog.panel-dialog').forEach(function(d){
+    d.addEventListener('click', function(e){ if (e.target === d) d.close(); });
+  });
+
+  function reejecutarScripts(raiz){
+    raiz.querySelectorAll('script').forEach(function(viejo){
+      var nuevo = document.createElement('script');
+      Array.prototype.forEach.call(viejo.attributes, function(atributo){
+        nuevo.setAttribute(atributo.name, atributo.value);
+      });
+      nuevo.textContent = viejo.textContent;
+      viejo.replaceWith(nuevo);
+    });
+  }
+
+  document.addEventListener('click', function(e){
+    var boton = e.target.closest('[data-editar-producto]');
+    if (!boton || !dialogoEditar || !dialogoEditar.showModal) return;
+    e.preventDefault();
+    var url = boton.getAttribute('data-url');
+    if (!url) return;
+    titulo.textContent = boton.getAttribute('data-titulo') || 'Editar producto';
+    cuerpo.setAttribute('aria-busy', 'true');
+    cuerpo.innerHTML = '<div class="flex items-center gap-3 px-1 py-10 text-sm text-gray-500">'
+      + '<span class="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-800"></span>'
+      + 'Cargando ficha…</div>';
+    if (!dialogoEditar.open) dialogoEditar.showModal();
+
+    fetch(url, {headers: {'X-Requested-With': 'fetch'}})
+      .then(function(r){ if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(function(html){
+        cuerpo.innerHTML = html;
+        cuerpo.removeAttribute('aria-busy');
+        reejecutarScripts(cuerpo);
+        var primero = cuerpo.querySelector('input:not([type=hidden]), select, textarea');
+        if (primero) primero.focus();
+      })
+      .catch(function(){
+        window.location.href = url.replace(/[?&]modal=1/, '');
+      });
+  });
+})();
+</script>

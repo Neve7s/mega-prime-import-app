@@ -1,92 +1,23 @@
 {% extends "panel/base_panel.html" %}
+{% load panel_ui %}
 {% block title %}{% if obj %}Editar{% else %}Nuevo{% endif %} producto — Panel{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold">{% if obj %}Editar {{ obj.sku }}{% else %}Nuevo producto{% endif %}</h1>
-<form method="post" enctype="multipart/form-data" class="panel-form mt-4 w-full">{% csrf_token %}
-  {% include "panel/_form_sections.html" with form=form sections=sections %}
-  <div id="extras-grid" class="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start mt-4">
-    <div class="bg-white border rounded-xl p-5">
-      <h2 class="font-bold text-sm uppercase tracking-wider text-gray-500 mb-1">🎨 Colores disponibles</h2>
-      <p class="text-xs text-gray-400 mb-3">Se muestran como puntitos en la tarjeta y el detalle.</p>
-      <div id="colores-list" class="flex flex-col gap-2"></div>
-      <button type="button" id="color-add" class="mt-2 text-xs font-bold bg-gray-100 border rounded-lg px-3 py-1.5 hover:bg-gray-200">+ Agregar color</button>
-      <input type="hidden" name="colores_json" id="colores_json" value="" />
-    </div>
-    <div class="bg-white border rounded-xl p-5">
-      <h2 class="font-bold text-sm uppercase tracking-wider text-gray-500 mb-1">✓ Características</h2>
-      <p class="text-xs text-gray-400 mb-3">Lista de destacados que se ve en el detalle del producto.</p>
-      <div id="caracts-list" class="flex flex-col gap-2"></div>
-      <button type="button" id="caract-add" class="mt-2 text-xs font-bold bg-gray-100 border rounded-lg px-3 py-1.5 hover:bg-gray-200">+ Agregar característica</button>
-      <input type="hidden" name="caracteristicas_json" id="caracteristicas_json" value="" />
+<div class="mx-auto max-w-[1200px]">
+  <div class="flex items-start gap-3">
+    <a class="icon-btn mt-1" href="{% url 'panel:productos' %}{% if volver_categoria %}?categoria={{ volver_categoria.slug }}{% elif categoria_ctx %}?categoria={{ categoria_ctx.slug }}{% endif %}"
+       aria-label="Volver a Productos" title="Volver">{% icon "volver" %}</a>
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">
+        {% if obj %}Editar {{ obj.sku }}{% else %}Nuevo producto{% endif %}
+      </h1>
+      <p class="mt-1 text-sm text-gray-500">
+        {% if obj %}Actualiza la ficha; los cambios se ven al instante en la tienda.{% else %}Completa la ficha para publicarlo en el catálogo.{% endif %}
+      </p>
     </div>
   </div>
-  {{ colores_init|json_script:"colores-init" }}
-  {{ caracteristicas_init|json_script:"caracts-init" }}
-  <button class="mt-4 bg-[#0A0A0B] text-[#D4AF37] px-8 py-2.5 rounded-lg font-bold">Guardar producto</button>
-<script>
-(function(){
-  var coloresList = document.getElementById('colores-list');
-  var caractsList = document.getElementById('caracts-list');
-  var coloresJson = document.getElementById('colores_json');
-  var caractsJson = document.getElementById('caracteristicas_json');
-  function esc(s){
-    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-  }
-  function sync(){
-    var colores = [];
-    coloresList.querySelectorAll('.color-row').forEach(function(r){
-      colores.push({nombre: r.querySelector('[data-nombre]').value,
-                    hex: r.querySelector('[data-hex]').value});
-    });
-    coloresJson.value = JSON.stringify(colores);
-    var caracts = [];
-    caractsList.querySelectorAll('[data-caract]').forEach(function(i){
-      caracts.push(i.value);
-    });
-    caractsJson.value = JSON.stringify(caracts);
-  }
-  function colorRow(c){
-    c = c || {nombre: '', hex: '#D4AF37'};
-    var div = document.createElement('div');
-    div.className = 'color-row flex items-center gap-2 panel-form';
-    div.innerHTML = '<input type="color" data-hex value="' + esc(/^#[0-9a-fA-F]{6}$/.test(c.hex) ? c.hex : '#D4AF37') + '" class="h-8 w-10 shrink-0 cursor-pointer rounded border border-gray-300 bg-white p-0.5" />'
-      + '<input data-nombre placeholder="Nombre (ej Rojo Teja)" value="' + esc(c.nombre) + '" maxlength="40" />'
-      + '<button type="button" class="rm text-red-500 font-bold px-2">×</button>';
-    return div;
-  }
-  function caractRow(t){
-    var div = document.createElement('div');
-    div.className = 'flex items-center gap-2 panel-form';
-    div.innerHTML = '<input data-caract placeholder="Ej: Resistente a rayos UV" value="' + esc(t || '') + '" maxlength="120" />'
-      + '<button type="button" class="rm text-red-500 font-bold px-2">×</button>';
-    return div;
-  }
-  function boot(){
-    var colores = [], caracts = [];
-    try { colores = JSON.parse(document.getElementById('colores-init').textContent) || []; } catch (e) {}
-    try { caracts = JSON.parse(document.getElementById('caracts-init').textContent) || []; } catch (e) {}
-    colores.forEach(function(c){ coloresList.appendChild(colorRow(c)); });
-    caracts.forEach(function(t){ caractsList.appendChild(caractRow(t)); });
-    sync();
-  }
-  document.getElementById('color-add').addEventListener('click', function(){
-    if (coloresList.querySelectorAll('.color-row').length >= 20) return;
-    coloresList.appendChild(colorRow()); sync();
-  });
-  document.getElementById('caract-add').addEventListener('click', function(){
-    if (caractsList.querySelectorAll('[data-caract]').length >= 30) return;
-    caractsList.appendChild(caractRow('')); sync();
-  });
-  document.getElementById('extras-grid').addEventListener('click', function(e){
-    if (e.target && e.target.classList.contains('rm')) {
-      e.target.closest('div').remove(); sync();
-    }
-  });
-  [coloresList, caractsList].forEach(function(box){
-    box.addEventListener('input', sync);
-  });
-  boot();
-})();
-</script>
-</form>
+  <div class="mt-4">
+    {% include "panel/_producto_form_body.html" %}
+  </div>
+</div>
+{% include "panel/_alta_rapida.html" %}
 {% endblock %}

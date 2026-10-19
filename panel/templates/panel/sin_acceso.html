@@ -1,0 +1,21 @@
+﻿{% extends "panel/base_panel.html" %}
+{% load panel_ui %}
+{% block title %}Sin acceso â€” Panel{% endblock %}
+{% block content %}
+<div class="mx-auto flex max-w-md flex-col items-center gap-3 py-16 text-center">
+  <span class="flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+    {% icon "bloqueado" clase="w-6 h-6" %}
+  </span>
+  <h1 class="text-xl font-bold text-gray-900">Sin acceso a esta secciÃ³n</h1>
+  <p class="text-sm text-gray-500">
+    {% if seccion %}Tu cuenta no tiene habilitada la secciÃ³n <strong>{{ seccion }}</strong>.
+    PÃ­dele al dueÃ±o que te la asigne.{% else %}Tu cuenta no tiene secciones habilitadas.
+    PÃ­dele al dueÃ±o que te asigne alguna.{% endif %}
+  </p>
+  {% if seccion %}
+  <a class="btn btn-secondary mt-2" href="{% url 'panel:dashboard' %}">{% icon "volver" %}Volver al inicio</a>
+  {% else %}
+  <a class="btn btn-secondary mt-2" href="{% url 'panel:salir' %}">{% icon "salir" %}Salir</a>
+  {% endif %}
+</div>
+{% endblock %}

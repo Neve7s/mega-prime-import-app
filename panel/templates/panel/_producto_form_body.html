@@ -1,0 +1,99 @@
+{% load panel_ui %}<form method="post" enctype="multipart/form-data" class="panel-form"{% if form_action %} action="{{ form_action }}"{% endif %}>{% csrf_token %}
+  {% include "panel/_form_sections.html" with form=form sections=sections %}
+  <div id="extras-grid" class="mt-4 grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
+    <div class="rounded-xl border border-gray-200 bg-white p-5">
+      <h2 class="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-gray-500">
+        {% icon "estrella" clase="w-4 h-4 text-[#D4AF37]" %}Colores disponibles
+      </h2>
+      <p class="mb-3 text-xs text-gray-400">Se muestran como puntitos en la tarjeta y el detalle.</p>
+      <div id="colores-list" class="flex flex-col gap-2"></div>
+      <button type="button" id="color-add" class="mt-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-100">+ Agregar color</button>
+      <input type="hidden" name="colores_json" id="colores_json" value="" />
+    </div>
+    <div class="rounded-xl border border-gray-200 bg-white p-5">
+      <h2 class="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-gray-500">
+        {% icon "guardar" clase="w-4 h-4 text-emerald-600" %}Características
+      </h2>
+      <p class="mb-3 text-xs text-gray-400">Lista de destacados que se ve en el detalle del producto.</p>
+      <div id="caracts-list" class="flex flex-col gap-2"></div>
+      <button type="button" id="caract-add" class="mt-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-100">+ Agregar característica</button>
+      <input type="hidden" name="caracteristicas_json" id="caracteristicas_json" value="" />
+    </div>
+  </div>
+  {{ colores_init|json_script:"colores-init" }}
+  {{ caracteristicas_init|json_script:"caracts-init" }}
+  <div class="mt-5 flex items-center gap-2">
+    <button class="btn btn-primary">{% icon "guardar" clase="w-4 h-4" %}Guardar producto</button>
+    {% if en_modal %}
+    <button type="button" class="btn btn-secondary" data-cerrar>Cancelar</button>
+    {% else %}
+    <a class="btn btn-secondary"
+       href="{% url 'panel:productos' %}{% if volver_categoria %}?categoria={{ volver_categoria.slug }}{% elif categoria_ctx %}?categoria={{ categoria_ctx.slug }}{% endif %}">Cancelar</a>
+    {% endif %}
+  </div>
+<script>
+(function(){
+  var coloresList = document.getElementById('colores-list');
+  var caractsList = document.getElementById('caracts-list');
+  var coloresJson = document.getElementById('colores_json');
+  var caractsJson = document.getElementById('caracteristicas_json');
+  function esc(s){
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  }
+  function sync(){
+    var colores = [];
+    coloresList.querySelectorAll('.color-row').forEach(function(r){
+      colores.push({nombre: r.querySelector('[data-nombre]').value,
+                    hex: r.querySelector('[data-hex]').value});
+    });
+    coloresJson.value = JSON.stringify(colores);
+    var caracts = [];
+    caractsList.querySelectorAll('[data-caract]').forEach(function(i){
+      caracts.push(i.value);
+    });
+    caractsJson.value = JSON.stringify(caracts);
+  }
+  function colorRow(c){
+    c = c || {nombre: '', hex: '#D4AF37'};
+    var div = document.createElement('div');
+    div.className = 'color-row flex items-center gap-2 panel-form';
+    div.innerHTML = '<input type="color" data-hex value="' + esc(/^#[0-9a-fA-F]{6}$/.test(c.hex) ? c.hex : '#D4AF37') + '" class="h-8 w-10 shrink-0 cursor-pointer rounded border border-gray-300 bg-white p-0.5" />'
+      + '<input data-nombre placeholder="Nombre (ej Rojo Teja)" value="' + esc(c.nombre) + '" maxlength="40" />'
+      + '<button type="button" class="rm text-red-500 font-bold px-2">×</button>';
+    return div;
+  }
+  function caractRow(t){
+    var div = document.createElement('div');
+    div.className = 'flex items-center gap-2 panel-form';
+    div.innerHTML = '<input data-caract placeholder="Ej: Resistente a rayos UV" value="' + esc(t || '') + '" maxlength="120" />'
+      + '<button type="button" class="rm text-red-500 font-bold px-2">×</button>';
+    return div;
+  }
+  function boot(){
+    var colores = [], caracts = [];
+    try { colores = JSON.parse(document.getElementById('colores-init').textContent) || []; } catch (e) {}
+    try { caracts = JSON.parse(document.getElementById('caracts-init').textContent) || []; } catch (e) {}
+    colores.forEach(function(c){ coloresList.appendChild(colorRow(c)); });
+    caracts.forEach(function(t){ caractsList.appendChild(caractRow(t)); });
+    sync();
+  }
+  document.getElementById('color-add').addEventListener('click', function(){
+    if (coloresList.querySelectorAll('.color-row').length >= 20) return;
+    coloresList.appendChild(colorRow()); sync();
+  });
+  document.getElementById('caract-add').addEventListener('click', function(){
+    if (caractsList.querySelectorAll('[data-caract]').length >= 30) return;
+    caractsList.appendChild(caractRow('')); sync();
+  });
+  document.getElementById('extras-grid').addEventListener('click', function(e){
+    if (e.target && e.target.classList.contains('rm')) {
+      e.target.closest('div').remove(); sync();
+    }
+  });
+  [coloresList, caractsList].forEach(function(box){
+    box.addEventListener('input', sync);
+  });
+  boot();
+})();
+</script>
+</form>

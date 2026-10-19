@@ -1,0 +1,78 @@
+{% extends "panel/base_panel.html" %}
+{% load panel_ui %}
+{% block title %}Posibles duplicados — Panel{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-[1100px]">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div class="flex items-start gap-3">
+      <a class="icon-btn mt-1" href="{% url 'panel:productos' %}" aria-label="Volver a Productos" title="Volver">{% icon "volver" %}</a>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Posibles duplicados</h1>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500">
+          Productos con el mismo nombre (sin distinguir tildes, mayúsculas ni espacios) dentro de la misma categoría.
+        </p>
+      </div>
+    </div>
+    <span class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800">
+      {% icon "duplicados" clase="w-3.5 h-3.5" %}
+      {{ n_grupos }} grupo{{ n_grupos|pluralize }} repetido{{ n_grupos|pluralize }} · {{ n_productos }} producto{{ n_productos|pluralize }}
+    </span>
+  </div>
+
+  {% for grupo in grupos %}
+  <div class="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white">
+    <div class="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-bold text-amber-900">
+      {% icon "alerta" clase="w-4 h-4 text-amber-600" %}
+      {{ grupo.0.categoria.nombre }} <span class="text-amber-400">·</span> «{{ grupo.0.nombre }}»
+    </div>
+    <div class="divide-y divide-gray-100">
+      {% for p in grupo %}
+      <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-mono text-[11px] text-gray-500">{{ p.sku }}</span>
+            <span class="truncate font-semibold text-gray-900">{{ p.nombre }}</span>
+          </div>
+          <div class="mt-0.5 text-xs text-gray-500">
+            USD {{ p.precio_mayor|floatformat:2 }} · stock {{ p.stock_cantidad|floatformat:2 }} ·
+            {% if p.activo %}activo{% else %}inactivo{% endif %}
+          </div>
+        </div>
+        <div class="flex shrink-0 items-center gap-1.5">
+          <button type="button" class="icon-btn icon-btn-edit" data-editar-producto
+                  data-url="{% url 'panel:producto_editar' p.pk %}?modal=1&categoria={{ p.categoria.slug }}"
+                  data-titulo="Editar {{ p.sku }}" aria-label="Editar {{ p.sku }}" title="Editar">
+            {% icon "editar" %}
+          </button>
+          <a class="icon-btn icon-btn-danger"
+             href="{% url 'panel:producto_eliminar' p.pk %}?categoria={{ p.categoria.slug }}"
+             aria-label="Eliminar {{ p.sku }}" title="Eliminar">
+            {% icon "eliminar" %}
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% empty %}
+  <div class="mt-6 rounded-xl border border-gray-200 bg-white px-6 py-14 text-center">
+    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+      {% icon "guardar" clase="w-6 h-6" %}
+    </div>
+    <p class="mt-3 text-sm font-semibold text-gray-900">No hay duplicados</p>
+    <p class="mt-1 text-sm text-gray-500">Cada nombre aparece una sola vez por categoría.</p>
+  </div>
+  {% endfor %}
+</div>
+
+<dialog id="dialogo-editar" class="panel-dialog max-w-4xl" aria-labelledby="dialogo-editar-titulo">
+  <div class="flex items-center justify-between gap-4 border-b border-gray-200 px-5 py-3">
+    <h2 id="dialogo-editar-titulo" class="text-base font-bold text-gray-900">Editar producto</h2>
+    <button type="button" class="icon-btn" data-cerrar aria-label="Cerrar">{% icon "cerrar" %}</button>
+  </div>
+  <div id="dialogo-editar-cuerpo" class="max-h-[76vh] overflow-y-auto px-5 py-4"></div>
+</dialog>
+
+{% include "panel/_modal_editar_js.html" %}
+{% include "panel/_alta_rapida.html" %}
+{% endblock %}

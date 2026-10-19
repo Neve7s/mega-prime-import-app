@@ -1,0 +1,31 @@
+﻿{% extends "panel/base_panel.html" %}
+{% load panel_ui %}
+{% block title %}Eliminar colaborador â€” Panel{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-xl">
+  <div class="rounded-xl border border-red-200 bg-white">
+    <div class="flex items-start gap-3 border-b border-gray-200 px-5 py-4">
+      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+        {% icon "eliminar" clase="w-5 h-5" %}
+      </span>
+      <div>
+        <h1 class="text-lg font-bold text-gray-900">Eliminar a {{ obj.usuario.username }}</h1>
+        <p class="mt-0.5 text-sm text-gray-500">Se borra su cuenta y su acceso al panel. Esta acciÃ³n no se puede deshacer.</p>
+      </div>
+    </div>
+    <div class="px-5 py-4 text-sm text-gray-700">
+      <p class="font-semibold">Secciones asignadas</p>
+      <p class="mt-1 text-gray-500">
+        {% for seccion in obj.secciones %}{{ seccion }}{% if not forloop.last %} Â· {% endif %}{% empty %}Ninguna{% endfor %}
+      </p>
+      <p class="mt-4 text-xs text-gray-500">
+        Si solo quieres retirarle el acceso temporalmente, cancela y usa <strong>Desactivar</strong> en la lista.
+      </p>
+    </div>
+    <form method="post" class="flex flex-wrap items-center gap-2 border-t border-gray-200 bg-gray-50/60 px-5 py-3">{% csrf_token %}
+      <button class="btn btn-danger">{% icon "eliminar" %}Eliminar definitivamente</button>
+      <a class="btn btn-secondary" href="{% url 'panel:colaboradores' %}">Cancelar</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,111 @@
+﻿{% extends "panel/base_panel.html" %}
+{% load panel_ui %}
+{% block title %}Colaboradores â€” Panel{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-[1400px]">
+
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">
+        Colaboradores <span class="ml-1 text-base font-semibold text-gray-400">{{ colaboradores|length }}</span>
+      </h1>
+      <p class="mt-1 text-sm text-gray-500">
+        Crea cuentas para tu personal y elige quÃ© secciones del panel puede ver cada una.
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <a class="btn btn-primary" href="{% url 'panel:colaborador_nuevo' %}">{% icon "nuevo" %}Nuevo colaborador</a>
+    </div>
+  </div>
+
+  <div class="mt-4 flex items-start gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-xs text-gray-600">
+    <span class="mt-0.5 text-gray-400">{% icon "llave" clase="w-4 h-4" %}</span>
+    <p>Tu cuenta de dueÃ±o y los superusuarios siempre ven todas las secciones. Un colaborador nunca
+       entra al admin de Django y solo accede a lo que marques aquÃ­.</p>
+  </div>
+
+  <div class="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white">
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[48rem] border-collapse text-sm">
+        <caption class="sr-only">Colaboradores con acceso al panel</caption>
+        <thead>
+          <tr class="border-b border-gray-200 bg-gray-50/80 text-[11px] uppercase tracking-wider text-gray-500">
+            <th scope="col" class="px-4 py-2.5 text-left font-semibold">Colaborador</th>
+            <th scope="col" class="px-4 py-2.5 text-left font-semibold">Secciones</th>
+            <th scope="col" class="px-4 py-2.5 text-left font-semibold">Estado</th>
+            <th scope="col" class="hidden px-4 py-2.5 text-left font-semibold lg:table-cell">Ãšltimo acceso</th>
+            <th scope="col" class="px-4 py-2.5 text-right font-semibold">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for c in colaboradores %}
+          <tr class="transition hover:bg-gray-50/70">
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0A0A0B] text-sm font-bold text-[#D4AF37]">
+                  {{ c.usuario.username|slice:":1"|upper }}
+                </span>
+                <div class="min-w-0">
+                  <div class="truncate font-semibold text-gray-900">{{ c.usuario.username }}</div>
+                  <div class="truncate text-xs text-gray-500">
+                    {% if c.usuario.first_name %}{{ c.usuario.first_name }}{% else %}Sin nombre{% endif %}
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex flex-wrap gap-1">
+                {% for seccion in c.secciones %}
+                <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-semibold text-gray-700 ring-1 ring-inset ring-gray-200">{{ seccion }}</span>
+                {% empty %}
+                <span class="text-xs text-gray-400">Sin secciones</span>
+                {% endfor %}
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              {% if c.activo %}
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Activo
+              </span>
+              {% else %}
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-300">
+                <span class="h-1.5 w-1.5 rounded-full bg-gray-400"></span>Inactivo
+              </span>
+              {% endif %}
+            </td>
+            <td class="hidden px-4 py-3 text-xs text-gray-500 lg:table-cell">
+              {% if c.usuario.last_login %}{{ c.usuario.last_login|date:"d/m/Y H:i" }}{% else %}Nunca{% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center justify-end gap-1.5">
+                <form method="post" action="{% url 'panel:colaborador_estado' c.pk %}">{% csrf_token %}
+                  <button type="submit" class="icon-btn" title="{% if c.activo %}Desactivar{% else %}Activar{% endif %}"
+                          aria-label="{% if c.activo %}Desactivar{% else %}Activar{% endif %} {{ c.usuario.username }}">
+                    {% if c.activo %}{% icon "bloqueado" %}{% else %}{% icon "ojo" %}{% endif %}
+                  </button>
+                </form>
+                <a class="icon-btn icon-btn-edit" href="{% url 'panel:colaborador_editar' c.pk %}"
+                   title="Editar" aria-label="Editar {{ c.usuario.username }}">{% icon "editar" %}</a>
+                <a class="icon-btn icon-btn-danger" href="{% url 'panel:colaborador_eliminar' c.pk %}"
+                   title="Eliminar" aria-label="Eliminar {{ c.usuario.username }}">{% icon "eliminar" %}</a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="px-4 py-12 text-center">
+              <div class="mx-auto flex max-w-sm flex-col items-center gap-2">
+                <span class="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 text-gray-400">{% icon "colaboradores" clase="w-5 h-5" %}</span>
+                <p class="text-sm font-semibold text-gray-800">AÃºn no hay colaboradores</p>
+                <p class="text-xs text-gray-500">Crea una cuenta y marca las secciones que podrÃ¡ usar.</p>
+                <a class="btn btn-primary mt-2" href="{% url 'panel:colaborador_nuevo' %}">{% icon "nuevo" %}Crear el primero</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% load panel_ui %}{% puede_seccion request.user "productos" as ver_productos %}{% puede_seccion request.user "pedidos" as ver_pedidos %}{% puede_seccion request.user "codigos" as ver_codigos %}{% puede_seccion request.user "calculadora" as ver_calculadora %}{% es_dueno request.user as dueno %}<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
@@ -7,12 +7,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family: 'IBM Plex Sans', sans-serif; }
-    h1, h2, h3 { font-family: 'Libre Franklin', sans-serif; }
-    .nav-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; color: #d4d4d8; }
-    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
-    .nav-item.active { background: rgba(212,175,55,0.15); color: #D4AF37; }
-    .nav-section { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: #71717a; padding: 0.9rem 0.75rem 0.3rem; }
+    body { font-family: 'IBM Plex Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+    h1, h2, h3 { font-family: 'Libre Franklin', sans-serif; letter-spacing: -0.01em; }
+
+    .nav-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.7rem; border-radius: 0.5rem;
+                color: #d4d4d8; border: 1px solid transparent; transition: background .15s, color .15s, border-color .15s; }
+    .nav-item svg { width: 1.05rem; height: 1.05rem; opacity: .7; flex-shrink: 0; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-item:hover svg { opacity: 1; }
+    .nav-item.active { background: rgba(212,175,55,0.13); color: #F5E7B2; border-color: rgba(212,175,55,0.28); }
+    .nav-item.active svg { opacity: 1; color: #D4AF37; }
+    .nav-section { font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.14em; color: #63636b; padding: 1rem 0.7rem 0.35rem; }
+
     .panel-form input[type="text"], .panel-form input[type="number"], .panel-form input[type="email"],
     .panel-form input[type="url"], .panel-form input[type="date"], .panel-form select, .panel-form textarea {
       width: 100%; border: 1px solid #d4d4d8; border-radius: 0.5rem; padding: 0.55rem 0.75rem; font-size: 0.9rem; background: #fff;
@@ -20,6 +26,31 @@
     .panel-form input:focus, .panel-form select:focus, .panel-form textarea:focus { outline: none; border-color: #D4AF37; box-shadow: 0 0 0 2px rgba(212,175,55,0.25); }
     .panel-form input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: #0A0A0B; }
     .panel-form input[type="file"] { font-size: 0.85rem; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; border-radius: 0.6rem;
+           padding: 0.5rem 0.8rem; font-size: 0.83rem; font-weight: 600; line-height: 1.1; border: 1px solid transparent;
+           transition: background .15s, border-color .15s, color .15s; cursor: pointer; white-space: nowrap; }
+    .btn-secondary { background: #fff; border-color: #d4d4d8; color: #3f3f46; }
+    .btn-secondary:hover { background: #fafafa; border-color: #a1a1aa; color: #18181b; }
+    .btn-primary { background: #0A0A0B; color: #F5E7B2; border-color: #0A0A0B; }
+    .btn-primary:hover { background: #27272a; }
+    .btn-danger { background: #b91c1c; color: #fff; border-color: #b91c1c; }
+    .btn-danger:hover { background: #991b1b; }
+
+    .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem;
+                border-radius: 0.5rem; border: 1px solid #e4e4e7; background: #fff; color: #52525b;
+                transition: background .15s, border-color .15s, color .15s; }
+    .icon-btn:hover { background: #fafafa; border-color: #d4d4d8; color: #18181b; }
+    .icon-btn-edit:hover { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+    .icon-btn-danger:hover { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+
+    .btn:focus-visible, .icon-btn:focus-visible, .nav-item:focus-visible, dialog button:focus-visible {
+      outline: 2px solid #D4AF37; outline-offset: 2px;
+    }
+
+    dialog.panel-dialog { border: 0; padding: 0; border-radius: 0.9rem; background: #fff; width: 92vw;
+                          box-shadow: 0 24px 60px -12px rgba(9,9,11,.35); max-height: 92vh; }
+    dialog.panel-dialog::backdrop { background: rgba(9,9,11,.45); }
   </style>
 </head>
 <body class="bg-[#f4f4f5]">
@@ -30,33 +61,59 @@
       <div class="text-[11px] uppercase tracking-widest text-[#D4AF37]">Panel de tienda</div>
     </div>
     <nav class="flex flex-col px-3 pb-3 text-sm flex-1 overflow-y-auto">
+      {% if dueno %}
       <div class="nav-section">Inicio</div>
-      <a class="nav-item" href="{% url 'panel:dashboard' %}">📊 Tablero</a>
+      <a class="nav-item {% if request.path == '/webadmin/' %}active{% endif %}" href="{% url 'panel:dashboard' %}">{% icon "tablero" %}Tablero</a>
+      {% endif %}
+      {% if ver_pedidos or ver_codigos or ver_productos or ver_calculadora %}
       <div class="nav-section">Tienda</div>
-      <a class="nav-item" href="{% url 'panel:pedidos' %}">🧾 Punto de venta</a>
-      <a class="nav-item" href="{% url 'panel:codigos' %}">🔑 Códigos WhatsApp</a>
-      <a class="nav-item" href="{% url 'panel:productos' %}">📦 Productos</a>
-      <a class="nav-item" href="{% url 'panel:categorias' %}">🏷 Categorías</a>
-      <a class="nav-item" href="{% url 'panel:tipos' %}">🧩 Tipos</a>
-      <a class="nav-item" href="{% url 'panel:calculadora' %}">🧮 Calculadora</a>
+      {% if ver_pedidos %}
+      <a class="nav-item {% if '/pedidos' in request.path %}active{% endif %}" href="{% url 'panel:pedidos' %}">{% icon "pedidos" %}Punto de venta</a>
+      {% endif %}
+      {% if ver_codigos %}
+      <a class="nav-item {% if '/codigos' in request.path %}active{% endif %}" href="{% url 'panel:codigos' %}">{% icon "codigos" %}Códigos WhatsApp</a>
+      {% endif %}
+      {% if ver_productos %}
+      <a class="nav-item {% if '/productos' in request.path or '/categorias' in request.path or '/tipos' in request.path %}active{% endif %}" href="{% url 'panel:productos' %}">{% icon "productos" %}Productos</a>
+      {% endif %}
+      {% if ver_calculadora %}
+      <a class="nav-item {% if '/calculadora' in request.path %}active{% endif %}" href="{% url 'panel:calculadora' %}">{% icon "calculadora" %}Calculadora</a>
+      {% endif %}
+      {% endif %}
+      {% if dueno %}
       <div class="nav-section">Sistema</div>
-      <a class="nav-item" href="{% url 'panel:ajustes' %}">⚙️ Ajustes del sitio</a>
+      <a class="nav-item {% if '/ajustes' in request.path %}active{% endif %}" href="{% url 'panel:ajustes' %}">{% icon "ajustes" %}Ajustes del sitio</a>
+      <a class="nav-item {% if '/colaboradores' in request.path %}active{% endif %}" href="{% url 'panel:colaboradores' %}">{% icon "colaboradores" %}Colaboradores</a>
+      {% endif %}
     </nav>
     <div class="p-3 border-t border-white/10 text-sm flex flex-col gap-1 shrink-0">
-      <a class="nav-item" target="_blank" href="{% url 'core:home' %}">🌐 Ver sitio</a>
-      <a class="nav-item" href="{% url 'panel:salir' %}">↩ Salir ({{ user.username }})</a>
+      <div class="px-2 pb-2 text-[11px] text-gray-400">
+        <div class="font-semibold text-gray-200">{{ user.username }}</div>
+        <div>{% if dueno %}Dueño{% else %}Colaborador{% endif %}</div>
+      </div>
+      <a class="nav-item" target="_blank" rel="noopener" href="{% url 'core:home' %}">{% icon "sitio" %}Ver sitio</a>
+      <a class="nav-item" href="{% url 'panel:salir' %}">{% icon "salir" %}Salir</a>
     </div>
   </aside>
   <div class="flex-1 flex flex-col min-w-0">
-    <header class="bg-white border-b px-6 py-3 flex items-center gap-4 sticky top-0 z-10">
+    <header class="bg-white border-b px-6 py-2.5 flex items-center gap-4 sticky top-0 z-10">
+      {% if ver_productos %}
       <form method="get" action="{% url 'panel:productos' %}" class="flex-1 max-w-md">
-        <input name="q" placeholder="🔍 Buscar SKU o producto..." class="w-full bg-gray-100 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#D4AF37]" />
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{% icon "buscar" %}</span>
+          <input name="q" aria-label="Buscar producto" placeholder="Buscar SKU o producto…"
+                 class="w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-3 py-1.5 text-sm outline-none transition focus:border-[#D4AF37] focus:bg-white focus:ring-2 focus:ring-[#D4AF37]/20" />
+        </div>
       </form>
+      {% else %}
+      <span class="flex-1"></span>
+      {% endif %}
       <span class="ml-auto text-sm text-gray-500">{{ user.username }}</span>
       <span class="w-8 h-8 rounded-full bg-[#0A0A0B] text-[#D4AF37] flex items-center justify-center font-bold text-sm">{{ user.username|slice:":1"|upper }}</span>
     </header>
     <main class="p-6">{% block content %}{% endblock %}</main>
   </div>
 </div>
+{% block scripts %}{% endblock %}
 </body>
 </html>

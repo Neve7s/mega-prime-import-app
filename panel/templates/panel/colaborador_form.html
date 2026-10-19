@@ -1,0 +1,111 @@
+﻿{% extends "panel/base_panel.html" %}
+{% load panel_ui %}
+{% block title %}{% if obj %}Editar colaborador{% else %}Nuevo colaborador{% endif %} â€” Panel{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-3xl">
+
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <div class="flex items-center gap-2 text-sm text-gray-500">
+        <a class="inline-flex items-center gap-1 hover:text-gray-900" href="{% url 'panel:colaboradores' %}">{% icon "volver" clase="w-3.5 h-3.5" %}Colaboradores</a>
+      </div>
+      <h1 class="mt-1 text-2xl font-bold text-gray-900">
+        {% if obj %}{{ obj.usuario.username }}{% else %}Nuevo colaborador{% endif %}
+      </h1>
+      <p class="mt-1 text-sm text-gray-500">
+        {% if obj %}Ajusta sus datos o cambia las secciones que puede ver.{% else %}La cuenta es solo para el panel: no tendrÃ¡ acceso al admin de Django.{% endif %}
+      </p>
+    </div>
+  </div>
+
+  <form method="post" class="panel-form mt-5 flex flex-col gap-4">{% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+      <span class="mt-0.5 text-red-600">{% icon "alerta" clase="w-4 h-4" %}</span>
+      <div class="text-sm font-semibold text-red-800">
+        {% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <section class="rounded-xl border border-gray-200 bg-white">
+      <div class="border-b border-gray-200 px-5 py-3">
+        <h2 class="text-sm font-bold text-gray-900">Cuenta</h2>
+        <p class="text-xs text-gray-500">Con estos datos el colaborador inicia sesiÃ³n en /webadmin/.</p>
+      </div>
+      <div class="grid grid-cols-1 gap-4 px-5 py-4 sm:grid-cols-2">
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-bold uppercase tracking-wider text-gray-700" for="{{ form.username.id_for_label }}">Usuario *</label>
+          {{ form.username }}
+          <p class="text-xs text-gray-400">Sin espacios. Ej.: ventas2, bodega.</p>
+          {% for e in form.username.errors %}<p class="text-xs font-semibold text-red-700">{{ e }}</p>{% endfor %}
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-bold uppercase tracking-wider text-gray-700" for="{{ form.first_name.id_for_label }}">Nombre</label>
+          {{ form.first_name }}
+          {% for e in form.first_name.errors %}<p class="text-xs font-semibold text-red-700">{{ e }}</p>{% endfor %}
+        </div>
+        <div class="flex flex-col gap-1 sm:col-span-2">
+          <label class="text-xs font-bold uppercase tracking-wider text-gray-700" for="{{ form.password.id_for_label }}">
+            ContraseÃ±a {% if not obj %}*{% endif %}
+          </label>
+          {{ form.password }}
+          <p class="text-xs text-gray-400">{{ form.password.help_text }}</p>
+          {% for e in form.password.errors %}<p class="text-xs font-semibold text-red-700">{{ e }}</p>{% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-xl border border-gray-200 bg-white">
+      <div class="border-b border-gray-200 px-5 py-3">
+        <h2 class="text-sm font-bold text-gray-900">Acceso al panel *</h2>
+        <p class="text-xs text-gray-500">Solo verÃ¡ en el menÃº las secciones marcadas. Ajustes y Colaboradores son exclusivos del dueÃ±o.</p>
+      </div>
+      <div class="grid grid-cols-1 gap-2 px-5 py-4 sm:grid-cols-2">
+        <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-3 transition hover:border-gray-300 hover:bg-gray-50/60">
+          {{ form.calculadora }}
+          <span>
+            <span class="block text-sm font-semibold text-gray-900">Calculadora</span>
+            <span class="block text-xs text-gray-500">Cotizador de importaciÃ³n, reportes y plantillas.</span>
+          </span>
+        </label>
+        <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-3 transition hover:border-gray-300 hover:bg-gray-50/60">
+          {{ form.pedidos }}
+          <span>
+            <span class="block text-sm font-semibold text-gray-900">Punto de venta</span>
+            <span class="block text-xs text-gray-500">Pedidos del sitio y su detalle.</span>
+          </span>
+        </label>
+        <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-3 transition hover:border-gray-300 hover:bg-gray-50/60">
+          {{ form.codigos }}
+          <span>
+            <span class="block text-sm font-semibold text-gray-900">CÃ³digos WhatsApp</span>
+            <span class="block text-xs text-gray-500">EmisiÃ³n y seguimiento de cÃ³digos de venta.</span>
+          </span>
+        </label>
+        <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-3 transition hover:border-gray-300 hover:bg-gray-50/60">
+          {{ form.productos }}
+          <span>
+            <span class="block text-sm font-semibold text-gray-900">Productos</span>
+            <span class="block text-xs text-gray-500">CatÃ¡logo completo: fichas, precios, stock, categorÃ­as y tipos.</span>
+          </span>
+        </label>
+      </div>
+    </section>
+
+    <section class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-5 py-3">
+      <label class="flex cursor-pointer items-center gap-2 text-sm font-semibold text-gray-800">
+        {{ form.activo }}
+        <span>Cuenta activa</span>
+        <span class="text-xs font-normal text-gray-500">â€” si lo desactivas no podrÃ¡ iniciar sesiÃ³n.</span>
+      </label>
+    </section>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <button class="btn btn-primary">{% icon "guardar" %}{% if obj %}Guardar cambios{% else %}Crear colaborador{% endif %}</button>
+      <a class="btn btn-secondary" href="{% url 'panel:colaboradores' %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

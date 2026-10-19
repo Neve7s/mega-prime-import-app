@@ -1,22 +1,37 @@
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 from django.contrib.auth import logout
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from calculator.models import SavedShipment, TaxRule
 from cart.models import Order, OrderItem, SaleCode
+from catalog.calidad import (contar_grupos_duplicados, faltantes_producto,
+                             grupos_duplicados, q_incompleto)
 from catalog.models import Category, Product, TipoProducto
 from core.models import SiteSettings
 
 from django.views.decorators.csrf import ensure_csrf_cookie
 
-from .auth import staff_only
-from .forms import (CategoryForm, OrderEstadoForm, ProductForm, SaleCodeForm,
-                    SiteSettingsForm, TipoForm)
+from .auth import (SECCIONES_URL, es_dueno, primera_seccion,
+                   seccion_requerida, staff_only, tiene_panel)
+from .forms import (CategoryForm, ColaboradorForm, OrderEstadoForm,
+                    ProductForm, SaleCodeForm, SiteSettingsForm, TipoForm)
+from .models import AccesoPanel
 
 
-@staff_only
 def dashboard(request):
+    if not request.user.is_authenticated:
+        return redirect("panel:login")
+    if not tiene_panel(request.user):
+        return redirect("panel:login")
+    if not es_dueno(request.user):
+        seccion = primera_seccion(request.user)
+        if seccion:
+            return redirect(SECCIONES_URL[seccion])
+        return render(request, "panel/sin_acceso.html", {"seccion": ""}, status=403)
+
     from datetime import timedelta
     from django.db.models import Count, Sum
     from django.utils import timezone
@@ -63,13 +78,259 @@ def dashboard(request):
     return render(request, "panel/dashboard.html", ctx)
 
 
-@staff_only
-def productos(request):
-    q = (request.GET.get("q") or "").strip()
-    prods = Product.objects.select_related("categoria").all()
+BULK_MAX = 200
+
+AVISOS = {
+    "eliminados": ("ok", "producto eliminado", "productos eliminados"),
+    "precios": ("ok", "ficha actualizada", "fichas actualizadas"),
+    "datos_invalidos": ("error",
+                        "Revisa precio y stock: deben ser números mayores o iguales a 0.",
+                        ""),
+}
+
+
+def _entero(valor, default=0):
+    try:
+        return int(str(valor).strip())
+    except (TypeError, ValueError):
+        return default
+
+
+def _todas(request):
+    """`?todas=1`: buscar en todas las categorías en vez de la activa."""
+    return (request.GET.get("todas") or "").strip().lower() in ("1", "on", "true", "si", "sí")
+
+
+def _aviso_desde_request(request):
+    """Los avisos viajan por querystring: `?msg=<codigo>&n=<cantidad>&cat=<nombre>`."""
+    codigo = (request.GET.get("msg") or "").strip()
+    if codigo not in AVISOS:
+        return None
+    tipo, singular, plural = AVISOS[codigo]
+    n = _entero(request.GET.get("n"))
+    if plural:
+        texto = f"{_plural(n, singular, plural)}."
+    else:
+        texto = singular
+    return {"tipo": tipo, "texto": texto}
+
+
+def _url_productos(cat_slug="", q="", todas=False):
+    """URL de la lista preservando el contexto (categoría, búsqueda, global)."""
+    params = {}
+    if cat_slug:
+        params["categoria"] = cat_slug
     if q:
-        prods = prods.filter(nombre__icontains=q) | prods.filter(sku__icontains=q)
-    return render(request, "panel/productos.html", {"productos": prods[:100], "q": q})
+        params["q"] = q
+    if todas:
+        params["todas"] = "1"
+    base = reverse("panel:productos")
+    return f"{base}?{urlencode(params)}" if params else base
+
+
+def _url_productos_desde_post(request):
+    return _url_productos(
+        (request.POST.get("volver_categoria") or "").strip(),
+        (request.POST.get("volver_q") or "").strip(),
+        (request.POST.get("volver_todas") or "").strip().lower() in ("1", "on", "true"))
+
+
+def _con_msg(url, codigo, n=0, cat=""):
+    extra = {"msg": codigo}
+    if n:
+        extra["n"] = n
+    if cat:
+        extra["cat"] = cat
+    sep = "&" if "?" in url else "?"
+    return f"{url}{sep}{urlencode(extra)}"
+
+
+def _ids_seleccionados(valores):
+    """Enteros válidos de la selección (máx BULK_MAX), sin duplicados."""
+    ids = []
+    for valor in valores[:BULK_MAX]:
+        numero = _entero(valor, None)
+        if numero is not None and numero not in ids:
+            ids.append(numero)
+    return ids
+
+
+def _ctx_productos(request, categoria_slug=None, import_result=None, import_error=""):
+    from django.db.models import Count, Q
+
+    q = (request.GET.get("q") or "").strip()
+    todas = _todas(request)
+    if categoria_slug is not None:
+        cat_slug = categoria_slug.strip()
+    else:
+        cat_slug = "" if todas else (request.GET.get("categoria") or "").strip()
+    categorias = (Category.objects.annotate(
+        n_productos=Count("productos"),
+        n_incompletos=Count("productos", filter=q_incompleto("productos__")),
+    ).order_by("orden", "nombre"))
+    categoria_activa = Category.objects.filter(slug=cat_slug).first() if cat_slug else None
+    prods = Product.objects.select_related("categoria", "tipo")
+    if categoria_activa is not None:
+        prods = prods.filter(categoria=categoria_activa)
+    if q:
+        prods = prods.filter(Q(nombre__icontains=q) | Q(sku__icontains=q))
+    productos = list(prods[:100])
+    for producto in productos:
+        producto.faltantes = faltantes_producto(producto)
+    return {
+        "productos": productos, "q": q, "todas": todas,
+        "categorias": categorias, "categoria_activa": categoria_activa,
+        "n_total": Product.objects.count(),
+        "n_duplicados": contar_grupos_duplicados(),
+        "aviso": _aviso_desde_request(request),
+        "import_result": import_result, "import_error": import_error,
+    }
+
+
+@seccion_requerida("productos")
+def productos(request):
+    return render(request, "panel/productos.html", _ctx_productos(request))
+
+
+@seccion_requerida("productos")
+def productos_precios(request):
+    """Edición inline de precio y stock en la lista."""
+    from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+
+    if request.method != "POST":
+        return redirect("panel:productos")
+    volver = _url_productos_desde_post(request)
+    ids = _ids_seleccionados(request.POST.getlist("ids_precio"))
+    if not ids:
+        return redirect(_con_msg(volver, "datos_invalidos"))
+
+    def _decimal(pk, campo):
+        raw = str(request.POST.get(f"{campo}_{pk}", "")).strip().replace(",", ".")
+        if not raw:
+            raise InvalidOperation
+        valor = Decimal(raw)
+        if not valor.is_finite() or valor < 0:
+            raise InvalidOperation
+        return valor.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    cambios = []
+    for pk in ids:
+        producto = Product.objects.filter(pk=pk).first()
+        if producto is None:
+            continue
+        try:
+            precio = _decimal(pk, "precio")
+            stock = _decimal(pk, "stock")
+        except (InvalidOperation, ValueError):
+            return redirect(_con_msg(volver, "datos_invalidos"))
+        cambios.append((producto.pk, precio, stock))
+    if not cambios:
+        return redirect(_con_msg(volver, "datos_invalidos"))
+    for pk, precio, stock in cambios:
+        Product.objects.filter(pk=pk).update(
+            precio_mayor=precio, stock_cantidad=stock)
+    return redirect(_con_msg(volver, "precios", len(cambios)))
+
+
+@seccion_requerida("productos")
+def productos_duplicados(request):
+    grupos = grupos_duplicados()
+    return render(request, "panel/productos_duplicados.html",
+                  {"grupos": grupos, "n_grupos": len(grupos),
+                   "n_productos": sum(len(g) for g in grupos)})
+
+
+@seccion_requerida("productos")
+def producto_eliminar(request, pk):
+    obj = get_object_or_404(Product, pk=pk)
+    volver_slug = (request.POST.get("volver_categoria")
+                   or request.GET.get("categoria") or "").strip()
+    if request.method == "POST":
+        obj.delete()
+        return redirect(_con_msg(_url_productos(volver_slug), "eliminados", 1))
+    return render(request, "panel/producto_eliminar.html",
+                  {"obj": obj, "volver_categoria": volver_slug})
+
+
+
+@seccion_requerida("productos")
+def productos_plantilla(request):
+    from catalog.excel_productos import build_productos_xlsx
+
+    resp = HttpResponse(
+        build_productos_xlsx(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    resp["Content-Disposition"] = 'attachment; filename="productos-plantilla.xlsx"'
+    return resp
+
+
+def _slug_producto(nombre, sku):
+    from django.utils.text import slugify
+
+    base = slugify(nombre) or slugify(sku) or "producto"
+    candidato = base
+    numero = 2
+    while Product.objects.filter(slug=candidato).exists():
+        candidato = f"{base}-{numero}"
+        numero += 1
+    return candidato
+
+
+def _plural(cantidad, singular, plural):
+    return f"{cantidad} {singular if cantidad == 1 else plural}"
+
+
+@seccion_requerida("productos")
+def productos_importar(request):
+    from catalog.excel_productos import read_productos_xlsx
+
+    if request.method != "POST":
+        return redirect("panel:productos")
+
+    cat_slug = (request.POST.get("categoria") or "").strip()
+    cat_defecto = Category.objects.filter(slug=cat_slug).first() if cat_slug else None
+
+    def fallo(mensaje):
+        return render(request, "panel/productos.html",
+                      _ctx_productos(request, categoria_slug=cat_slug,
+                                     import_error=mensaje))
+
+    archivo = request.FILES.get("archivo")
+    if archivo is None:
+        return fallo("Adjunta un archivo Excel (.xlsx).")
+    if archivo.size > 5 * 1024 * 1024:
+        return fallo("El archivo supera los 5 MB. Divídelo en partes más pequeñas.")
+    try:
+        filas = read_productos_xlsx(archivo)
+    except ValueError as exc:
+        return fallo(str(exc))
+
+    creados = actualizados = 0
+    campos = ("nombre", "tipo", "precio_mayor", "unidad", "stock_cantidad",
+              "badge", "origen", "imagen_url", "descripcion")
+    for fila in filas:
+        categoria = fila["categoria"] or cat_defecto
+        if categoria is None:
+            return fallo(f"Falta la categoría en la fila {fila['fila']} "
+                         "y no hay una categoría seleccionada como valor por defecto.")
+        valores = {campo: fila[campo] for campo in campos}
+        existente = Product.objects.filter(sku=fila["sku"]).first()
+        if existente is None:
+            Product.objects.create(
+                sku=fila["sku"], slug=_slug_producto(fila["nombre"], fila["sku"]),
+                categoria=categoria, **valores)
+            creados += 1
+        else:
+            for campo, valor in valores.items():
+                setattr(existente, campo, valor)
+            existente.categoria = categoria
+            existente.save()
+            actualizados += 1
+
+    return render(request, "panel/productos.html", _ctx_productos(
+        request, categoria_slug=cat_slug,
+        import_result={"creados": creados, "actualizados": actualizados,
+                       "total": len(filas)}))
 
 
 def _parse_colores(raw):
@@ -110,18 +371,29 @@ def _parse_caracteristicas(raw):
     return [str(t).strip()[:120] for t in data[:30] if str(t or "").strip()]
 
 
-@staff_only
+@seccion_requerida("productos")
 def producto_editar(request, pk=None):
     import json as _json
 
     obj = get_object_or_404(Product, pk=pk) if pk else None
+    # Alta "dentro de una categoría": llega desde el listado filtrado.
+    volver_slug = (request.POST.get("volver_categoria")
+                   or request.GET.get("categoria") or "").strip()
+    volver_categoria = (Category.objects.filter(slug=volver_slug).first()
+                        if volver_slug else None)
+    # Alta "dentro de una categoría": la categoría queda fijada y sin select.
+    categoria_ctx = volver_categoria if obj is None else None
     form = ProductForm(request.POST or None, request.FILES or None, instance=obj)
+    if categoria_ctx is not None and request.method != "POST":
+        form.initial["categoria"] = categoria_ctx.pk
     if request.method == "POST" and form.is_valid():
         prod = form.save()
         prod.colores = _parse_colores(request.POST.get("colores_json", "[]"))
         prod.caracteristicas = _parse_caracteristicas(
             request.POST.get("caracteristicas_json", "[]"))
         prod.save(update_fields=["colores", "caracteristicas"])
+        if volver_categoria is not None:
+            return redirect(f"{reverse('panel:productos')}?categoria={volver_categoria.slug}")
         return redirect("panel:productos")
     sections = [
         {"wide": True, "title": "Datos básicos", "fields": ["categoria", "tipo", "sku", "nombre", "slug", "badge", "descripcion"], "full": ["descripcion"]},
@@ -142,11 +414,22 @@ def producto_editar(request, pk=None):
             getattr(obj, "caracteristicas", None) or [])
     ctx = {"form": form, "obj": obj, "sections": sections,
            "colores_init": colores_init,
-           "caracteristicas_init": caracteristicas_init}
+           "caracteristicas_init": caracteristicas_init,
+           "categoria_ctx": categoria_ctx,
+           "volver_categoria": volver_categoria,
+           "en_modal": False}
+    # El listado pide la ficha dentro de un <dialog>: devolvemos sólo el
+    # fragmento y dejamos la URL normal como respaldo sin JavaScript.
+    if obj is not None and request.method == "GET" and request.GET.get("modal") == "1":
+        base = reverse("panel:producto_editar", args=[obj.pk])
+        ctx["form_action"] = (f"{base}?categoria={volver_categoria.slug}"
+                              if volver_categoria else base)
+        ctx["en_modal"] = True
+        return render(request, "panel/producto_form_modal.html", ctx)
     return render(request, "panel/producto_form.html", ctx)
 
 
-@staff_only
+@seccion_requerida("productos")
 def categorias(request):
     from django.db.models import Count
 
@@ -154,7 +437,7 @@ def categorias(request):
     return render(request, "panel/categorias.html", {"categorias": cats})
 
 
-@staff_only
+@seccion_requerida("productos")
 def categoria_editar(request, pk=None):
     obj = get_object_or_404(Category, pk=pk) if pk else None
     form = CategoryForm(request.POST or None, instance=obj)
@@ -164,7 +447,7 @@ def categoria_editar(request, pk=None):
     return render(request, "panel/categoria_form.html", {"form": form, "obj": obj})
 
 
-@staff_only
+@seccion_requerida("productos")
 def categoria_eliminar(request, pk):
     from django.db.models import ProtectedError
 
@@ -182,7 +465,7 @@ def categoria_eliminar(request, pk):
                   {"obj": obj, "error": error})
 
 
-@staff_only
+@seccion_requerida("productos")
 def tipos(request):
     from django.db.models import Count
 
@@ -190,7 +473,7 @@ def tipos(request):
     return render(request, "panel/tipos.html", {"tipos": tipos})
 
 
-@staff_only
+@seccion_requerida("productos")
 def tipo_editar(request, pk=None):
     obj = get_object_or_404(TipoProducto, pk=pk) if pk else None
     form = TipoForm(request.POST or None, instance=obj)
@@ -200,7 +483,7 @@ def tipo_editar(request, pk=None):
     return render(request, "panel/tipo_form.html", {"form": form, "obj": obj})
 
 
-@staff_only
+@seccion_requerida("productos")
 def tipo_eliminar(request, pk):
     from django.db.models import ProtectedError
 
@@ -218,7 +501,43 @@ def tipo_eliminar(request, pk):
                   {"obj": obj, "error": error})
 
 
-@staff_only
+def _alta_rapida(request, form_class):
+    """Alta desde modal: JSON con el objeto creado o los errores del form.
+
+    Sólo exige el nombre; el slug se deriva y el orden cae al final.
+    """
+    from django.http import JsonResponse
+    from django.utils.text import slugify
+
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Solo POST."}, status=405)
+    data = request.POST.copy()
+    if not (data.get("slug") or "").strip():
+        data["slug"] = slugify(data.get("nombre") or "")
+    data.setdefault("orden", "0")
+    form = form_class(data)
+    if not form.is_valid():
+        errores = {field: [str(e) for e in errors]
+                   for field, errors in form.errors.items()}
+        if "slug" in errores:
+            errores["slug"] = ["Ya existe un registro con ese nombre."]
+        return JsonResponse({"ok": False, "errors": errores}, status=400)
+    obj = form.save()
+    return JsonResponse({"ok": True, "id": obj.pk,
+                         "nombre": obj.nombre, "slug": obj.slug})
+
+
+@seccion_requerida("productos")
+def categoria_crear_rapida(request):
+    return _alta_rapida(request, CategoryForm)
+
+
+@seccion_requerida("productos")
+def tipo_crear_rapido(request):
+    return _alta_rapida(request, TipoForm)
+
+
+@seccion_requerida("pedidos")
 def pedidos(request):
     estado = request.GET.get("estado", "")
     qs = Order.objects.select_related("sale_code").all()
@@ -228,7 +547,7 @@ def pedidos(request):
                   {"pedidos": qs[:100], "estado": estado, "estados": Order.ESTADOS})
 
 
-@staff_only
+@seccion_requerida("pedidos")
 def pedido_detalle(request, codigo):
     pedido = get_object_or_404(Order, codigo=codigo)
     form = OrderEstadoForm(request.POST or None, initial={"estado": pedido.estado})
@@ -242,12 +561,12 @@ def pedido_detalle(request, codigo):
                   {"pedido": pedido, "form": form, "wa_cliente": wa})
 
 
-@staff_only
+@seccion_requerida("codigos")
 def codigos(request):
     return render(request, "panel/codigos.html", {"codigos": SaleCode.objects.all()[:100]})
 
 
-@staff_only
+@seccion_requerida("codigos")
 def codigo_crear(request):
     form = SaleCodeForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
@@ -262,7 +581,7 @@ def codigo_crear(request):
     return render(request, "panel/codigo_form.html", {"form": form, "sections": sections})
 
 
-@staff_only
+@seccion_requerida("codigos")
 def codigo_detalle(request, codigo):
     sale = get_object_or_404(SaleCode, codigo=codigo)
     tel = "".join(c for c in sale.cliente_telefono if c.isdigit())
@@ -403,7 +722,7 @@ def ajustes(request):
                    "paletas": PALETAS_TEMA})
 
 
-@staff_only
+@seccion_requerida("calculadora")
 @ensure_csrf_cookie
 def calculadora(request):
     from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
@@ -552,7 +871,7 @@ def calculadora(request):
                                        else embarques[sel]["nombre"] if sel in embarques else "")})
 
 
-@staff_only
+@seccion_requerida("calculadora")
 def calculadora_guardar(request):
     import json
     from decimal import Decimal, InvalidOperation
@@ -635,7 +954,7 @@ def calculadora_guardar(request):
     })
 
 
-@staff_only
+@seccion_requerida("calculadora")
 def calculadora_plantilla(request):
     from django.http import HttpResponse
 
@@ -650,7 +969,7 @@ def calculadora_plantilla(request):
     return response
 
 
-@staff_only
+@seccion_requerida("calculadora")
 def calculadora_importar(request):
     from django.http import JsonResponse
     from calculator.excel_templates import read_plantilla_xlsx
@@ -671,7 +990,7 @@ def calculadora_importar(request):
     return JsonResponse(imported)
 
 
-@staff_only
+@seccion_requerida("calculadora")
 def calculadora_reporte(request):
     """Descarga el reporte del embarque en .xlsx presentable.
 
@@ -755,6 +1074,45 @@ def calculadora_reporte(request):
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     resp["Content-Disposition"] = f'attachment; filename="reporte-embarque-{stamp}.xlsx"'
     return resp
+
+
+@staff_only
+def colaboradores(request):
+    perfiles = (AccesoPanel.objects.select_related("usuario")
+                .order_by("usuario__username"))
+    return render(request, "panel/colaboradores.html", {"colaboradores": perfiles})
+
+
+@staff_only
+def colaborador_editar(request, pk=None):
+    perfil = get_object_or_404(AccesoPanel, pk=pk) if pk else None
+    form = ColaboradorForm(request.POST or None, colaborador=perfil)
+    if request.method == "POST" and form.is_valid():
+        perfil = form.save()
+        return redirect("panel:colaboradores")
+    return render(request, "panel/colaborador_form.html",
+                  {"form": form, "obj": perfil})
+
+
+@staff_only
+def colaborador_estado(request, pk):
+    perfil = get_object_or_404(AccesoPanel, pk=pk)
+    if request.method == "POST":
+        perfil.activo = not perfil.activo
+        perfil.save(update_fields=["activo", "actualizado"])
+        perfil.usuario.is_active = perfil.activo
+        perfil.usuario.save(update_fields=["is_active"])
+    return redirect("panel:colaboradores")
+
+
+@staff_only
+def colaborador_eliminar(request, pk):
+    perfil = get_object_or_404(AccesoPanel, pk=pk)
+    if request.method == "POST":
+        usuario = perfil.usuario
+        usuario.delete()
+        return redirect("panel:colaboradores")
+    return render(request, "panel/colaborador_eliminar.html", {"obj": perfil})
 
 
 def salir(request):

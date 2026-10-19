@@ -85,3 +85,125 @@
 - [ ] `docker build` + `collectstatic` ok; imágenes sirven vía WhiteNoise/Nginx
 - [ ] Sin Tailwind CDN en prod
 **Verification:** `docker compose up --build`, Lighthouse básico. **Dependencies:** Tasks 1-10. **Files:** `Dockerfile`, `nginx.conf`, `static/css/*`. **Scope:** M
+
+---
+
+# Feature: Catálogo por categoría + alta rápida de categoría/tipo en modales
+
+## Task A1: Filtro por categoría en la lista de productos
+**Description:** `panel:productos` acepta `?categoria=<slug>` combinable con `?q=`; arma contexto de categorías (con conteo de productos), categoría activa y lista filtrada. `productos.html` muestra una banda de categorías (pills/sidebar) con estado activo, "Todas" y la búsqueda existentes.
+**Acceptance criteria:**
+- [x] `?categoria=<slug>` lista sólo los productos de esa categoría y respeta `?q=`
+- [x] `Todas` (sin `categoria`) lista todo; la categoría activa se marca visualmente
+**Verification:** tests `panel/tests.py` (filtro por categoría y combinado con búsqueda). Manual: click en cada categoría.
+**Dependencies:** None. **Files:** `panel/views.py`, `panel/templates/panel/productos.html`. **Scope:** M
+
+## Task A2: Alta de producto dentro de la categoría activa
+**Description:** El botón de la lista pasa a "+ Nuevo en {Categoría}" y apunta a `/webadmin/productos/nuevo/?categoria=<slug>`. `producto_editar` preselecciona esa categoría (`initial`) y, al guardar, redirige a `/webadmin/productos/?categoria=<slug>`; "Cancelar" vuelve al mismo filtro.
+**Acceptance criteria:**
+- [x] El select `categoría` llega preseleccionado según el querystring
+- [x] Al guardar se vuelve a la lista filtrada y el producto aparece ahí
+**Verification:** tests (POST con producto Nuevo ya preseleccionado + redirect a `?categoria=`). Manual: alta en contexto.
+**Dependencies:** A1. **Files:** `panel/views.py`, `panel/urls.py`, `panel/templates/panel/producto_form.html`. **Scope:** S
+
+## Task B1: Endpoints JSON de alta rápida (categoría / tipo)
+**Description:** `categoria_crear_rapida` y `tipo_crear_rapido` (POST, `@staff_only`) reutilizan `CategoryForm`/`TipoForm`. Responden 200 `{ok, id, nombre, slug}` o 400 `{ok:false, errors}`. URL: `/webadmin/categorias/rapida/` y `/webadmin/tipos/rapido/`.
+**Acceptance criteria:**
+- [x] POST válido crea el registro y responde 200 JSON con `id/nombre/slug`
+- [x] POST inválido responde 400 JSON con `errors`; no-staff no crea (302/403)
+**Verification:** tests de endpoint válido, inválido y permiso. Manual: `curl`/fetch.
+**Dependencies:** None. **Files:** `panel/views.py`, `panel/urls.py`, `panel/tests.py`. **Scope:** S
+
+## Task B2: Modales de alta rápida en el formulario de producto
+**Description:** Botones `+ Nuevo` junto a `categoría` y `tipo` que abren un `<dialog>` con los campos del form (nombre, slug auto, descripción, orden). Submit por `fetch` con `X-CSRFToken`; al éxito agrega la `<option>` al select y la selecciona; errores inline sin cerrar el modal; cierra con Escape/Cancelar.
+**Acceptance criteria:**
+- [x] Crear categoría desde el modal la deja seleccionada sin recargar
+- [x] Error (duplicado/faltante) se muestra en el modal y conserva lo escrito
+**Verification:** tests que verifican el markup del modal + endpoint; manual en navegador (crear, error, cancelar).
+**Dependencies:** B1. **Files:** `panel/templates/panel/producto_form.html`, `panel/templates/panel/_form_sections.html`. **Scope:** M
+**Nota:** el `<dialog>` + JS viven inline en `producto_form.html`; no se creó `_modal_rapido.html` (un solo consumidor). El alta rápida sólo pide nombre y descripción: el slug se deriva y `orden` cae a 0. Mensaje de duplicado suavizado a "Ya existe un registro con ese nombre."
+
+## Task C1: Verificación integral
+**Description:** Tests de todo el flujo A/B y `python manage.py check`; repaso manual end-to-end.
+**Acceptance criteria:**
+- [x] `python manage.py test` en verde
+- [x] Flujo manual completo: categoría → alta → guardar → ver producto; crear categoría y tipo desde modales
+**Verification:** `python manage.py test panel` + `python manage.py check`. **Dependencies:** A1, A2, B1, B2. **Files:** `panel/tests.py`. **Scope:** S
+
+## Task D1: Lectura/escritura de plantilla Excel de productos
+**Description:** `catalog/excel_productos.py` con `build_productos_xlsx()` (plantilla con encabezados estilo calculadora) y `read_productos_xlsx(upload)` que devuelve filas normalizadas. Columnas: SKU, nombre, categoría, tipo, precio_mayor, unidad, stock_cantidad, badge, origen, imagen_url, descripcion. Valida encabezados, números, categoría/tipo existentes y SKU duplicados.
+**Acceptance criteria:**
+- [x] Plantilla generada abre en Excel y sus encabezados coinciden con el lector
+- [x] Fila inválida (sin SKU/nombre, precio no numérico, categoría inexistente) produce error legible
+**Verification:** tests unitarios `catalog/tests.py` (idempotencia encabezados + casos de error). **Dependencies:** None. **Files:** `catalog/excel_productos.py`, `catalog/tests.py`. **Scope:** M
+**Nota:** `Categoría` vacía es válida en el lector (`categoria=None`); el importador aplica la categoría activa como valor por defecto.
+
+## Task D2: Importación masiva por Excel (staff)
+**Description:** Vista `productos_importar` (POST staff) + URL `productos/importar/`; botones "Importar Excel" y "Descargar plantilla" en la lista, usando la categoría activa como valor por defecto. Resumen "X creados / Y actualizados" y errores por fila.
+**Acceptance criteria:**
+- [x] Subir plantilla válida crea/actualiza productos y muestra el resumen
+- [x] Archivo inválido o >5 MB responde con error legible; no-staff no importa
+**Verification:** tests (import ok, archivo inválido, permiso). Manual: descargar plantilla → llenar → importar. **Dependencies:** A1, D1. **Files:** `panel/views.py`, `panel/urls.py`, `panel/templates/panel/productos.html`, `panel/tests.py`. **Scope:** M
+**Nota:** el resumen y los errores se renderizan en la misma lista (sin framework de mensajes). SLA: 5 MB y 1000 filas.
+
+---
+
+# Feature v2: Calidad de fichas, búsqueda global, acciones masivas, duplicados y edición inline
+
+Spec: `tasks/spec-productos-v2.md` · Plan: `tasks/plan.md` (sección v2).
+
+## Task E1: Reglas de calidad y normalización (`catalog/calidad.py`)
+**Description:** Módulo con `faltantes_producto(prod)` (`sin fotos`, `sin características`, `sin precio`), `clave_nombre(nombre)` (sin tildes/mayúsculas/espacios), los `Q` reutilizables `q_sin_fotos/q_sin_caracteristicas/q_sin_precio` y `contar_grupos_duplicados()`.
+**Acceptance criteria:**
+- [x] Un producto sin imagen ni `imagen_url`, sin características y con precio 0 devuelve los 3 faltantes; uno completo devuelve `[]`
+- [x] `clave_nombre` iguala "Teja  Roma" y "teja roma" (y "Grifería"/"griferia")
+- [x] Los `Q` reproducen exactamente la regla de `faltantes_producto` sobre los mismos datos
+**Verification:** `& ".venv\Scripts\python.exe" manage.py test catalog`. **Dependencies:** None. **Files:** `catalog/calidad.py`, `catalog/tests.py`. **Scope:** S
+
+## Task E2: Badges de faltantes + búsqueda global en la lista
+**Description:** `_ctx_productos` agrega `faltantes` por producto, `n_incompletos` por categoría, `todas`, `n_duplicados` y `aviso`. `productos.html`: badges por fila, `⚠ N` en el pill, checkbox "Buscar en todas las categorías" (`todas=1`) y banner de aviso verde/rojo.
+**Acceptance criteria:**
+- [x] La fila muestra "sin fotos", "sin características" y/o "sin precio" según corresponda
+- [x] `?q=...&todas=1` encuentra productos de otra categoría; sin `todas`, el filtro por categoría se respeta
+- [x] El pill de una categoría con incompletos muestra `⚠ N`
+**Verification:** `manage.py test panel`. Manual: ver badges y buscar en todas. **Dependencies:** E1. **Files:** `panel/views.py`, `panel/templates/panel/productos.html`, `panel/tests.py`. **Scope:** M
+
+## Task E3: Acciones masivas (activar/desactivar/mover/eliminar)
+**Description:** Vista `productos_acciones` (POST staff) + URL `productos/acciones/`; form `#acciones-masivas` con checkboxes asociados por el atributo `form`, select de acción, select de categoría destino con `+ Nueva` (reusa `_alta_rapida.html`, extraído del formulario de producto).
+**Acceptance criteria:**
+- [x] `activar`/`desactivar` cambian `activo` sólo en los ids seleccionados y redirigen con aviso
+- [x] `mover` cambia la categoría; sin destino responde aviso de error sin cambios
+- [x] `eliminar` borra los seleccionados; sin selección o acción inválida no cambia nada; no-staff no cambia nada
+**Verification:** `manage.py test panel`. Manual: seleccionar → aplicar cada acción. **Dependencies:** E2. **Files:** `panel/views.py`, `panel/urls.py`, `panel/templates/panel/productos.html`, `panel/templates/panel/_alta_rapida.html`, `panel/templates/panel/producto_form.html`, `panel/tests.py`. **Scope:** M
+
+## Task E4: Edición inline de precio y stock
+**Description:** Vista `productos_precios` (POST staff) + URL `productos/precios/`; form `#precios` con inputs `precio_<pk>`/`stock_<pk>` (con `ids_precio`) y botón "Guardar precios". Valida números ≥ 0 y cuantiza a 2 decimales; si algo es inválido no guarda nada.
+**Acceptance criteria:**
+- [x] POST válido actualiza `precio_mayor` y `stock_cantidad` de cada fila y redirige con aviso
+- [x] Valor no numérico o negativo → aviso de error y BD intacta
+- [x] no-staff no cambia nada
+**Verification:** `manage.py test panel`. Manual: cambiar un precio y guardar. **Dependencies:** E2. **Files:** `panel/views.py`, `panel/urls.py`, `panel/templates/panel/productos.html`, `panel/tests.py`. **Scope:** S
+
+## Task E5: Detector de duplicados
+**Description:** Vista `productos_duplicados` + URL `productos/duplicados/` + template con grupos (≥2 productos del mismo nombre normalizado dentro de la misma categoría), enlaces a Editar/Eliminar, y enlace con conteo en el encabezado de la lista (`🔍 Duplicados (N)`).
+**Acceptance criteria:**
+- [x] Dos productos con el mismo nombre normalizado en la misma categoría aparecen agrupados
+- [x] El mismo nombre en categorías distintas NO se agrupa
+- [x] Cada grupo muestra el conteo y los enlaces a editar/eliminar de cada producto
+**Verification:** `manage.py test panel`. Manual: crear dos parecidos y verlos agrupados. **Dependencies:** E1, E2. **Files:** `panel/views.py`, `panel/urls.py`, `panel/templates/panel/productos_duplicados.html`, `panel/templates/panel/productos.html`, `panel/tests.py`. **Scope:** M
+
+## Task E6: Borrado de un producto con confirmación
+**Description:** Vista `producto_eliminar` + URL `productos/<pk>/eliminar/` + template de confirmación (GET confirma, POST borra); enlace desde la página de duplicados.
+**Acceptance criteria:**
+- [x] GET muestra la confirmación con el SKU y no borra
+- [x] POST borra y redirige a la lista con aviso (preservando la categoría si venía)
+- [x] no-staff no borra
+**Verification:** `manage.py test panel`. Manual: borrar un duplicado desde la página de duplicados. **Dependencies:** E3. **Files:** `panel/views.py`, `panel/urls.py`, `panel/templates/panel/producto_eliminar.html`, `panel/templates/panel/productos_duplicados.html`, `panel/tests.py`. **Scope:** S
+
+## Task E7: Verificación integral
+**Description:** `manage.py check`, `test panel catalog`, y repaso manual end-to-end en navegador (login → badges → búsqueda global → acciones masivas → precios inline → duplicados → borrado).
+**Acceptance criteria:**
+- [x] `manage.py check` sin issues y `test panel catalog` en verde
+- [x] Flujo manual completo verificado con capturas/observaciones
+- [x] BD de desarrollo sin residuos de las pruebas manuales
+**Hallazgos del repaso manual (corregidos):** (1) `@staff_only` estaba en el helper `_ctx_productos` en vez de en la vista `productos`: anónimo/no-staff recibía 500 en lugar de redirigir a login — sin cobertura de test, se agregó `test_lista_productos_requiere_staff`; (2) con `LANGUAGE_CODE='es-ec'` los Decimal se renderizaban localizados (`68,50`) dentro de `<input type="number">`, y el navegador los vaciaba: guardar precios habría borrado los valores — se corrigió con `|unlocalize` + `{% load l10n %}` y se agregó `test_precios_y_stock_sin_localizar_en_inputs_number`; (3) el aviso de éxito y el de importación no se anunciaban a lectores de pantalla (`role="status"`); (4) el estado vacío decía "Sin productos en <categoría>" aunque hubiera una búsqueda activa. Verificado en navegador: badges, pills `⚠ N`, búsqueda global con `todas=1` y sin ella, acciones masivas (activar/desactivar/mover/eliminar + alta rápida de categoría destino), precios inline, página de duplicados y borrado con confirmación. **Verification:** comandos + navegador. **Dependencies:** E1–E6. **Files:** (ninguno). **Scope:** S

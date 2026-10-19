@@ -1,4 +1,4 @@
-{# Formulario por secciones en rejilla: sections = [{title, fields, full, wide}] #}
+{% load panel_ui %}{# Formulario por secciones en rejilla: sections = [{title, fields, full, wide}] #}
 <style>
   .img-drop{display:flex;gap:12px;align-items:center;border:1.5px dashed #d4d4d8;border-radius:12px;padding:12px;background:#fafafa;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s;}
   .img-drop:hover{border-color:#D4AF37;background:#fffdf5;}
@@ -21,7 +21,7 @@
     <label class="img-drop" data-drop for="{{ field.id_for_label }}">
       <span data-prev class="shrink-0 w-28 h-20 flex items-center justify-center rounded-lg border bg-white overflow-hidden">
         {% if field.value %}<img src="/media/{{ field.value }}" alt="actual" class="max-h-20 w-auto object-contain" />
-        {% else %}<span class="text-3xl">🖼</span>{% endif %}
+        {% else %}{% icon "imagen" clase="w-6 h-6 text-gray-400" %}{% endif %}
       </span>
       <span>
         <span class="block text-sm font-bold">{% if field.value %}Cambiar imagen{% else %}Subir imagen{% endif %} <span class="font-normal text-gray-400">— arrastra aquí o haz clic</span></span>
@@ -32,9 +32,24 @@
     </label>
     {% if field.value %}
     <label class="text-xs text-gray-500 flex items-center gap-1.5 mt-1 cursor-pointer w-fit">
-      <input type="checkbox" name="{{ field.html_name }}-clear" class="accent-red-600 w-3.5 h-3.5" /> 🗑 Quitar imagen actual
+      <input type="checkbox" name="{{ field.html_name }}-clear" class="accent-red-600 w-3.5 h-3.5" /> {% icon "eliminar" clase="w-3.5 h-3.5" %} Quitar imagen actual
     </label>
     {% endif %}
+    {% elif field.name == "categoria" and categoria_ctx %}
+    <span class="inline-flex items-center gap-1.5 bg-[#0A0A0B] text-[#D4AF37] px-3 py-2 rounded-lg text-sm font-bold w-fit">{% icon "categorias" clase="w-4 h-4" %} {{ categoria_ctx.nombre }}</span>
+    <input type="hidden" name="categoria" value="{{ categoria_ctx.pk }}" />
+    <input type="hidden" name="volver_categoria" value="{{ categoria_ctx.slug }}" />
+    {% elif field.name == "categoria" %}
+    <div class="flex items-center gap-2">
+      <div class="flex-1">{{ field }}</div>
+      <button type="button" data-alta-rapida="categoria" class="shrink-0 border rounded-lg px-3 py-2 text-sm font-bold hover:border-[#D4AF37]">+ Nueva</button>
+    </div>
+    {% if volver_categoria %}<input type="hidden" name="volver_categoria" value="{{ volver_categoria.slug }}" />{% endif %}
+    {% elif field.name == "tipo" %}
+    <div class="flex items-center gap-2">
+      <div class="flex-1">{{ field }}</div>
+      <button type="button" data-alta-rapida="tipo" class="shrink-0 border rounded-lg px-3 py-2 text-sm font-bold hover:border-[#D4AF37]">+ Nuevo</button>
+    </div>
     {% else %}
     {{ field }}
     {% endif %}
@@ -56,7 +71,7 @@
     var fname = dz.querySelector('[data-fname]');
     if (!input) return;
     function showFile(f){
-      if (fname) fname.textContent = '📎 ' + f.name;
+      if (fname) fname.textContent = f.name;
       if (f.type && f.type.indexOf('image/') === 0 && prev) {
         var rd = new FileReader();
         rd.onload = function(ev){

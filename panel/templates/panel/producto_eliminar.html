@@ -1,0 +1,39 @@
+{% extends "panel/base_panel.html" %}
+{% load panel_ui %}
+{% block title %}Eliminar producto — Panel{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-lg">
+  <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
+    <div class="flex items-start gap-3 border-b border-red-200 bg-red-50 px-5 py-4">
+      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-600">
+        {% icon "eliminar" clase="w-5 h-5" %}
+      </span>
+      <div>
+        <h1 class="text-base font-bold text-red-900">Eliminar producto</h1>
+        <p class="mt-0.5 text-xs text-red-700">Esta acción no se puede deshacer.</p>
+      </div>
+    </div>
+    <div class="px-5 py-5">
+      <p class="text-sm text-gray-700">¿Seguro que quieres eliminar este producto?</p>
+      <div class="mt-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+        <div class="font-semibold text-gray-900">{{ obj.nombre }}</div>
+        <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+          <span class="font-mono text-[11px]">{{ obj.sku }}</span>
+          <span class="text-gray-300">·</span>
+          <span>{{ obj.categoria.nombre }}</span>
+          <span class="text-gray-300">·</span>
+          <span>USD {{ obj.precio_mayor|floatformat:2 }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center justify-end gap-2 border-t border-gray-200 bg-gray-50/60 px-5 py-3">
+      <a class="btn btn-secondary"
+         href="{% url 'panel:productos' %}{% if volver_categoria %}?categoria={{ volver_categoria }}{% endif %}">Cancelar</a>
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="volver_categoria" value="{{ volver_categoria }}" />
+        <button class="btn btn-danger">{% icon "eliminar" clase="w-4 h-4" %}Sí, eliminar</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

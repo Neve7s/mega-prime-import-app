@@ -1,20 +1,309 @@
 {% extends "panel/base_panel.html" %}
+{% load l10n panel_ui %}
 {% block title %}Productos — Panel{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between">
-  <h1 class="text-2xl font-bold">Productos</h1>
-  <div class="flex gap-2">
-    <a class="border px-4 py-2 rounded font-bold text-sm" href="{% url 'panel:categorias' %}">🏷 Categorías</a>
-    <a class="bg-[#1e232a] text-white px-4 py-2 rounded font-bold text-sm" href="{% url 'panel:producto_nuevo' %}">+ Nuevo</a>
+<div class="mx-auto max-w-[1400px]">
+
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">
+        Productos <span class="ml-1 text-base font-semibold text-gray-400">{{ n_total }}</span>
+      </h1>
+      <p class="mt-1 text-sm text-gray-500">
+        Edita precios y stock en la tabla, o abre la ficha completa con el lápiz.
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <a class="btn btn-secondary" href="{% url 'panel:categorias' %}">
+        {% icon "categorias" clase="w-4 h-4 text-gray-500" %}Categorías
+      </a>
+      <a class="btn btn-secondary" href="{% url 'panel:tipos' %}">
+        {% icon "tipos" clase="w-4 h-4 text-gray-500" %}Tipos
+      </a>
+      <a class="btn btn-secondary" href="{% url 'panel:productos_duplicados' %}">
+        {% if n_duplicados %}{% icon "duplicados" clase="w-4 h-4 text-amber-600" %}{% else %}{% icon "duplicados" clase="w-4 h-4 text-gray-500" %}{% endif %}
+        Duplicados
+        {% if n_duplicados %}
+        <span class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-800">{{ n_duplicados }}</span>
+        {% endif %}
+      </a>
+      <button type="button" class="btn btn-secondary" data-dialogo="dialogo-excel">
+        {% icon "excel" clase="w-4 h-4 text-emerald-600" %}Importar Excel
+      </button>
+      <a class="btn btn-primary"
+         href="{% url 'panel:producto_nuevo' %}{% if categoria_activa %}?categoria={{ categoria_activa.slug }}{% endif %}">
+        {% icon "nuevo" clase="w-4 h-4" %}Nuevo{% if categoria_activa %} en {{ categoria_activa.nombre }}{% endif %}
+      </a>
+    </div>
+  </div>
+
+  <div class="mt-5 flex flex-wrap gap-2">
+    <a href="{% url 'panel:productos' %}{% if q %}?q={{ q|urlencode }}{% if todas %}&todas=1{% endif %}{% endif %}"
+       {% if not categoria_activa %}aria-current="page"{% endif %}
+       class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition
+              {% if not categoria_activa %}border-[#0A0A0B] bg-[#0A0A0B] text-white{% else %}border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:text-gray-900{% endif %}">
+      Todas
+      <span class="{% if not categoria_activa %}text-[#D4AF37]{% else %}text-gray-400{% endif %}">{{ n_total }}</span>
+    </a>
+    {% for c in categorias %}
+    <a href="{% url 'panel:productos' %}?categoria={{ c.slug }}{% if q %}&q={{ q|urlencode }}{% if todas %}&todas=1{% endif %}{% endif %}"
+       {% if categoria_activa and categoria_activa.pk == c.pk %}aria-current="page"{% endif %}
+       class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition
+              {% if categoria_activa and categoria_activa.pk == c.pk %}border-[#0A0A0B] bg-[#0A0A0B] text-white{% else %}border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:text-gray-900{% endif %}">
+      {{ c.nombre }}
+      <span class="{% if categoria_activa and categoria_activa.pk == c.pk %}text-[#D4AF37]{% else %}text-gray-400{% endif %}">{{ c.n_productos }}</span>
+      {% if c.n_incompletos %}
+      <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800"
+            data-incompletos="{{ c.n_incompletos }}"
+            title="Fichas incompletas en esta categoría">
+        {% icon "alerta" clase="w-3 h-3" %}{{ c.n_incompletos }}
+      </span>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+
+  <form method="get" action="{% url 'panel:productos' %}"
+        class="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2">
+    {% if categoria_activa %}<input type="hidden" name="categoria" value="{{ categoria_activa.slug }}" />{% endif %}
+    <div class="relative min-w-[15rem] flex-1">
+      <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{% icon "buscar" %}</span>
+      <input name="q" value="{{ q }}" aria-label="Buscar producto"
+             placeholder="Buscar por SKU o nombre{% if categoria_activa %} en {{ categoria_activa.nombre }}{% endif %}…"
+             class="w-full rounded-lg border border-transparent bg-gray-50 py-1.5 pl-9 pr-3 text-sm outline-none transition focus:border-[#D4AF37] focus:bg-white focus:ring-2 focus:ring-[#D4AF37]/20" />
+    </div>
+    <label class="flex items-center gap-2 text-xs font-semibold text-gray-600">
+      <input type="checkbox" name="todas" value="1" {% if todas %}checked{% endif %}
+             class="h-4 w-4 rounded border-gray-300 accent-[#0A0A0B]" />
+      Todas las categorías
+    </label>
+    <button class="btn btn-secondary">Filtrar</button>
+  </form>
+
+  {% if aviso %}
+  <div class="mt-4 flex items-start gap-3 rounded-xl border px-4 py-3 text-sm
+              {% if aviso.tipo == 'error' %}border-red-200 bg-red-50 text-red-800{% else %}border-emerald-200 bg-emerald-50 text-emerald-800{% endif %}"
+       role="{% if aviso.tipo == 'error' %}alert{% else %}status{% endif %}">
+    <span class="mt-0.5 shrink-0 {% if aviso.tipo == 'error' %}text-red-600{% else %}text-emerald-600{% endif %}">
+      {% if aviso.tipo == 'error' %}{% icon "alerta" %}{% else %}{% icon "guardar" %}{% endif %}
+    </span>
+    <p class="font-medium">{{ aviso.texto }}</p>
+  </div>
+  {% endif %}
+
+  {% if import_result %}
+  <div class="mt-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
+    <span class="mt-0.5 shrink-0 text-emerald-600">{% icon "guardar" %}</span>
+    <p class="font-medium">
+      Importación lista: {{ import_result.creados }} creado{{ import_result.creados|pluralize }},
+      {{ import_result.actualizados }} actualizado{{ import_result.actualizados|pluralize }}.
+    </p>
+  </div>
+  {% endif %}
+  {% if import_error %}
+  <div class="mt-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+    <span class="mt-0.5 shrink-0 text-red-600">{% icon "alerta" %}</span>
+    <p class="font-medium">{{ import_error }}</p>
+  </div>
+  {% endif %}
+
+  <form id="precios" method="post" action="{% url 'panel:productos_precios' %}">
+    {% csrf_token %}
+    <input type="hidden" name="volver_categoria" value="{{ categoria_activa.slug|default:'' }}" />
+    <input type="hidden" name="volver_q" value="{{ q }}" />
+    {% if todas %}<input type="hidden" name="volver_todas" value="1" />{% endif %}
+    {% for p in productos %}<input type="hidden" name="ids_precio" value="{{ p.pk }}" />{% endfor %}
+  </form>
+
+  <div class="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white">
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[58rem] border-collapse text-sm">
+        <caption class="sr-only">Productos del catálogo</caption>
+        <thead>
+          <tr class="border-b border-gray-200 bg-gray-50/80 text-[11px] uppercase tracking-wider text-gray-500">
+            <th scope="col" class="px-4 py-2.5 text-left font-semibold">Producto</th>
+            <th scope="col" class="hidden px-4 py-2.5 text-left font-semibold lg:table-cell">Categoría</th>
+            <th scope="col" class="px-4 py-2.5 text-left font-semibold">Estado</th>
+            <th scope="col" class="px-3 py-2.5 text-right font-semibold">Precio USD</th>
+            <th scope="col" class="px-3 py-2.5 text-right font-semibold">Stock</th>
+            <th scope="col" class="px-4 py-2.5 text-right font-semibold">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for p in productos %}
+          <tr class="transition hover:bg-gray-50/70">
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50 text-gray-400">
+                  {% if p.imagen %}
+                  <img src="/media/{{ p.imagen }}" alt="" loading="lazy" class="h-full w-full object-cover" />
+                  {% elif p.imagen_url %}
+                  <img src="{{ p.imagen_url }}" alt="" loading="lazy" class="h-full w-full object-cover" />
+                  {% else %}
+                  {% icon "imagen" clase="w-5 h-5" %}
+                  {% endif %}
+                </span>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="truncate font-semibold text-gray-900" title="{{ p.nombre }}">{{ p.nombre }}</span>
+                    {% if p.destacado %}
+                    <span class="text-[#D4AF37]" title="Destacado">{% icon "estrella" clase="w-3.5 h-3.5" %}</span>
+                    {% endif %}
+                  </div>
+                  <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+                    <span class="font-mono text-[11px] tracking-tight text-gray-500">{{ p.sku }}</span>
+                    {% if p.tipo %}<span class="text-gray-300">·</span><span>{{ p.tipo.nombre }}</span>{% endif %}
+                    {% if p.badge %}
+                    <span class="rounded border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-600">{{ p.badge }}</span>
+                    {% endif %}
+                  </div>
+                  {% if p.faltantes %}
+                  <div class="mt-1.5 flex flex-wrap gap-1">
+                    {% for falta in p.faltantes %}
+                    <span class="inline-flex items-center gap-1 rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                      {% icon "alerta" clase="w-3 h-3" %}{{ falta }}
+                    </span>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+            <td class="hidden px-4 py-3 lg:table-cell">
+              <span class="inline-flex items-center gap-1.5 rounded-md bg-gray-50 px-2 py-1 text-xs font-semibold text-gray-700 ring-1 ring-inset ring-gray-200">
+                {{ p.categoria.nombre }}
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              {% if p.activo %}
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Activo
+              </span>
+              {% else %}
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-500/20">
+                <span class="h-1.5 w-1.5 rounded-full bg-gray-400"></span>Inactivo
+              </span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-3 text-right">
+              <input type="number" step="0.01" min="0" form="precios" name="precio_{{ p.pk }}" value="{{ p.precio_mayor|unlocalize }}"
+                     aria-label="Precio de {{ p.sku }}"
+                     class="w-24 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-right font-mono text-[13px] tabular-nums text-gray-900 outline-none transition focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20" />
+            </td>
+            <td class="px-3 py-3 text-right">
+              <input type="number" step="0.01" min="0" form="precios" name="stock_{{ p.pk }}" value="{{ p.stock_cantidad|unlocalize }}"
+                     aria-label="Stock de {{ p.sku }}"
+                     class="w-20 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-right font-mono text-[13px] tabular-nums text-gray-900 outline-none transition focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20" />
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center justify-end gap-1.5">
+                <button type="button" class="icon-btn icon-btn-edit" data-editar-producto
+                        data-url="{% url 'panel:producto_editar' p.pk %}?modal=1{% if categoria_activa %}&categoria={{ categoria_activa.slug }}{% endif %}"
+                        data-titulo="Editar {{ p.sku }}"
+                        aria-label="Editar {{ p.sku }}" title="Editar">
+                  {% icon "editar" %}
+                </button>
+                <a class="icon-btn icon-btn-danger"
+                   href="{% url 'panel:producto_eliminar' p.pk %}{% if categoria_activa %}?categoria={{ categoria_activa.slug }}{% endif %}"
+                   aria-label="Eliminar {{ p.sku }}" title="Eliminar">
+                  {% icon "eliminar" %}
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="px-6 py-16 text-center">
+              <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+                {% icon "productos" clase="w-6 h-6" %}
+              </div>
+              <p class="mt-3 text-sm font-semibold text-gray-900">
+                {% if q %}Sin resultados para «{{ q }}»{% if categoria_activa %} en {{ categoria_activa.nombre }}{% endif %}{% elif categoria_activa %}Sin productos en {{ categoria_activa.nombre }}{% else %}Aún no hay productos{% endif %}
+              </p>
+              <p class="mt-1 text-sm text-gray-500">
+                {% if q %}Prueba con otro SKU o nombre, o marca «Todas las categorías».{% else %}Registra el primero para empezar a vender.{% endif %}
+              </p>
+              <a class="btn btn-primary mt-4"
+                 href="{% url 'panel:producto_nuevo' %}{% if categoria_activa %}?categoria={{ categoria_activa.slug }}{% endif %}">
+                {% icon "nuevo" clase="w-4 h-4" %}Nuevo producto
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if productos %}
+    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50/60 px-4 py-3">
+      <p class="text-xs text-gray-500">Precio y stock se guardan juntos. Los cambios sin guardar se pierden al salir.</p>
+      <button form="precios" class="btn btn-primary">
+        {% icon "guardar" clase="w-4 h-4" %}Guardar precios y stock
+      </button>
+    </div>
+    {% endif %}
   </div>
 </div>
-<form method="get" class="mt-4"><input name="q" value="{{ q }}" placeholder="Buscar SKU o nombre..." class="border rounded px-3 py-2 w-full max-w-md" /></form>
-<div class="bg-white rounded-xl border mt-4 divide-y">
-{% for p in productos %}
-<div class="px-4 py-3 flex items-center justify-between gap-3">
-  <div><strong>{{ p.sku }}</strong> · {{ p.nombre }} <span class="text-xs text-gray-500">USD {{ p.precio_mayor }} · stock {{ p.stock_cantidad }} · {% if p.activo %}activo{% else %}inactivo{% endif %}</span></div>
-  <a class="text-sm underline shrink-0" href="{% url 'panel:producto_editar' p.pk %}">Editar</a>
-</div>
-{% empty %}<p class="px-4 py-3 text-sm text-gray-500">Sin productos.</p>{% endfor %}
-</div>
+
+<dialog id="dialogo-excel" class="panel-dialog max-w-lg" aria-labelledby="dialogo-excel-titulo">
+  <form method="post" action="{% url 'panel:productos_importar' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% if categoria_activa %}<input type="hidden" name="categoria" value="{{ categoria_activa.slug }}" />{% endif %}
+    <div class="flex items-start justify-between gap-4 border-b border-gray-200 px-5 py-4">
+      <div class="flex items-start gap-3">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+          {% icon "excel" clase="w-5 h-5" %}
+        </span>
+        <div>
+          <h2 id="dialogo-excel-titulo" class="text-base font-bold text-gray-900">Importar desde Excel</h2>
+          <p class="mt-0.5 text-xs text-gray-500">Si el SKU ya existe, el producto se actualiza.</p>
+        </div>
+      </div>
+      <button type="button" class="icon-btn" data-cerrar aria-label="Cerrar">{% icon "cerrar" %}</button>
+    </div>
+    <div class="px-5 py-5">
+      <label class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center transition hover:border-[#D4AF37] hover:bg-white">
+        <span class="text-gray-400">{% icon "subir" clase="w-6 h-6" %}</span>
+        <span class="text-sm font-semibold text-gray-700">Elegir archivo .xlsx</span>
+        <span id="excel-nombre" class="text-xs text-gray-500">Máximo 5 MB</span>
+        <input type="file" name="archivo" accept=".xlsx" required class="sr-only" data-archivo-excel />
+      </label>
+      {% if categoria_activa %}
+      <p class="mt-3 text-xs text-gray-500">«{{ categoria_activa.nombre }}» se usa cuando la fila no trae categoría.</p>
+      {% endif %}
+    </div>
+    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50/60 px-5 py-3">
+      <a class="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 underline underline-offset-2 hover:text-gray-900"
+         href="{% url 'panel:productos_plantilla' %}">
+        {% icon "descargar" clase="w-3.5 h-3.5" %}Descargar plantilla
+      </a>
+      <div class="flex gap-2">
+        <button type="button" class="btn btn-secondary" data-cerrar>Cancelar</button>
+        <button class="btn btn-primary">{% icon "subir" clase="w-4 h-4" %}Importar</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dialogo-editar" class="panel-dialog max-w-4xl" aria-labelledby="dialogo-editar-titulo">
+  <div class="flex items-center justify-between gap-4 border-b border-gray-200 px-5 py-3">
+    <h2 id="dialogo-editar-titulo" class="text-base font-bold text-gray-900">Editar producto</h2>
+    <button type="button" class="icon-btn" data-cerrar aria-label="Cerrar">{% icon "cerrar" %}</button>
+  </div>
+  <div id="dialogo-editar-cuerpo" class="max-h-[76vh] overflow-y-auto px-5 py-4"></div>
+</dialog>
+
+<script>
+(function(){
+  var archivo = document.querySelector('[data-archivo-excel]');
+  if (archivo) {
+    archivo.addEventListener('change', function(){
+      var nombre = document.getElementById('excel-nombre');
+      if (nombre && archivo.files.length) nombre.textContent = archivo.files[0].name;
+    });
+  }
+})();
+</script>
+
+{% include "panel/_modal_editar_js.html" %}
+{% include "panel/_alta_rapida.html" %}
 {% endblock %}

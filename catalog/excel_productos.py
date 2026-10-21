@@ -18,9 +18,10 @@ from .models import Category, Product, TipoProducto
 HEADERS = [
     "SKU", "Nombre", "Categoría", "Tipo", "Precio mayor USD",
     "Unidad", "Stock", "Badge", "Origen", "Imagen URL", "Descripción",
+    "Colores", "Galería (URLs)",
 ]
 
-ANCHOS = (18, 40, 22, 22, 16, 10, 10, 16, 12, 38, 50)
+ANCHOS = (18, 40, 22, 22, 16, 10, 10, 16, 12, 38, 50, 30, 40)
 
 MAX_FILAS = 1000
 
@@ -38,7 +39,9 @@ INSTRUCCIONES = (
     "Cómo llenar la plantilla de productos",
     "",
     "· Una fila por producto. Deje la fila en blanco para ignorarla.",
-    "· SKU y Nombre son obligatorios. El SKU identifica el producto: si ya existe, se actualiza.",
+    "· Nombre y Categoría son obligatorios.",
+    "· SKU: opcional. Si lo deja vacío se genera solo (COD-0001, COD-0002…)."
+    " Si lo escribe y ya existe, ese producto se actualiza.",
     "· Categoría: nombre o slug de una categoría existente (obligatorio).",
     "· Tipo: nombre o slug del tipo de producto (opcional).",
     "· Precio mayor USD: número mayor o igual a 0 (obligatorio).",
@@ -46,6 +49,9 @@ INSTRUCCIONES = (
     "· Stock: número mayor o igual a 0. Vacío = 0.",
     "· Badge: etiqueta destacada, ej MÁS VENDIDO (opcional).",
     "· Imagen URL: enlace http(s) de la foto (opcional).",
+    "· Colores: separados por coma, ej Terracota, Negro."
+    " Para dos colores (exterior/interior): Negro (exterior), Blanco (interior).",
+    "· Galería (URLs): enlaces de las fotos, separados por punto y coma.",
 )
 
 
@@ -70,6 +76,39 @@ def _numero(value, etiqueta, fila, obligatorio):
     return numero.quantize(Decimal("0.01"))
 
 
+def _colores(texto):
+    """'Terracota, Negro (exterior)' -> [{nombre, rol}, …]"""
+    salida = []
+    vistos = set()
+    for parte in str(texto or "").split(","):
+        nombre = parte.strip()
+        if not nombre:
+            continue
+        rol = ""
+        if "(" in nombre and nombre.endswith(")"):
+            nombre, _, etiqueta = nombre.partition("(")
+            nombre = nombre.strip()
+            etiqueta = etiqueta[:-1].strip().lower()
+            if etiqueta in ("exterior", "interior"):
+                rol = etiqueta
+        clave = (nombre.casefold(), rol)
+        if nombre and clave not in vistos:
+            vistos.add(clave)
+            salida.append({"nombre": nombre[:40], "rol": rol})
+    return salida[:20]
+
+
+def _galeria(texto):
+    """Enlaces de la galería separados por punto y coma o salto de línea."""
+    urls = []
+    for parte in str(texto or "").replace("\n", ";").split(";"):
+        url = parte.strip()
+        if url.startswith("http://") or url.startswith("https://"):
+            if url not in urls:
+                urls.append(url)
+    return urls[:20]
+
+
 def build_productos_xlsx():
     workbook = Workbook()
     sheet = workbook.active
@@ -77,7 +116,7 @@ def build_productos_xlsx():
     sheet.append(HEADERS)
     sheet.freeze_panes = "A2"
     sheet.auto_filter.ref = sheet.dimensions
-    for columna, ancho in zip("ABCDEFGHIJK", ANCHOS):
+    for columna, ancho in zip("ABCDEFGHIJKLM", ANCHOS):
         sheet.column_dimensions[columna].width = ancho
     for cell in sheet[1]:
         cell.font = Font(bold=True, color="FFFFFF")
@@ -129,14 +168,13 @@ def read_productos_xlsx(uploaded_file):
         if all(_texto(valor) == "" for valor in valores):
             continue
         (sku, nombre, categoria_txt, tipo_txt, precio, unidad_txt, stock,
-         badge, origen, imagen, descripcion) = valores[:len(HEADERS)]
+         badge, origen, imagen, descripcion, colores_txt, galeria_txt) = valores[:len(HEADERS)]
 
         sku = _texto(sku)
-        if not sku:
-            raise ValueError(f"Falta SKU en la fila {fila}.")
-        if sku.casefold() in skus:
+        if sku and sku.casefold() in skus:
             raise ValueError(f"El SKU {sku} está repetido en el archivo (fila {fila}).")
-        skus.add(sku.casefold())
+        if sku:
+            skus.add(sku.casefold())
 
         nombre = _texto(nombre)
         if not nombre:
@@ -154,6 +192,9 @@ def read_productos_xlsx(uploaded_file):
             tipo = tipos.get(_texto(tipo_txt).casefold())
             if tipo is None:
                 raise ValueError(f"Tipo no encontrado: {_texto(tipo_txt)} (fila {fila}).")
+            if categoria is None and tipo.categoria_id:
+                # El tipo ya sabe su categoría: no hace falta repetirla.
+                categoria = tipo.categoria
 
         unidad = Product.UNIDAD_M2
         if _texto(unidad_txt):
@@ -165,7 +206,7 @@ def read_productos_xlsx(uploaded_file):
 
         filas.append({
             "fila": fila,
-            "sku": sku,
+            "sku": sku,          # vacío = se genera el siguiente COD-000X
             "nombre": nombre,
             "categoria": categoria,
             "tipo": tipo,
@@ -176,6 +217,8 @@ def read_productos_xlsx(uploaded_file):
             "origen": _texto(origen)[:40],
             "imagen_url": _texto(imagen)[:500],
             "descripcion": _texto(descripcion)[:1000],
+            "colores": _colores(colores_txt),
+            "galeria": _galeria(galeria_txt),
         })
 
     workbook.close()

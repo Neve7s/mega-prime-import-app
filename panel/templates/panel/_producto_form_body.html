@@ -5,10 +5,49 @@
       <h2 class="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-gray-500">
         {% icon "estrella" clase="w-4 h-4 text-[#D4AF37]" %}Colores disponibles
       </h2>
-      <p class="mb-3 text-xs text-gray-400">Se muestran como puntitos en la tarjeta y el detalle.</p>
-      <div id="colores-list" class="flex flex-col gap-2"></div>
-      <button type="button" id="color-add" class="mt-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-100">+ Agregar color</button>
+      <p class="mb-3 text-xs text-gray-400">Un clic por color. Se muestran como puntitos en la tarjeta y el detalle.</p>
+      <div id="paleta-colores" class="flex flex-wrap gap-2">
+        {% for c in paleta %}
+        <button type="button" class="paleta-color inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-2 py-1 text-xs font-bold text-gray-600 hover:border-gray-400" data-slug="{{ c.slug }}" data-nombre="{{ c.nombre }}" data-hex="{{ c.hex }}" title="{{ c.nombre }}">
+          <span class="inline-block h-4 w-4 rounded-full border border-black/10" style="background:{{ c.hex }}"></span>{{ c.nombre }}
+        </button>
+        {% endfor %}
+      </div>
+      <div id="colores-list" class="mt-3 flex flex-col gap-2"></div>
+      <div class="mt-3 flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3">
+        <label class="text-[11px] text-gray-500">Color nuevo
+          <input type="text" id="color-nombre" placeholder="Ej. Verde oliva" maxlength="40" class="mt-0.5 block w-40 rounded-lg border border-gray-200 px-2 py-1 text-xs" />
+        </label>
+        <input type="color" id="color-hex" value="#D4AF37" class="h-8 w-10 cursor-pointer rounded border border-gray-300 bg-white p-0.5" title="Tono" />
+        <button type="button" id="color-add" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-100">+ Agregar color</button>
+      </div>
+      <p id="color-aviso" class="mt-1 text-[11px] text-amber-700"></p>
       <input type="hidden" name="colores_json" id="colores_json" value="" />
+    </div>
+    <div class="rounded-xl border border-gray-200 bg-white p-5">
+      <h2 class="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-gray-500">
+        {% icon "imagen" clase="w-4 h-4 text-emerald-600" %}Galería de fotos
+      </h2>
+      <p class="mb-3 text-xs text-gray-400">Varias fotos por producto: archivo o enlace http(s).</p>
+      {% if obj %}
+      <div class="mb-3 flex flex-col gap-2">
+        {% for foto in obj.imagenes.all %}
+        <label class="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 p-2">
+          <img src="{{ foto.imagen_src }}" alt="{{ foto.alt }}" class="h-12 w-12 rounded object-cover" />
+          <span class="min-w-0 flex-1 truncate text-xs text-gray-600">{{ foto.alt|default:"Foto" }}</span>
+          <input type="checkbox" name="galeria_borrar" value="{{ foto.pk }}" class="accent-red-600" /> quitar
+        </label>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <div class="flex flex-col gap-2">
+        <label class="text-[11px] text-gray-500">Fotos por enlace
+          <textarea name="galeria_urls" rows="3" placeholder="https://…&#10;https://…" class="mt-0.5 block w-full rounded-lg border border-gray-200 px-2 py-1 text-xs"></textarea>
+        </label>
+        <label class="text-[11px] text-gray-500">O subir archivos
+          <input type="file" name="galeria_archivos" accept="image/*" multiple class="mt-0.5 block w-full text-xs" />
+        </label>
+      </div>
     </div>
     <div class="rounded-xl border border-gray-200 bg-white p-5">
       <h2 class="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-gray-500">
@@ -22,6 +61,7 @@
   </div>
   {{ colores_init|json_script:"colores-init" }}
   {{ caracteristicas_init|json_script:"caracts-init" }}
+  {{ tipos_categoria|json_script:"tipos-categoria" }}
   <div class="mt-5 flex items-center gap-2">
     <button class="btn btn-primary">{% icon "guardar" clase="w-4 h-4" %}Guardar producto</button>
     {% if en_modal %}
@@ -33,33 +73,83 @@
   </div>
 <script>
 (function(){
+  // ── Tipo y categoría: una sola decisión ──
+  // Al elegir el tipo, la categoría se rellena sola (el tipo manda).
+  var TIPOS_CATEGORIA = {};
+  try { TIPOS_CATEGORIA = JSON.parse(document.getElementById('tipos-categoria').textContent) || {}; } catch (e) {}
+  var selTipo = document.getElementById('id_tipo');
+  var selCategoria = document.getElementById('id_categoria');
+  function sincronizaCategoria(){
+    if (!selTipo || !selCategoria) return;
+    var info = TIPOS_CATEGORIA[selTipo.value];
+    if (info && info.categoria){
+      selCategoria.value = info.categoria;
+      selCategoria.disabled = true;
+      selCategoria.classList.add('opacity-60');
+    } else {
+      selCategoria.disabled = false;
+      selCategoria.classList.remove('opacity-60');
+    }
+  }
+  if (selTipo && selCategoria){
+    selTipo.addEventListener('change', sincronizaCategoria);
+    sincronizaCategoria();
+  }
+  // El slug se arma con el nombre mientras el usuario escribe.
+  var campoNombre = document.getElementById('id_nombre');
+  var campoSlug = document.getElementById('id_slug');
+  function slugify(texto){
+    return (texto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 140);
+  }
+  if (campoNombre && campoSlug){
+    // Mientras no se toque el slug a mano, se arma con el nombre.
+    campoNombre.addEventListener('input', function(){
+      if (campoSlug.dataset.tocado === '1') return;
+      campoSlug.value = slugify(campoNombre.value);
+    });
+    campoSlug.addEventListener('input', function(){ campoSlug.dataset.tocado = '1'; });
+  }
+
   var coloresList = document.getElementById('colores-list');
   var caractsList = document.getElementById('caracts-list');
   var coloresJson = document.getElementById('colores_json');
-  var caractsJson = document.getElementById('caracteristicas_json');
+  var caracteristicasJson = document.getElementById('caracteristicas_json');
+  var paleta = document.getElementById('paleta-colores');
   function esc(s){
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   }
+  var colores = [];
   function sync(){
-    var colores = [];
+    colores = [];
     coloresList.querySelectorAll('.color-row').forEach(function(r){
-      colores.push({nombre: r.querySelector('[data-nombre]').value,
-                    hex: r.querySelector('[data-hex]').value});
+      colores.push({slug: r.getAttribute('data-slug'), nombre: r.querySelector('[data-nombre]').value,
+                    hex: r.querySelector('[data-hex]').value, rol: r.querySelector('[data-rol]').value});
     });
     coloresJson.value = JSON.stringify(colores);
+    if (paleta){
+      paleta.querySelectorAll('.paleta-color').forEach(function(b){
+        var elegido = colores.some(function(c){ return c.slug === b.getAttribute('data-slug'); });
+        b.classList.toggle('border-[#D4AF37]', elegido);
+        b.classList.toggle('bg-amber-50', elegido);
+        b.classList.toggle('text-gray-900', elegido);
+        b.classList.toggle('text-gray-600', !elegido);
+      });
+    }
     var caracts = [];
-    caractsList.querySelectorAll('[data-caract]').forEach(function(i){
-      caracts.push(i.value);
-    });
-    caractsJson.value = JSON.stringify(caracts);
+    caractsList.querySelectorAll('[data-caract]').forEach(function(i){ caracts.push(i.value); });
+    caracteristicasJson.value = JSON.stringify(caracts);
   }
   function colorRow(c){
-    c = c || {nombre: '', hex: '#D4AF37'};
+    c = c || {slug: '', nombre: '', hex: '#D4AF37', rol: ''};
     var div = document.createElement('div');
     div.className = 'color-row flex items-center gap-2 panel-form';
+    div.setAttribute('data-slug', c.slug || '');
     div.innerHTML = '<input type="color" data-hex value="' + esc(/^#[0-9a-fA-F]{6}$/.test(c.hex) ? c.hex : '#D4AF37') + '" class="h-8 w-10 shrink-0 cursor-pointer rounded border border-gray-300 bg-white p-0.5" />'
-      + '<input data-nombre placeholder="Nombre (ej Rojo Teja)" value="' + esc(c.nombre) + '" maxlength="40" />'
+      + '<input data-nombre placeholder="Nombre del color" value="' + esc(c.nombre) + '" maxlength="40" />'
+      + '<select data-rol class="rounded-lg border border-gray-200 px-2 py-1 text-xs"><option value="">Color</option><option value="exterior">Exterior</option><option value="interior">Interior</option></select>'
       + '<button type="button" class="rm text-red-500 font-bold px-2">×</button>';
+    div.querySelector('[data-rol]').value = c.rol || '';
     return div;
   }
   function caractRow(t){
@@ -69,18 +159,56 @@
       + '<button type="button" class="rm text-red-500 font-bold px-2">×</button>';
     return div;
   }
+  function alterna(slug, nombre, hex){
+    var existe = colores.find(function(c){ return c.slug === slug; });
+    if (existe){
+      colores = colores.filter(function(c){ return c.slug !== slug; });
+      var fila = coloresList.querySelector('.color-row[data-slug="' + slug + '"]');
+      if (fila) fila.remove();
+    } else {
+      colores.push({slug: slug, nombre: nombre, hex: hex, rol: ''});
+      coloresList.appendChild(colorRow({slug: slug, nombre: nombre, hex: hex, rol: ''}));
+    }
+    sync();
+  }
+  function agrega(nombre, hex){
+    // "Agregar color" suma; si ya está, solo avisa (no lo quita).
+    var slug = nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+               .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+    if (colores.some(function(c){ return c.slug === slug || c.nombre.toLowerCase() === nombre.toLowerCase(); })){
+      return false;
+    }
+    colores.push({slug: slug, nombre: nombre, hex: hex, rol: ''});
+    coloresList.appendChild(colorRow({slug: slug, nombre: nombre, hex: hex, rol: ''}));
+    sync();
+    return true;
+  }
+  if (paleta){
+    paleta.addEventListener('click', function(e){
+      var boton = e.target.closest('.paleta-color');
+      if (!boton) return;
+      alterna(boton.getAttribute('data-slug'), boton.getAttribute('data-nombre'), boton.getAttribute('data-hex'));
+    });
+  }
+  document.getElementById('color-add').addEventListener('click', function(){
+    var nombre = document.getElementById('color-nombre').value.trim();
+    var hex = document.getElementById('color-hex').value;
+    if (!nombre){ document.getElementById('color-nombre').focus(); return; }
+    if (!agrega(nombre, hex)){
+      var aviso = document.getElementById('color-aviso');
+      if (aviso){ aviso.textContent = 'Ese color ya está en la lista.'; }
+      return;
+    }
+    document.getElementById('color-nombre').value = '';
+  });
   function boot(){
-    var colores = [], caracts = [];
+    var caracts = [];
     try { colores = JSON.parse(document.getElementById('colores-init').textContent) || []; } catch (e) {}
     try { caracts = JSON.parse(document.getElementById('caracts-init').textContent) || []; } catch (e) {}
     colores.forEach(function(c){ coloresList.appendChild(colorRow(c)); });
     caracts.forEach(function(t){ caractsList.appendChild(caractRow(t)); });
     sync();
   }
-  document.getElementById('color-add').addEventListener('click', function(){
-    if (coloresList.querySelectorAll('.color-row').length >= 20) return;
-    coloresList.appendChild(colorRow()); sync();
-  });
   document.getElementById('caract-add').addEventListener('click', function(){
     if (caractsList.querySelectorAll('[data-caract]').length >= 30) return;
     caractsList.appendChild(caractRow('')); sync();
@@ -92,6 +220,7 @@
   });
   [coloresList, caractsList].forEach(function(box){
     box.addEventListener('input', sync);
+    box.addEventListener('change', sync);
   });
   boot();
 })();

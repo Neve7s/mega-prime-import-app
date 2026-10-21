@@ -3,25 +3,56 @@
 {% block content %}
 <section class="w-full pt-32 lg:pt-36 pb-space-xl bg-surface">
 <div class="max-w-[1200px] mx-auto px-margin md:px-margin-md grid grid-cols-1 lg:grid-cols-2 gap-gutter-lg">
-  <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-surface-container-low shadow-md">
-    <img class="w-full h-full object-cover" alt="{{ product.nombre }}" src="{{ product.imagen_src }}" />
-    <span class="absolute top-3 left-3 bg-secondary text-on-secondary px-2 py-0.5 rounded font-label-sm text-label-sm font-bold uppercase">{{ product.origen|default:'' }}</span>
+  <div class="flex flex-col gap-space-sm">
+    <div class="relative w-[calc(100%-10px)] mx-auto aspect-square rounded-xl overflow-hidden bg-surface-container-low shadow-md">
+      {% if product.imagen_src %}<img id="galeria-principal" class="w-full h-full object-cover" alt="{{ product.nombre }}" src="{{ product.imagen_src }}" />{% else %}<span class="flex h-full w-full items-center justify-center p-6 text-center font-headline-sm text-headline-sm font-bold uppercase tracking-wider text-on-surface-variant opacity-60">{{ product.nombre }}</span>{% endif %}
+      <span class="absolute top-3 left-3 bg-secondary text-on-secondary px-2 py-0.5 rounded font-label-sm text-label-sm font-bold uppercase">{{ product.origen|default:'' }}</span>
+    </div>
+    {% if galeria %}
+    <div class="flex gap-2 overflow-x-auto pb-1 scroll-thin">
+      {% for foto in galeria %}
+      <button type="button" class="galeria-mini shrink-0 w-[74px] aspect-square overflow-hidden rounded-lg border-2 {% if forloop.first %}border-secondary{% else %}border-outline-variant{% endif %} bg-surface-container-low" data-src="{{ foto.imagen_src }}" data-alt="{{ foto.alt|default:product.nombre }}" aria-label="Ver foto {{ forloop.counter }}">
+        <img class="w-full h-full object-cover" alt="{{ foto.alt|default:product.nombre }}" loading="lazy" src="{{ foto.imagen_src }}" />
+      </button>
+      {% endfor %}
+    </div>
+    {% endif %}
   </div>
   <div class="flex flex-col gap-space-md">
     <div>
-      <span class="font-label-sm text-label-sm uppercase text-secondary font-bold tracking-wider">{{ product.categoria.nombre }}{% if product.tipo %} · {{ product.tipo.nombre }}{% endif %} · SKU: {{ product.sku }}</span>
+      <span class="font-label-sm text-label-sm uppercase text-secondary font-bold tracking-wider">{{ product.categoria.nombre }}{% if product.tipo %} · {{ product.tipo.nombre }}{% endif %}</span>
       {% if product.badge %}<span class="inline-block mt-1 bg-secondary-container text-primary px-2 py-0.5 rounded font-label-sm text-label-sm font-bold uppercase">{{ product.badge }}</span>{% endif %}
       <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight mt-1">{{ product.nombre }}</h1>
-      <p class="font-headline-md text-headline-md font-bold text-secondary mt-2">USD {{ product.precio_mayor }} / {{ product.get_unidad_display }}</p>
+      <p class="font-headline-md text-headline-md font-bold text-secondary mt-2">{% if product.precio_mayor %}{{ product.precio_mayor|floatformat:2 }} USD / {{ product.get_unidad_display }}{% else %}<span class="text-on-surface-variant">Precio a cotizar</span>{% endif %}</p>
       <p class="font-body-sm text-body-sm {% if product.en_stock %}text-green-700{% else %}text-error{% endif %} font-bold mt-1">{% if product.en_stock %}Stock: {{ product.stock_cantidad|floatformat:0 }} {{ product.get_unidad_display }}{% else %}Sin stock — cotizar disponibilidad{% endif %}</p>
     </div>
-    {% if product.descripcion %}<p class="font-body-md text-body-md text-on-surface-variant">{{ product.descripcion }}</p>{% endif %}
-    {% if product.caracteristicas %}<ul class="flex flex-col gap-1">{% for t in product.caracteristicas %}<li class="font-body-sm text-body-sm text-on-surface flex items-start gap-2"><span class="text-secondary font-bold">✓</span>{{ t }}</li>{% endfor %}</ul>{% endif %}
-    {% if product.colores %}<div class="flex flex-wrap items-center gap-2">{% for c in product.colores %}<span class="inline-flex items-center gap-1.5 font-body-sm text-body-sm text-on-surface-variant border border-outline-variant rounded-full pl-1 pr-2.5 py-0.5"><span class="inline-block w-4 h-4 rounded-full" style="background:{{ c.hex }}"></span>{{ c.nombre }}</span>{% endfor %}</div>{% endif %}
+    {% if product.descripcion or product.caracteristicas %}
+    <div class="max-h-80 overflow-y-auto pr-1 scroll-thin">
+      {% if product.descripcion %}<p class="font-body-md text-body-md text-on-surface-variant">{{ product.descripcion }}</p>{% endif %}
+      {% if product.caracteristicas %}<ul class="flex flex-col gap-1 mt-2">{% for t in product.caracteristicas %}<li class="font-body-sm text-body-sm text-on-surface flex items-start gap-2"><span class="text-secondary font-bold">✓</span>{{ t }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+    {% endif %}
+    {% with colores=product.colores_producto.all %}{% if colores %}
+    <div>
+      <span class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Color</span>
+      <div class="flex flex-wrap items-center gap-2 mt-1">
+        {% for pc in colores %}
+        <label class="cursor-pointer inline-flex items-center gap-1.5 border border-outline-variant rounded-full pl-1 pr-3 py-1 text-body-sm has-[:checked]:border-secondary has-[:checked]:bg-secondary-container has-[:checked]:text-primary">
+          <input type="radio" name="color-producto" value="{{ pc.color.nombre }}" class="sr-only" {% if forloop.first %}checked{% endif %} />
+          <span class="inline-block w-4 h-4 rounded-full border border-black/10" style="background:{{ pc.color.hex }}"></span>{{ pc.color.nombre }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}{% endwith %}
+    {% if product.ficha_tecnica %}
     <div class="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-space-md">
       <h2 class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Ficha técnica</h2>
-      {% for k, v in product.ficha_tecnica.items %}<div class="flex justify-between py-1.5 border-b border-outline-variant/20 font-body-sm text-body-sm"><span class="text-on-surface-variant">{{ k }}</span><span class="font-semibold">{{ v }}</span></div>{% endfor %}
+      <div class="max-h-56 overflow-y-auto pr-1 scroll-thin mt-1">
+        {% for k, v in product.ficha_tecnica.items %}<div class="flex justify-between gap-3 py-1.5 border-b border-outline-variant/20 font-body-sm text-body-sm"><span class="text-on-surface-variant shrink-0">{{ k }}</span><span class="font-semibold text-right">{{ v }}</span></div>{% endfor %}
+      </div>
     </div>
+    {% endif %}
     <div class="flex flex-wrap gap-space-sm">
       <button class="bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg uppercase tracking-wider px-space-lg py-3 rounded-lg" data-add-sku="{{ product.sku }}" data-add-nombre="{{ product.nombre }}" data-add-precio="{{ product.precio_mayor }}">Agregar a cotización</button>
       <a class="bg-secondary-container hover:bg-secondary text-primary font-label-lg text-label-lg uppercase tracking-wider px-space-lg py-3 rounded-lg font-bold" href="{% url 'cart:carrito' %}">Ir al carrito</a>
@@ -38,8 +69,8 @@
   <h2 class="font-headline-md text-headline-md font-bold text-primary">También te puede interesar</h2>  <div class="grid grid-cols-2 lg:grid-cols-4 gap-gutter mt-4">
     {% for r in relacionados %}
     <a href="{% url 'catalog:detalle' r.slug %}" class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm hover:shadow-md block">
-      <img class="w-full aspect-square object-cover rounded-lg" alt="{{ r.nombre }}" loading="lazy" src="{{ r.imagen_src }}" />
-      <div class="font-label-sm text-label-sm text-secondary font-bold mt-2">SKU: {{ r.sku }}</div>
+      {% if r.imagen_src %}<img class="w-full aspect-square object-cover rounded-lg" alt="{{ r.nombre }}" loading="lazy" src="{{ r.imagen_src }}" />{% else %}<span class="flex aspect-square w-full items-center justify-center rounded-lg bg-surface-container p-2 text-center font-label-sm text-label-sm font-bold uppercase tracking-wider text-on-surface-variant opacity-60">{{ r.nombre }}</span>{% endif %}
+      <div class="font-label-sm text-label-sm text-secondary font-bold mt-2">{% if r.tipo %}{{ r.tipo.nombre }}{% else %}{{ r.categoria.nombre }}{% endif %}</div>
       <div class="font-headline-sm text-headline-sm font-bold text-primary">{{ r.nombre }}</div>
     </a>
     {% endfor %}
@@ -47,5 +78,21 @@
 </div>
 {% endif %}
 </section>
-<script>{% load l10n %}window.MPI_PRODUCTS = window.MPI_PRODUCTS || {}; window.MPI_PRODUCTS["{{ product.sku }}"] = {nombre: "{{ product.nombre|escapejs }}", precio: {{ product.precio_mayor|unlocalize }}};</script>
+<script>{% load l10n %}window.MPI_PRODUCTS = window.MPI_PRODUCTS || {}; window.MPI_PRODUCTS["{{ product.sku }}"] = {nombre: "{{ product.nombre|escapejs }}", precio: {{ product.precio_mayor|unlocalize }}};
+(function(){
+  var principal = document.getElementById('galeria-principal');
+  document.querySelectorAll('.galeria-mini').forEach(function(mini){
+    mini.addEventListener('click', function(){
+      principal.src = mini.getAttribute('data-src');
+      principal.alt = mini.getAttribute('data-alt') || principal.alt;
+      document.querySelectorAll('.galeria-mini').forEach(function(otro){
+        otro.classList.remove('border-secondary');
+        otro.classList.add('border-outline-variant');
+      });
+      mini.classList.remove('border-outline-variant');
+      mini.classList.add('border-secondary');
+    });
+  });
+})();
+</script>
 {% endblock %}

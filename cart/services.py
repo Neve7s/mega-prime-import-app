@@ -57,9 +57,15 @@ def crear_pedido(datos: dict, items: list[dict], sale: SaleCode) -> tuple[Order 
             return None, f"Cantidad no válida para {product.sku}."
         if cantidad < 1 or cantidad > 9999:
             return None, f"Cantidad no válida para {product.sku}."
+        color = str(it.get("color") or "").strip()[:40]
+        if color:
+            # El color debe ser uno de los del producto.
+            disponibles = {pc.color.nombre for pc in product.colores_producto.all()}
+            if disponibles and color not in disponibles:
+                return None, f"Color no disponible para {product.sku}: {color}"
         precio = product.precio_mayor
         subtotal += precio * cantidad
-        lineas.append((product, cantidad, precio))
+        lineas.append((product, cantidad, precio, color))
 
     try:
         numero = Order.objects.count() + 1
@@ -72,10 +78,11 @@ def crear_pedido(datos: dict, items: list[dict], sale: SaleCode) -> tuple[Order 
             subtotal=subtotal, descuento=Decimal("0"), total=subtotal,
             raw_payload={"items": items},
         )
-        for product, cantidad, precio in lineas:
+        for product, cantidad, precio, color in lineas:
             OrderItem.objects.create(
                 order=pedido, product=product, sku_snapshot=product.sku,
-                nombre_snapshot=product.nombre, cantidad=cantidad, precio_snapshot=precio,
+                nombre_snapshot=product.nombre, color_snapshot=color,
+                cantidad=cantidad, precio_snapshot=precio,
             )
     except (InvalidOperation, ValueError):
         return None, "No se pudo procesar el pedido. Intenta de nuevo."

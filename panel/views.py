@@ -1,6 +1,7 @@
 from urllib.parse import quote, urlencode
 
 from django.contrib.auth import logout
+from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -9,14 +10,14 @@ from calculator.models import SavedShipment, TaxRule
 from cart.models import Order, OrderItem, SaleCode
 from catalog.calidad import (contar_grupos_duplicados, faltantes_producto,
                              grupos_duplicados, q_incompleto)
-from catalog.models import Category, Product, TipoProducto
-from core.models import SiteSettings
+from catalog.models import Category, Color, Product, TipoProducto
+from core.models import HeroMedia, SiteSettings
 
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 from .auth import (SECCIONES_URL, es_dueno, primera_seccion,
                    seccion_requerida, staff_only, tiene_panel)
-from .forms import (CategoryForm, ColaboradorForm, OrderEstadoForm,
+from .forms import (CategoryForm, ColaboradorForm, HeroMediaForm, OrderEstadoForm,
                     ProductForm, SaleCodeForm, SiteSettingsForm, TipoForm)
 from .models import AccesoPanel
 
@@ -83,6 +84,7 @@ BULK_MAX = 200
 AVISOS = {
     "eliminados": ("ok", "producto eliminado", "productos eliminados"),
     "precios": ("ok", "ficha actualizada", "fichas actualizadas"),
+    "fusionados": ("ok", "variante de color fusionada", "variantes de color fusionadas"),
     "datos_invalidos": ("error",
                         "Revisa precio y stock: deben ser números mayores o iguales a 0.",
                         ""),
@@ -235,9 +237,52 @@ def productos_precios(request):
 @seccion_requerida("productos")
 def productos_duplicados(request):
     grupos = grupos_duplicados()
+    from catalog.calidad import grupos_mismo_modelo
+
+    modelos = grupos_mismo_modelo()
     return render(request, "panel/productos_duplicados.html",
                   {"grupos": grupos, "n_grupos": len(grupos),
-                   "n_productos": sum(len(g) for g in grupos)})
+                   "n_productos": sum(len(g) for g in grupos),
+                   "grupos_modelo": modelos,
+                   "n_grupos_modelo": len(modelos),
+                   "n_productos_modelo": sum(len(g) for g in modelos)})
+
+
+@seccion_requerida("productos")
+def productos_fusionar(request):
+    """Junta en un solo producto las fichas que son el mismo modelo."""
+    from catalog.calidad import fusionar_variantes, grupos_mismo_modelo
+
+    if request.method != "POST":
+        return redirect("panel:productos_duplicados")
+    try:
+        principal = get_object_or_404(Product, pk=int(request.POST.get("principal")))
+    except (TypeError, ValueError):
+        return redirect("panel:productos_duplicados")
+    ids = []
+    for valor in request.POST.getlist("variantes"):
+        try:
+            ids.append(int(valor))
+        except (TypeError, ValueError):
+            continue
+    ids = [i for i in ids if i != principal.pk]
+    if not ids:
+        return redirect("panel:productos_duplicados")
+    # Solo se fusionan fichas del MISMO grupo de "mismo modelo".
+    grupo = next((g for g in grupos_mismo_modelo()
+                  if any(p.pk == principal.pk for p in g)), None)
+    if grupo is None:
+        return redirect(_con_msg(reverse("panel:productos_duplicados"),
+                                "datos_invalidos"))
+    pks_grupo = {p.pk for p in grupo}
+    variantes = [p for p in Product.objects.filter(pk__in=ids)
+                 if p.pk in pks_grupo]
+    if not variantes:
+        return redirect("panel:productos_duplicados")
+    with transaction.atomic():
+        fusionar_variantes(principal, variantes)
+    return redirect(_con_msg(
+        reverse("panel:productos_duplicados"), "fusionados", len(variantes)))
 
 
 @seccion_requerida("productos")
@@ -308,24 +353,66 @@ def productos_importar(request):
     creados = actualizados = 0
     campos = ("nombre", "tipo", "precio_mayor", "unidad", "stock_cantidad",
               "badge", "origen", "imagen_url", "descripcion")
+    from catalog.sku import siguiente_sku
+
+    # 1) Validación ANTES de escribir nada: si algo falla, no queda nada a medias.
     for fila in filas:
-        categoria = fila["categoria"] or cat_defecto
-        if categoria is None:
+        if (fila["categoria"] or cat_defecto) is None:
             return fallo(f"Falta la categoría en la fila {fila['fila']} "
-                         "y no hay una categoría seleccionada como valor por defecto.")
-        valores = {campo: fila[campo] for campo in campos}
-        existente = Product.objects.filter(sku=fila["sku"]).first()
-        if existente is None:
-            Product.objects.create(
-                sku=fila["sku"], slug=_slug_producto(fila["nombre"], fila["sku"]),
-                categoria=categoria, **valores)
-            creados += 1
-        else:
-            for campo, valor in valores.items():
-                setattr(existente, campo, valor)
-            existente.categoria = categoria
-            existente.save()
-            actualizados += 1
+                        "y no hay una categoría seleccionada como valor por defecto.")
+
+    # Los SKUs que trae el archivo y los que se generen aquí no pueden pisarse
+    # entre sí ni repetir uno ya existente en la base.
+    reservados = {f["sku"] for f in filas if f["sku"]}
+    with transaction.atomic():
+        for fila in filas:
+            categoria = fila["categoria"] or cat_defecto
+            valores = {campo: fila[campo] for campo in campos}
+            sku = fila["sku"]
+            generado = not sku
+            if generado:
+                # Sin SKU en el Excel: se asigna el siguiente correlativo COD-000X.
+                sku = siguiente_sku(reservados=reservados)
+                while Product.objects.filter(sku__iexact=sku).exists():
+                    sku = siguiente_sku(reservados=reservados)
+                reservados.add(sku)
+            existente = Product.objects.filter(sku=sku).first()
+            if existente is None:
+                producto = Product.objects.create(
+                    sku=sku, slug=_slug_producto(fila["nombre"], sku),
+                    categoria=categoria, **valores)
+                creados += 1
+            elif generado:
+                # Un SKU generado nunca pisa un producto existente.
+                producto = Product.objects.create(
+                    sku=sku, slug=_slug_producto(fila["nombre"], sku),
+                    categoria=categoria, **valores)
+                creados += 1
+            else:
+                for campo, valor in valores.items():
+                    setattr(existente, campo, valor)
+                existente.categoria = categoria
+                existente.save()
+                producto = existente
+                actualizados += 1
+            # Colores (uno por modelo) y galería con las fotos del Excel.
+            if fila["colores"]:
+                from catalog.colores import aplicar_colores
+
+                aplicar_colores(producto, [
+                    {"slug": "", "nombre": c["nombre"], "hex": "", "rol": c["rol"]}
+                    for c in fila["colores"]])
+            if fila["galeria"]:
+                from catalog.models import ProductImage
+
+                orden = producto.imagenes.count()
+                for url in fila["galeria"]:
+                    if producto.imagenes.filter(imagen_url=url).exists():
+                        continue
+                    ProductImage.objects.create(
+                        producto=producto, imagen_url=url[:500],
+                        alt=producto.nombre[:160], orden=orden)
+                    orden += 1
 
     return render(request, "panel/productos.html", _ctx_productos(
         request, categoria_slug=cat_slug,
@@ -334,7 +421,7 @@ def productos_importar(request):
 
 
 def _parse_colores(raw):
-    """Lista [{nombre, hex}] saneada (máx 20). Lo inválido se descarta."""
+    """Lista [{slug, nombre, hex, rol}] saneada (máx 20). Lo inválido se descarta."""
     import json as _json
     import re as _re
 
@@ -350,12 +437,93 @@ def _parse_colores(raw):
             continue
         nombre = str(it.get("nombre") or "").strip()[:40]
         hexv = str(it.get("hex") or "").strip()
-        if not nombre:
+        slug = str(it.get("slug") or "").strip()[:40]
+        rol = str(it.get("rol") or "").strip().lower()
+        if not nombre and not slug:
             continue
-        if not _re.fullmatch(r"#[0-9a-fA-F]{6}", hexv):
+        if hexv and not _re.fullmatch(r"#[0-9a-fA-F]{6}", hexv):
+            hexv = ""
+        if not slug and not hexv:
+            # Color propio sin tono válido: se descarta.
             continue
-        out.append({"nombre": nombre, "hex": hexv.upper()})
+        if rol not in ("", "exterior", "interior"):
+            rol = ""
+        out.append({"slug": slug, "nombre": nombre, "hex": hexv.upper(), "rol": rol})
     return out
+
+
+def _parse_galeria_urls(raw):
+    """Lista de enlaces de la galería (uno por línea)."""
+    import re as _re
+
+    urls = []
+    for linea in str(raw or "").splitlines():
+        url = linea.strip()
+        if not url or not _re.match(r"^https?://\S+$", url):
+            continue
+        if url not in urls:
+            urls.append(url)
+    return urls[:20]
+
+
+def _imagen_valida(archivo, max_bytes=8 * 1024 * 1024):
+    """Solo imágenes reales (y no tan grandes) para la galería."""
+    if archivo is None:
+        return False
+    try:
+        if archivo.size > max_bytes:
+            return False
+    except (TypeError, ValueError):
+        return False
+    tipo = (getattr(archivo, "content_type", "") or "").lower()
+    if tipo and not tipo.startswith("image/"):
+        return False
+    # Comprobación real: si Pillow no la abre, no es una imagen.
+    try:
+        from PIL import Image
+
+        archivo.seek(0)
+        with Image.open(archivo) as imagen:
+            imagen.verify()
+        archivo.seek(0)
+    except Exception:
+        return False
+    return True
+
+
+def _guardar_galeria(request, producto):
+    """Aplica la galería del formulario: borra, agrega enlaces y sube archivos."""
+    from catalog.models import ProductImage
+
+    # 1) Fotos marcadas para quitar
+    for pk in request.POST.getlist("galeria_borrar"):
+        try:
+            numero = int(pk)
+        except (TypeError, ValueError):
+            continue
+        producto.imagenes.filter(pk=numero).delete()
+
+    # 2) Enlaces nuevos (al final de la galería, sin repetir)
+    orden = producto.imagenes.count()
+    for url in _parse_galeria_urls(request.POST.get("galeria_urls", "")):
+        if producto.imagenes.filter(imagen_url=url).exists():
+            continue
+        ProductImage.objects.create(
+            producto=producto, imagen_url=url[:500], alt=producto.nombre[:160],
+            orden=orden)
+        orden += 1
+
+    # 3) Archivos subidos (solo imágenes válidas)
+    for archivo in request.FILES.getlist("galeria_archivos"):
+        if not _imagen_valida(archivo):
+            continue
+        try:
+            ProductImage.objects.create(
+                producto=producto, imagen=archivo, alt=producto.nombre[:160],
+                orden=orden)
+        except Exception:
+            continue
+        orden += 1
 
 
 def _parse_caracteristicas(raw):
@@ -388,10 +556,13 @@ def producto_editar(request, pk=None):
         form.initial["categoria"] = categoria_ctx.pk
     if request.method == "POST" and form.is_valid():
         prod = form.save()
-        prod.colores = _parse_colores(request.POST.get("colores_json", "[]"))
+        from catalog.colores import aplicar_colores
+
+        aplicar_colores(prod, _parse_colores(request.POST.get("colores_json", "[]")))
         prod.caracteristicas = _parse_caracteristicas(
             request.POST.get("caracteristicas_json", "[]"))
-        prod.save(update_fields=["colores", "caracteristicas"])
+        prod.save(update_fields=["caracteristicas"])
+        _guardar_galeria(request, prod)
         if volver_categoria is not None:
             return redirect(f"{reverse('panel:productos')}?categoria={volver_categoria.slug}")
         return redirect("panel:productos")
@@ -409,11 +580,18 @@ def producto_editar(request, pk=None):
         caracteristicas_init = _parse_caracteristicas(
             request.POST.get("caracteristicas_json", "[]"))
     else:
-        colores_init = list(getattr(obj, "colores", None) or [])
+        from catalog.colores import colores_para_form
+
+        colores_init = colores_para_form(obj) if obj is not None else []
         caracteristicas_init = list(
             getattr(obj, "caracteristicas", None) or [])
     ctx = {"form": form, "obj": obj, "sections": sections,
            "colores_init": colores_init,
+           "paleta": Color.objects.all(),
+           "tipos_categoria": {
+               str(t.pk): {"categoria": t.categoria_id,
+                           "nombre": t.categoria.nombre if t.categoria else ""}
+               for t in TipoProducto.objects.select_related("categoria")},
            "caracteristicas_init": caracteristicas_init,
            "categoria_ctx": categoria_ctx,
            "volver_categoria": volver_categoria,
@@ -707,7 +885,7 @@ def ajustes(request):
     if request.method == "POST" and form.is_valid():
         form.save()
         ok = True
-    # Pestaña activa: la pedida, o la primera con errores de validación.
+    # Pesta��a activa: la pedida, o la primera con errores de validaci��n.
     active_tab = request.GET.get("tab", "marca")
     if form.errors:
         for tab in AJUSTES_TABS:
@@ -719,7 +897,39 @@ def ajustes(request):
     return render(request, "panel/ajustes.html",
                   {"form": form, "ok": ok, "tabs": AJUSTES_TABS,
                    "hints": AJUSTES_HINTS, "active_tab": active_tab,
-                   "paletas": PALETAS_TEMA})
+                   "paletas": PALETAS_TEMA,
+                   "hero_medias": HeroMedia.objects.all(),
+                   "hero_media_form": HeroMediaForm(),
+                   "n_hero_medias": HeroMedia.objects.count()})
+
+
+@seccion_requerida("productos")
+def ajustes_hero_media(request):
+    """Alta / cambio / borrado de los fondos del hero (máx. 3)."""
+    from django.shortcuts import redirect
+
+    borrar_pk = request.POST.get("borrar_pk")
+    if borrar_pk:
+        HeroMedia.objects.filter(pk=borrar_pk).delete()
+        return redirect(f"{reverse('panel:ajustes')}#tab-portada")
+    instancia = HeroMedia.objects.filter(pk=request.POST.get("hero_pk") or 0).first()
+    datos = {
+        "tipo": request.POST.get("hero_tipo") or HeroMedia.TIPO_IMAGEN,
+        "url": (request.POST.get("hero_url") or "").strip()[:300],
+        "alt": (request.POST.get("hero_alt") or "").strip()[:160],
+        "activo": True,
+    }
+    archivo = request.FILES.get("hero_imagen")
+    form = HeroMediaForm(datos, {"imagen": archivo} if archivo else None,
+                         instance=instancia)
+    if not form.is_valid():
+        return redirect(f"{reverse('panel:ajustes')}#tab-portada")
+    media = form.save(commit=False)
+    if not media.pk and HeroMedia.objects.count() >= HeroMedia.MAX_MEDIOS:
+        return redirect(f"{reverse('panel:ajustes')}#tab-portada")
+    media.orden = HeroMedia.objects.count()
+    media.save()
+    return redirect(f"{reverse('panel:ajustes')}#tab-portada")
 
 
 @seccion_requerida("calculadora")
@@ -760,7 +970,9 @@ def calculadora(request):
                 if legacy_margin not in (None, ""):
                     item[key] = str(legacy_margin)
                 elif item.get(key) in (None, ""):
-                    item[key] = "35"
+                    # Los márgenes se dejan sin rellenar: el cálculo usa la
+                    # tasa general cuando el campo está vacío.
+                    item[key] = ""
                 else:
                     item[key] = str(item[key])
             normalized.append(item)
@@ -785,7 +997,7 @@ def calculadora(request):
                             "devolucion", "comision_banco", "descarga", "agente",
                             "otros_unit")}
         defaults_items = [{"nombre": "", "cant": "1", "valor_unit": "",
-                           "compet1": "35", "compet2": "35", "compet3": "35",
+                           "compet1": "", "compet2": "", "compet3": "",
                            "seguro_pct": "", "advalorem_pct": "",
                            "fondinfa_pct": "", "iva_pct": ""}]
     else:
@@ -794,7 +1006,7 @@ def calculadora(request):
         defaults_gastos = {k: _q2(v) for k, v in seed["gastos"].items()}
         defaults_items = _pricing_items(seed["items"]) or [{
             "nombre": "", "cant": "1", "valor_unit": "",
-            "compet1": "35", "compet2": "35", "compet3": "35",
+            "compet1": "", "compet2": "", "compet3": "",
             "seguro_pct": "", "advalorem_pct": "", "fondinfa_pct": "", "iva_pct": "",
         }]
     override_keys = ("seguro_pct", "advalorem_pct", "fondinfa_pct", "iva_pct")
@@ -817,6 +1029,17 @@ def calculadora(request):
             s = _raw(f"ov_{key}", i, "").strip()
             return s if s != "" else None
 
+        def _margen(key, i):
+            """El margen se guarda tal cual, pero solo si es numérico."""
+            s = _raw(key, i).strip()
+            if s == "":
+                return ""
+            try:
+                float(s.replace(",", "."))
+            except ValueError:
+                return ""
+            return s
+
         items = []
         for i, nombre in enumerate(nombres):
             if not (nombre.strip() or _raw("cant", i).strip() or _raw("valor_unit", i).strip()):
@@ -825,9 +1048,9 @@ def calculadora(request):
                 "nombre": nombre.strip() or f"Producto {i+1}",
                 "cant": _num(_raw("cant", i), 0),
                 "valor_unit": _num(_raw("valor_unit", i), 0),
-                "compet1": _num(_raw("compet1", i), 35),
-                "compet2": _num(_raw("compet2", i), 35),
-                "compet3": _num(_raw("compet3", i), 35),
+                "compet1": _margen("compet1", i),
+                "compet2": _margen("compet2", i),
+                "compet3": _margen("compet3", i),
                 # Override por producto: None/vacío = usa tasa general.
                 "seguro_pct": _ov("seguro_pct", i),
                 "advalorem_pct": _ov("advalorem_pct", i),
@@ -918,7 +1141,7 @@ def calculadora_guardar(request):
             raise ValueError("El embarque admite hasta 500 productos.")
         items = []
         numeric_defaults = {"cant": "0", "valor_unit": "",
-                            "compet1": "35", "compet2": "35", "compet3": "35",
+                            "compet1": "", "compet2": "", "compet3": "",
                             "seguro_pct": "", "advalorem_pct": "", "fondinfa_pct": "",
                             "iva_pct": ""}
         for row_number, item in enumerate(items_input, start=1):
@@ -937,8 +1160,9 @@ def calculadora_guardar(request):
         return JsonResponse({"error": str(exc)}, status=400)
 
     key = str(payload.get("embarque_key") or "")
-    if key.startswith("guardado-") and key[9:].isdigit():
-        shipment = get_object_or_404(SavedShipment, pk=int(key[9:]))
+    numero = key[9:] if key.startswith("guardado-") else ""
+    if numero.isascii() and numero.isdigit():
+        shipment = get_object_or_404(SavedShipment, pk=int(numero))
         shipment.nombre = name
         shipment.tasas = tasas
         shipment.gastos = gastos
@@ -951,6 +1175,76 @@ def calculadora_guardar(request):
         "key": f"guardado-{shipment.pk}",
         "nombre": shipment.nombre,
         "message": "Embarque guardado correctamente.",
+    })
+
+
+def _embarque_guardado(payload):
+    """Devuelve el SavedShipment de la clave 'guardado-<id>' o un error."""
+    from django.http import Http404
+
+    key = str(payload.get("embarque_key") or "")
+    numero = key[9:] if key.startswith("guardado-") else ""
+    if not (numero.isascii() and numero.isdigit()):
+        raise ValueError("Solo se pueden modificar los embarques guardados.")
+    try:
+        return get_object_or_404(SavedShipment, pk=int(numero)), key
+    except Http404:
+        raise ValueError("El embarque no existe.") from None
+
+
+@seccion_requerida("calculadora")
+def calculadora_renombrar(request):
+    """Cambia el nombre de un embarque guardado (sin tocar sus datos)."""
+    import json
+    from django.http import JsonResponse
+
+    if request.method != "POST":
+        return JsonResponse({"error": "Solo POST."}, status=405)
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({"error": "JSON inválido."}, status=400)
+    if not isinstance(payload, dict):
+        return JsonResponse({"error": "Los datos no son válidos."}, status=400)
+    nombre = str(payload.get("nombre") or "").strip()[:100]
+    if not nombre:
+        return JsonResponse({"error": "Ingrese un nombre para el embarque."}, status=400)
+    try:
+        shipment, key = _embarque_guardado(payload)
+    except ValueError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    shipment.nombre = nombre
+    shipment.save()
+    return JsonResponse({
+        "key": key,
+        "nombre": shipment.nombre,
+        "message": "Embarque renombrado correctamente.",
+    })
+
+
+@seccion_requerida("calculadora")
+def calculadora_eliminar(request):
+    """Elimina un embarque guardado."""
+    import json
+    from django.http import JsonResponse
+
+    if request.method != "POST":
+        return JsonResponse({"error": "Solo POST."}, status=405)
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({"error": "JSON inválido."}, status=400)
+    if not isinstance(payload, dict):
+        return JsonResponse({"error": "Los datos no son válidos."}, status=400)
+    try:
+        shipment, key = _embarque_guardado(payload)
+    except ValueError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    nombre = shipment.nombre
+    shipment.delete()
+    return JsonResponse({
+        "key": key,
+        "message": f"Embarque «{nombre}» eliminado.",
     })
 
 

@@ -278,9 +278,9 @@ class PlantillaImportacionTest(TestCase):
         self.assertEqual(imported["gastos"]["comision_banco"], "25")
         self.assertEqual(imported["items"][0]["cant"], "10")
         self.assertEqual(imported["items"][0]["valor_unit"], "8.5")
-        self.assertEqual(imported["items"][0]["compet1"], "35")
-        self.assertEqual(imported["items"][0]["compet2"], "35")
-        self.assertEqual(imported["items"][0]["compet3"], "35")
+        self.assertEqual(imported["items"][0]["compet1"], "")
+        self.assertEqual(imported["items"][0]["compet2"], "")
+        self.assertEqual(imported["items"][0]["compet3"], "")
 
 
 class SavedShipmentViewTest(TestCase):
@@ -326,8 +326,8 @@ class SavedShipmentViewTest(TestCase):
         self.assertContains(page, "May $")
         self.assertContains(page, "Frec %")
         self.assertContains(page, "Frec $")
-        self.assertContains(page, "Event %")
-        self.assertContains(page, "Event $")
+        self.assertContains(page, "Eve %")
+        self.assertContains(page, "PVP $")
         self.assertNotContains(page, "C/Caja")
 
         payload["embarque_key"] = f"guardado-{saved.pk}"
@@ -369,3 +369,101 @@ class SavedShipmentViewTest(TestCase):
         self.assertEqual(response.json()["items"][0]["cant"], "4")
         self.assertEqual(response.json()["items"][0]["valor_unit"], "12")
         self.assertEqual(response.json()["gastos"]["flete_intl"], "750")
+
+
+class EmbarqueGestiónTest(TestCase):
+    """Renombrar y eliminar embarques guardados."""
+
+    def setUp(self):
+        import json
+
+        from django.contrib.auth.models import User
+
+        from .models import SavedShipment
+
+        self.user = User.objects.create_user(
+            username="gestion-staff", password="test-password", is_staff=True)
+        self.client.force_login(self.user)
+        self.shipment = SavedShipment.objects.create(
+            nombre="Compra vieja", tasas={}, gastos={}, items=[])
+        self.key = f"guardado-{self.shipment.pk}"
+        self.payload = json.dumps({"embarque_key": self.key, "nombre": "Compra nueva"})
+
+    def test_renombrar_embarque_guardado(self):
+        response = self.client.post(
+            "/webadmin/calculadora/renombrar/", self.payload,
+            content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        self.shipment.refresh_from_db()
+        self.assertEqual(self.shipment.nombre, "Compra nueva")
+        self.assertEqual(response.json()["key"], self.key)
+
+    def test_renombrar_exige_nombre(self):
+        import json
+
+        response = self.client.post(
+            "/webadmin/calculadora/renombrar/",
+            json.dumps({"embarque_key": self.key, "nombre": "   "}),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+        self.shipment.refresh_from_db()
+        self.assertEqual(self.shipment.nombre, "Compra vieja")
+
+    def test_no_se_renombra_una_semilla(self):
+        import json
+
+        response = self.client.post(
+            "/webadmin/calculadora/renombrar/",
+            json.dumps({"embarque_key": "roma", "nombre": "Otra"}),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_eliminar_embarque_guardado(self):
+        import json
+
+        from .models import SavedShipment
+
+        response = self.client.post(
+            "/webadmin/calculadora/eliminar/", json.dumps({"embarque_key": self.key}),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(SavedShipment.objects.count(), 0)
+
+    def test_no_se_elimina_una_semilla(self):
+        import json
+
+        from .models import SavedShipment
+
+        response = self.client.post(
+            "/webadmin/calculadora/eliminar/", json.dumps({"embarque_key": "roma"}),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(SavedShipment.objects.count(), 1)
+
+    def test_embarque_inexistente_devuelve_json(self):
+        import json
+
+        from .models import SavedShipment
+
+        response = self.client.post(
+            "/webadmin/calculadora/eliminar/",
+            json.dumps({"embarque_key": "guardado-999999"}),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", response.json())
+        self.assertEqual(SavedShipment.objects.count(), 1)
+
+    def test_clave_con_digitos_no_ascii_no_revienta(self):
+        import json
+
+        response = self.client.post(
+            "/webadmin/calculadora/eliminar/",
+            json.dumps({"embarque_key": "guardado-²"}),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_la_calculadora_tiene_busqueda_y_botones(self):
+        page = self.client.get("/webadmin/calculadora/").content.decode("utf-8")
+        self.assertIn('id="embarque-buscar"', page)
+        self.assertIn('id="btn-renombrar"', page)
+        self.assertIn('id="btn-eliminar"', page)

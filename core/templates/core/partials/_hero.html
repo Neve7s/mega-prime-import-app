@@ -1,5 +1,16 @@
 <!-- SECTION 1: HERO INDUSTRIAL PRESTIGE -->
 <section class="relative w-full overflow-hidden bg-primary text-on-primary">
+<!-- Fondos del hero (hasta 3: imagen, GIF o video) -->
+{% if hero_medias %}
+<div class="absolute inset-0 overflow-hidden" aria-hidden="true">
+  {% for m in hero_medias %}{% if m.tiene_fuente %}{% if m.tipo == 'video' %}
+  <video class="absolute inset-0 w-full h-full object-cover hero-fondo transition-opacity duration-1000" data-hero-fondo autoplay muted loop playsinline preload="metadata"><source src="{{ m.src }}"></video>
+  {% else %}
+  <img class="absolute inset-0 w-full h-full object-cover hero-fondo transition-opacity duration-1000" data-hero-fondo src="{{ m.src }}" alt="{{ m.alt }}" {% if not forloop.first %}loading="lazy"{% endif %}>
+  {% endif %}{% endif %}{% endfor %}
+  <div class="absolute inset-0 bg-primary/85"></div>
+</div>
+{% endif %}
 <!-- Geometric Architecture Grid Overlay -->
 <div class="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none"></div>
 <div class="absolute -top-32 -right-32 w-96 h-96 bg-secondary-container/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -51,40 +62,72 @@
 </div>
 </div>
 </div>
-<!-- Visual Hero Showcase & Floating Telemetry Cards -->
-<div class="lg:col-span-5 relative mt-space-lg lg:mt-0">
-<div class="relative w-full aspect-[4/5] rounded-xl overflow-hidden shadow-2xl">
-<img class="w-full h-full object-cover" data-alt="Close-up architectural photograph of a luxury corporate lobby interior featuring ultra-large sintered stone wall slabs in Calacatta gold, precision brushed bronze metallic transitions, polished microcement floors, warm atmospheric industrial architectural downlighting, sharp geometric composition, high-end commercial design." src="{% if site_settings.hero_image %}{{ site_settings.hero_image.url }}{% else %}https://lh3.googleusercontent.com/aida-public/AB6AXuC4fkF190L1nAKqL3ghINgt7Og_Z8e0JdbVUZp6UVlhOTk2wPGQbEvWyU2EN_A3avGIaMmfwWNMrU3Y98OKgrsnmhnRJ9y9j4qcxDi1SnWr7xIhZcX1wLTOAjtFLCJrvMtFWsWmf7DG5SD5iXXieWfW-zmM4rBA2Jv2EiBc9FngaNktg_kEKKIs4H8nWcYNIjcxm0c09nzKxRibgQ5YMZ-JqzSKqhJLtG0QmxR3lVKbYrXCqugDgL7Y{% endif %}"/>
-<div class="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/30 to-transparent"></div>
-<!-- Material Spec Marker Overlay -->
-<div class="absolute top-space-md left-space-md bg-primary-container/90 backdrop-blur-md px-space-md py-2 rounded-lg flex items-center gap-space-xs text-on-primary shadow-md">
-<span class="material-symbols-outlined text-secondary-container text-[18px]">verified</span>
-<span class="font-label-sm text-label-sm tracking-wider uppercase">{{ site_settings.hero_spec_label|default:'Placa Sinterizada 3200x1600x12mm' }}</span>
+  <!-- Visual Hero Showcase & Floating Telemetry Cards -->
+  <div class="lg:col-span-5 relative mt-space-lg lg:mt-0">
+    <div class="relative w-full aspect-[4/5] rounded-xl overflow-hidden shadow-2xl">
+      {% if hero_productos %}
+      {% for p in hero_productos %}
+      <a href="{% url 'catalog:detalle' p.slug %}" class="absolute inset-0 block transition-opacity duration-1000 {% if not forloop.first %}opacity-0{% endif %}" data-hero-producto>
+        {% if p.imagen_src %}<img class="w-full h-full object-cover" src="{{ p.imagen_src }}" alt="{{ p.nombre }}" {% if not forloop.first %}loading="lazy"{% endif %}>{% else %}<span class="flex h-full w-full items-center justify-center p-6 text-center font-headline-sm text-headline-sm font-bold uppercase tracking-wider text-on-surface-variant opacity-70">{{ p.nombre }}</span>{% endif %}
+      </a>
+      {% endfor %}
+      {% else %}
+      <img class="w-full h-full object-cover" data-alt="Close-up architectural photograph of a luxury corporate lobby interior featuring ultra-large sintered stone wall slabs in Calacatta gold, precision brushed bronze metallic transitions, polished microcement floors, warm atmospheric industrial architectural downlighting, sharp geometric composition, high-end commercial design." src="{% if site_settings.hero_image %}{{ site_settings.hero_image.url }}{% else %}https://lh3.googleusercontent.com/aida-public/AB6AXuC4fkF190L1nAKqL3ghINgt7Og_Z8e0JdbVUZp6UVlhOTk2wPGQbEvWyU2EN_A3avGIaMmfwWNMrU3Y98OKgrsnmhnRJ9y9j4qcxDi1SnWr7xIhZcX1wLTOAjtFLCJrvMtFWsWmf7DG5SD5iXXieWfW-zmM4rBA2Jv2EiBc9FngaNktg_kEKKIs4H8nWcYNIjcxm0c09nzKxRibgQ5YMZ-JqzSKqhJLtG0QmxR3lVKbYrXCqugDgL7Y{% endif %}"/>
+      {% endif %}
+      <div class="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/30 to-transparent pointer-events-none"></div>
+      <!-- Material Spec Marker Overlay -->
+      <div class="absolute top-space-md left-space-md bg-primary-container/90 backdrop-blur-md px-space-md py-2 rounded-lg flex items-center gap-space-xs text-on-primary shadow-md">
+        <span class="material-symbols-outlined text-secondary-container text-[18px]">verified</span>
+        <span class="font-label-sm text-label-sm tracking-wider uppercase" data-hero-spec>{% if hero_productos.0 %}{{ hero_productos.0.tipo.nombre|default:site_settings.hero_spec_label }}{% else %}{{ site_settings.hero_spec_label|default:'Placa Sinterizada 3200x1600x12mm' }}{% endif %}</span>
+      </div>
+      <!-- Bottom Live Telemetry Overlay -->
+      <div class="absolute bottom-space-md inset-x-space-md bg-surface-container-lowest text-on-surface p-space-md rounded-xl shadow-xl flex items-center justify-between">
+      <div class="flex items-center gap-space-md">
+      <div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-secondary">
+        <span class="material-symbols-outlined text-[22px]">domain</span>
+      </div>
+      <div>
+        <div class="font-headline-sm text-headline-sm font-bold text-primary" data-hero-nombre>{% if hero_productos.0 %}{{ hero_productos.0.nombre }}{% else %}+1,200{% endif %}</div>
+        <div class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">{% if hero_productos.0 %}{{ hero_productos.0.categoria.nombre }}{% else %}Obras Suministradas{% endif %}</div>
+      </div>
+      </div>
+      <div class="h-8 w-px bg-surface-container-high"></div>
+      <div class="flex items-center gap-space-md">
+      <div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-secondary">
+        <span class="material-symbols-outlined text-[22px]">warehouse</span>
+      </div>
+      <div>
+        <div class="font-headline-sm text-headline-sm font-bold text-primary">{{ site_settings.hero_telemetry_2_value|default:'40,000 m²' }}</div>
+        <div class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">{{ site_settings.hero_telemetry_2_label|default:'Stock en Bodega Ambato' }}</div>
+      </div>
+      </div>
+      </div>
+    </div>
+  </div>
+  </div>
 </div>
-<!-- Bottom Live Telemetry Overlay -->
-<div class="absolute bottom-space-md inset-x-space-md bg-surface-container-lowest text-on-surface p-space-md rounded-xl shadow-xl flex items-center justify-between">
-<div class="flex items-center gap-space-md">
-<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-secondary">
-<span class="material-symbols-outlined text-[22px]">domain</span>
-</div>
-<div>
-<div class="font-headline-sm text-headline-sm font-bold text-primary">+1,200</div>
-<div class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Obras Suministradas</div>
-</div>
-</div>
-<div class="h-8 w-px bg-surface-container-high"></div>
-<div class="flex items-center gap-space-md">
-<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-secondary">
-<span class="material-symbols-outlined text-[22px]">warehouse</span>
-</div>
-<div>
-<div class="font-headline-sm text-headline-sm font-bold text-primary">{{ site_settings.hero_telemetry_2_value|default:'40,000 m²' }}</div>
-<div class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">{{ site_settings.hero_telemetry_2_label|default:'Stock en Bodega Ambato' }}</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
+{% if hero_medias|length > 1 or hero_productos|length > 1 %}
+<script>
+(function(){
+  // Rotación suave: los fondos del hero y los productos del showcase.
+  var fondos = Array.prototype.slice.call(document.querySelectorAll('[data-hero-fondo]'));
+  var productos = Array.prototype.slice.call(document.querySelectorAll('[data-hero-producto]'));
+  var spec = document.querySelector('[data-hero-spec]');
+  var nombre = document.querySelector('[data-hero-nombre]');
+  var indice = 0;
+  function rotar(){
+    if (fondos.length > 1){
+      fondos[indice % fondos.length].classList.add('opacity-0');
+      fondos[(indice + 1) % fondos.length].classList.remove('opacity-0');
+    }
+    if (productos.length > 1){
+      productos[indice % productos.length].classList.add('opacity-0');
+      productos[(indice + 1) % productos.length].classList.remove('opacity-0');
+    }
+    indice = (indice + 1) % Math.max(fondos.length, productos.length);
+  }
+  if (fondos.length > 1 || productos.length > 1) setInterval(rotar, 6000);
+})();
+</script>
+{% endif %}
 </section>

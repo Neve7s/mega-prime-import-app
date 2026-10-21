@@ -89,6 +89,56 @@
     </div>
     {{ paletas|json_script:"paletas-data" }}
     {% endif %}
+    {% if tab.key == "portada" %}
+    <h3 class="font-bold text-sm mt-6 mb-1">🖼 Fondos del hero ({{ n_hero_medias }}/3)</h3>
+    <p class="text-sm text-gray-500 mb-3">Hasta 3 imágenes, GIF o videos de fondo. Se van turnando solos en la portada.</p>
+    <input type="hidden" name="hero_pk" id="hero-pk" value="" />
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      {% for m in hero_medias %}
+      <div class="border border-gray-200 rounded-xl p-3 bg-white">
+        <div class="aspect-video rounded-lg overflow-hidden bg-gray-100 mb-2">
+          {% if m.imagen %}<img src="{{ m.imagen.url }}" alt="{{ m.alt }}" class="w-full h-full object-cover">{% elif m.tipo == 'video' %}<video src="{{ m.url }}" class="w-full h-full object-cover" muted></video>{% else %}<div class="w-full h-full flex items-center justify-center text-xs text-gray-400">GIF</div>{% endif %}
+        </div>
+        <p class="text-xs font-bold text-gray-700 truncate">{{ m.alt|default:"Fondo " }}{{ forloop.counter }}</p>
+        <p class="text-[11px] text-gray-400 mb-2">{% if m.imagen %}{{ m.imagen.name|truncatechars:28 }}{% else %}{{ m.url|truncatechars:34 }}{% endif %}</p>
+        <div class="flex items-center gap-1.5">
+          <button type="submit" formaction="{% url 'panel:ajustes_hero_media' %}" name="borrar_pk" value="{{ m.pk }}"
+                  onclick="return confirm('¿Borrar este fondo del hero?')"
+                  class="rounded-lg border border-red-200 px-2.5 py-1 text-xs font-bold text-red-700 hover:bg-red-50">Borrar</button>
+          <button type="button" data-hero-editar="{{ m.pk }}" data-hero-nombre="{{ m.alt|default:'Fondo ' }}"
+                  class="rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-bold text-gray-700 hover:bg-gray-100">Cambiar</button>
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-400 md:col-span-3">Sin fondos: se usa el fondo por defecto de la portada.</p>
+      {% endfor %}
+    </div>
+    {% if n_hero_medias < 3 or hero_medias %}
+    <div class="mt-4 border border-dashed border-gray-300 rounded-xl p-4 bg-gray-50">
+      <p class="text-sm font-bold text-gray-700 mb-2" id="hero-form-titulo">+ Agregar un fondo ({{ n_hero_medias }}/3)</p>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <label class="text-xs font-bold uppercase tracking-wider text-gray-700">Tipo
+          <select name="hero_tipo" class="mt-1 w-full rounded-lg border border-gray-200 px-2 py-2 text-sm font-normal normal-case">
+            <option value="imagen">Imagen o GIF</option>
+            <option value="video">Video (mp4)</option>
+          </select>
+        </label>
+        <label class="text-xs font-bold uppercase tracking-wider text-gray-700">Archivo
+          <input type="file" name="hero_imagen" accept="image/*,video/mp4,image/gif" class="mt-1 w-full text-xs" />
+        </label>
+        <label class="text-xs font-bold uppercase tracking-wider text-gray-700">Enlace (mp4 / GIF)
+          <input type="url" name="hero_url" placeholder="https://…" class="mt-1 w-full rounded-lg border border-gray-200 px-2 py-2 text-sm font-normal normal-case" />
+        </label>
+        <label class="text-xs font-bold uppercase tracking-wider text-gray-700">Texto alternativo
+          <input type="text" name="hero_alt" maxlength="160" class="mt-1 w-full rounded-lg border border-gray-200 px-2 py-2 text-sm font-normal normal-case" />
+        </label>
+      </div>
+      <button type="submit" formaction="{% url 'panel:ajustes_hero_media' %}" name="accion" value="guardar"
+              class="mt-3 rounded-lg bg-[#0A0A0B] px-3 py-2 text-xs font-bold text-white hover:bg-black/80" id="hero-submit">Subir fondo</button>
+      <button type="button" id="hero-cancelar" class="mt-3 ml-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold text-gray-700 hidden">Cancelar cambio</button>
+    </div>
+    {% endif %}
+    {% endif %}
   </section>
 {% endfor %}
 {% for e in form.non_field_errors %}<p class="text-sm font-semibold text-red-700 bg-red-50 border border-red-200 rounded p-2 mt-3">{{ e }}</p>{% endfor %}
@@ -166,8 +216,31 @@
     txt.addEventListener('input', function(){ var n = normHex(txt.value); if (n) sw.value = n; });
   });
   // Paletas predefinidas: rellenan colores + fuentes
-  var palData = document.getElementById('paletas-data');
-  var PALETAS = palData ? JSON.parse(palData.textContent) : [];
+    // Fondos del hero: cambiar (rellena el pk) / cancelar
+  var heroPk = document.getElementById('hero-pk');
+  var heroTitulo = document.getElementById('hero-form-titulo');
+  var heroSubmit = document.getElementById('hero-submit');
+  var heroCancelar = document.getElementById('hero-cancelar');
+  document.querySelectorAll('[data-hero-editar]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if (!heroPk) return;
+      heroPk.value = btn.getAttribute('data-hero-editar');
+      if (heroTitulo) heroTitulo.textContent = '↻ Cambiar: ' + (btn.getAttribute('data-hero-nombre') || 'fondo');
+      if (heroSubmit) heroSubmit.textContent = 'Guardar el cambio';
+      if (heroCancelar) heroCancelar.classList.remove('hidden');
+      var archivo = document.querySelector('input[name="hero_imagen"]');
+      if (archivo) archivo.focus();
+    });
+  });
+  if (heroCancelar && heroPk){
+    heroCancelar.addEventListener('click', function(){
+      heroPk.value = '';
+      if (heroTitulo) heroTitulo.textContent = '+ Agregar un fondo';
+      if (heroSubmit) heroSubmit.textContent = 'Subir fondo';
+      heroCancelar.classList.add('hidden');
+    });
+  }
+  var palData = document.getElementById('paletas-data');  var PALETAS = palData ? JSON.parse(palData.textContent) : [];
   document.querySelectorAll('[data-paleta]').forEach(function(btn){
     btn.addEventListener('click', function(){
       var p = PALETAS[parseInt(btn.dataset.paleta, 10)];

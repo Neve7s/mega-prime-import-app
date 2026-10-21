@@ -1,19 +1,20 @@
 <div class="product-item bg-surface-container-lowest rounded-xl p-space-md flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow" data-category="{{ product.categoria.slug }}">
 <div class="flex flex-col gap-space-sm">
 <div class="relative w-full aspect-square rounded-lg overflow-hidden bg-surface-container">
-<a href="{% url 'catalog:detalle' product.slug %}"><img class="w-full h-full object-cover" alt="{{ product.nombre }}" loading="lazy" src="{{ product.imagen_src }}" /></a>
+<a href="{% url 'catalog:detalle' product.slug %}">{% if product.imagen_src %}<img class="w-full h-full object-cover" alt="{{ product.nombre }}" loading="lazy" src="{{ product.imagen_src }}" />{% else %}<span class="flex h-full w-full items-center justify-center p-3 text-center font-label-sm text-label-sm font-bold uppercase tracking-wider text-on-surface-variant opacity-60">{{ product.nombre }}</span>{% endif %}</a>
 {% if product.badge %}<span class="absolute top-2 left-2 bg-secondary-container text-primary px-2 py-0.5 rounded font-label-sm text-label-sm font-bold uppercase">{{ product.badge }}</span>
 {% elif product.origen %}<span class="absolute top-2 left-2 bg-secondary text-on-secondary px-2 py-0.5 rounded font-label-sm text-label-sm font-bold uppercase">{{ product.origen }}</span>{% endif %}
 <span class="absolute top-2 right-2 bg-primary text-on-primary px-2 py-0.5 rounded font-label-sm text-label-sm font-bold uppercase">Stock: {{ product.stock_cantidad|floatformat:0 }} {{ product.get_unidad_display }}</span>
 </div>
 <div>
-<span class="font-label-sm text-label-sm uppercase text-secondary font-bold tracking-wider">SKU: {{ product.sku }}{% if product.tipo %} · {{ product.tipo.nombre }}{% endif %}</span>
+<span class="font-label-sm text-label-sm uppercase text-secondary font-bold tracking-wider">{% if product.tipo %}{{ product.tipo.nombre }}{% else %}{{ product.categoria.nombre }}{% endif %}</span>
 <a href="{% url 'catalog:detalle' product.slug %}"><h4 class="font-headline-sm text-headline-sm font-bold text-primary mt-0.5 hover:underline">{{ product.nombre }}</h4></a>
 <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">USD {{ product.precio_mayor }} / {{ product.get_unidad_display }}</p>
-{% if product.colores %}<p class="flex items-center gap-1.5 mt-1.5">{% for c in product.colores %}<span title="{{ c.nombre }}" class="inline-block w-4 h-4 rounded-full border border-outline-variant" style="background:{{ c.hex }}"></span>{% endfor %}</p>{% endif %}
+{% with colores=product.colores_producto.all %}{% if colores %}<p class="flex items-center gap-1.5 mt-1.5">{% for pc in colores %}<span title="{{ pc.color.nombre }}{% if pc.rol %} ({{ pc.rol }}){% endif %}" class="inline-block w-4 h-4 rounded-full border border-outline-variant" style="background:{{ pc.color.hex }}"></span>{% endfor %}</p>{% endif %}{% endwith %}
 </div>
 <div class="bg-surface-container-low p-space-sm rounded flex flex-col gap-1 text-body-sm font-body-sm text-on-surface">
-{% for k, v in product.ficha_tecnica.items %}<div class="flex justify-between"><span class="text-on-surface-variant">{{ k }}:</span><span class="font-semibold">{{ v }}</span></div>{% endfor %}
+{% for k, v in product.ficha_tecnica.items %}{% if forloop.counter <= 3 %}<div class="flex justify-between gap-2"><span class="text-on-surface-variant shrink-0">{{ k }}:</span><span class="font-semibold text-right">{{ v|truncatechars:46 }}</span></div>{% endif %}{% endfor %}
+{% if product.ficha_tecnica|length > 3 %}<a href="{% url 'catalog:detalle' product.slug %}" class="text-on-surface-variant hover:text-secondary font-semibold leading-none" title="Ver la ficha técnica completa">…</a>{% endif %}
 </div>
 </div>
 <div class="pt-space-md flex flex-col gap-2">

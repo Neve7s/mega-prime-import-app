@@ -110,9 +110,10 @@ def read_plantilla_xlsx(uploaded_file):
             "nombre": str(name).strip()[:200],
             "cant": number(quantity, f"cantidad, fila {row_number}"),
             "valor_unit": number(price, f"precio, fila {row_number}"),
-            "compet1": "35",
-            "compet2": "35",
-            "compet3": "35",
+            # Los márgenes se importan vacíos: el cálculo usa la tasa general.
+            "compet1": "",
+            "compet2": "",
+            "compet3": "",
             "seguro_pct": "",
             "advalorem_pct": "",
             "fondinfa_pct": "",

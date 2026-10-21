@@ -117,6 +117,9 @@ class OrderItem(models.Model):
     )
     sku_snapshot = models.CharField(max_length=40)
     nombre_snapshot = models.CharField(max_length=160)
+    color_snapshot = models.CharField(
+        max_length=40, blank=True, default="",
+        help_text="Color pedido por el cliente (si el producto tiene colores).")
     cantidad = models.PositiveIntegerField()
     precio_snapshot = models.DecimalField(max_digits=12, decimal_places=2)
 
@@ -125,4 +128,5 @@ class OrderItem(models.Model):
         verbose_name_plural = "Ítems de pedido"
 
     def __str__(self) -> str:
-        return f"{self.sku_snapshot} x{self.cantidad}"
+        color = f" · {self.color_snapshot}" if self.color_snapshot else ""
+        return f"{self.sku_snapshot}{color} x{self.cantidad}"

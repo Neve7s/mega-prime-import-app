@@ -34,7 +34,7 @@ const MPI_WA_NUMBER = "{{ site_settings.whatsapp_number|default:'593963796222' }
 function mpiWaLink() {
   const items = window.MpiCart.items();
   let msg = "Hola MEGA PRIME, quiero consultar por estos productos:\n";
-  items.forEach((i) => { msg += `\n• ${i.nombre} x${i.cantidad} — USD ${Number(i.precio).toFixed(2)}`; });
+  items.forEach((i) => { msg += `\n• ${i.nombre}${i.color ? " (" + i.color + ")" : ""} x${i.cantidad}` + (Number(i.precio) > 0 ? ` — USD ${Number(i.precio).toFixed(2)}` : " — precio a cotizar"); });
   msg += `\n\nTotal estimado: USD ${items.reduce((a, i) => a + i.cantidad * Number(String(i.precio).replace(",", ".")), 0).toFixed(2)}`;
   const a = document.getElementById("wa-consulta");
   if (a) a.href = `https://wa.me/${MPI_WA_NUMBER}?text=${encodeURIComponent(msg)}`;

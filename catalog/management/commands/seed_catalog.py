@@ -7,17 +7,17 @@ from django.core.management.base import BaseCommand
 from catalog.models import Category, Product
 
 CATEGORIES = [
-    ("porcelanato", "Porcelanatos", 0,
-     "Revestimientos porcelánicos de gran formato para pisos, muros y fachadas de alto tránsito."),
-    ("interiorismo", "Paneles y Decor", 1,
+    ("pisos", "Pisos", 3,
+     "Revestimientos porcelánicos de gran formato para pisos, muros y fachadas de alto tráfico."),
+    ("revestimientos-y-paneles", "Revestimientos y Paneles", 4,
      "Paneles acústicos 3D y decor contract para interiorismo corporativo y residencial."),
-    ("maquinaria", "Herramientas Pro", 2,
+    ("herramientas-y-equipos", "Herramientas y Equipos", 6,
      "Maquinaria de corte de precisión milimétrica y herramientas para cuadrillas profesionales."),
 ]
 
 PRODUCTS = [
     {
-        "cat": "porcelanato", "sku": "MPG-CALA-120", "nombre": "Calacatta Imperial Gold Honed",
+        "cat": "pisos", "sku": "MPG-CALA-120", "nombre": "Calacatta Imperial Gold Honed",
         "slug": "calacatta-imperial-gold-honed", "precio": "68.50", "unidad": "m2",
         "stock": "4800", "origen": "España",
         "desc": "Placa porcelánica 120x240x9 mm satinada anti-huella, PEI V para tráfico comercial pesado. Importación directa desde España.",
@@ -25,7 +25,7 @@ PRODUCTS = [
         "ficha": {"Formato": "120 x 240 x 9 mm", "Superficie": "Satinado Mate Anti-huella", "Tráfico": "PEI V (Comercial Pesado)"},
     },
     {
-        "cat": "porcelanato", "sku": "MPG-NERO-160", "nombre": "Titanium Nero Sintered Slab",
+        "cat": "pisos", "sku": "MPG-NERO-160", "nombre": "Titanium Nero Sintered Slab",
         "slug": "titanium-nero-sintered-slab", "precio": "124.00", "unidad": "m2",
         "stock": "2400", "origen": "Italia",
         "desc": "Lámina sinterizada 160x320x12 mm texturizada, inalterable térmica para mesadas y fachadas. Origen Italia.",
@@ -33,7 +33,7 @@ PRODUCTS = [
         "ficha": {"Formato": "160 x 320 x 12 mm", "Superficie": "Texturizado Flamed Touch", "Tráfico": "Inalterable Térmico (Mesadas)"},
     },
     {
-        "cat": "interiorismo", "sku": "MPG-ACOU-WNL", "nombre": "Panel Acústico Walnut 3D Pro",
+        "cat": "revestimientos-y-paneles", "sku": "MPG-ACOU-WNL", "nombre": "Panel Acústico Walnut 3D Pro",
         "slug": "panel-acustico-walnut-3d-pro", "precio": "89.00", "unidad": "unid",
         "stock": "850", "origen": "Alemania",
         "desc": "Panel acústico walnut 600x2800x21 mm sobre fieltro PET reciclado, retardante al fuego B-s1,d0 para interiorismo contract.",
@@ -41,7 +41,7 @@ PRODUCTS = [
         "ficha": {"Formato": "600 x 2800 x 21 mm", "Base": "Fieltro PET Reciclado 9mm", "Fuego": "Norma Retardante B-s1,d0"},
     },
     {
-        "cat": "maquinaria", "sku": "MPG-CUT-3600", "nombre": "Cortadora de Riel Guiado 3.6m",
+        "cat": "herramientas-y-equipos", "sku": "MPG-CUT-3600", "nombre": "Cortadora de Riel Guiado 3.6m",
         "slug": "cortadora-riel-guiado-36m", "precio": "1250.00", "unidad": "set",
         "stock": "120", "origen": "Alemania",
         "desc": "Cortadora de riel guiado con corte continuo hasta 360 cm, espesores de 3 a 20 mm con prensa. Incluye 3 rieles y ventosas de bombeo.",

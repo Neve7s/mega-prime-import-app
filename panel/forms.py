@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model, password_validation
 from calculator.models import HSCode
 from cart.models import Order, SaleCode
 from catalog.models import Category, Product, TipoProducto
-from core.models import SiteSettings
+from core.models import HeroMedia, SiteSettings
 
 from .models import AccesoPanel
 
@@ -15,6 +15,94 @@ class ProductForm(forms.ModelForm):
         fields = ["categoria", "tipo", "sku", "nombre", "slug", "descripcion", "badge",
                   "precio_mayor", "unidad", "stock_cantidad", "en_stock", "destacado",
                   "origen", "imagen", "imagen_url", "activo"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # El SKU se genera solo: no debe ser obligatorio escribirlo.
+        self.fields["sku"].required = False
+        self.fields["sku"].help_text = (
+            "Se genera solo (COD-0001, COD-0002…). Escríbelo si prefieres otro.")
+        # El tipo trae su categoría: la categoría no se elige a mano.
+        self.fields["categoria"].required = False
+        self.fields["tipo"].required = False
+        self.fields["tipo"].help_text = (
+            "Elige el tipo y la categoría se pone sola (ej: Teja Española → Tejas y Cubiertas).")
+        self.fields["slug"].required = False
+        self.fields["slug"].help_text = "Se genera solo desde el nombre. Cámbialo si ya existe."
+        # El tipo se muestra agrupado por categoría: una sola lista legible.
+        self.fields["tipo"].widget = forms.Select(
+            choices=self._tipos_agrupados(), attrs={"id": "id_tipo"})
+        if not self.instance.pk:
+            from catalog.sku import siguiente_sku
+
+            self.fields["sku"].initial = siguiente_sku()
+
+    def _tipos_agrupados(self):
+        from catalog.models import TipoProducto
+
+        grupos = {}
+        for tipo in TipoProducto.objects.select_related("categoria").order_by(
+                "categoria__orden", "orden", "nombre"):
+            etiqueta = tipo.categoria.nombre if tipo.categoria else "Sin categoría"
+            grupos.setdefault(etiqueta, []).append((str(tipo.pk), tipo.nombre))
+        choices = [("", "— Sin tipo (elige la categoría) —")]
+        for etiqueta, opciones in grupos.items():
+            choices.append((etiqueta, opciones))
+        return choices
+
+    def clean_sku(self):
+        """Alta nueva: si el SKU viene vacío se asigna el siguiente correlativo."""
+        sku = (self.cleaned_data.get("sku") or "").strip()
+        if sku:
+            return sku
+        if self.instance.pk:
+            # El SKU de un producto existente no se cambia por dejarlo vacío.
+            return self.instance.sku
+        from catalog.sku import siguiente_sku
+
+        return siguiente_sku()
+
+    def clean_slug(self):
+        slug = (self.cleaned_data.get("slug") or "").strip()
+        if slug:
+            return slug
+        from django.utils.text import slugify
+
+        base = slugify(self.data.get("nombre") or "")[:50] or "producto"
+        candidato = base
+        numero = 2
+        while Product.objects.filter(slug=candidato).exclude(pk=self.instance.pk).exists():
+            candidato = f"{base}-{numero}"
+            numero += 1
+        return candidato
+
+    def clean(self):
+        datos = super().clean()
+        tipo = datos.get("tipo")
+        if tipo is not None and tipo.categoria_id:
+            # El tipo manda la categoría: una sola decisión al rellenar.
+            datos["categoria"] = tipo.categoria
+        elif not datos.get("categoria"):
+            self.add_error("categoria", "Elige el tipo de producto o la categoría.")
+        return datos
+
+
+class HeroMediaForm(forms.ModelForm):
+    """Alta/edición de un fondo del hero (imagen, GIF o video)."""
+
+    class Meta:
+        model = HeroMedia
+        fields = ["tipo", "imagen", "url", "alt", "activo"]
+        widgets = {
+            "imagen": forms.ClearableFileInput(attrs={"accept": "image/*,video/mp4,image/gif"}),
+            "url": forms.TextInput(attrs={"placeholder": "https://… (mp4 o GIF)"}),
+        }
+
+    def clean(self):
+        datos = super().clean()
+        if not datos.get("imagen") and not (datos.get("url") or "").strip():
+            raise forms.ValidationError("Sube un archivo o pega el enlace del video/GIF.")
+        return datos
 
 
 class CategoryForm(forms.ModelForm):

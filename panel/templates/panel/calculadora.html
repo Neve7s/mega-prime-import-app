@@ -117,6 +117,8 @@
   #calc-app .product-actions .calc-btn--upload:hover { background: #ecfdf5; border-color: #6ee7b7; }
   #calc-app .product-actions .calc-btn--add { color: #3f3f46; border-color: #d4d4d8; }
   #calc-app .product-actions .calc-btn--add:hover { background: #f4f4f5; border-color: #a1a1aa; }
+  #calc-app .calc-btn--danger { color: #b91c1c; border-color: #fecaca; }
+  #calc-app .calc-btn--danger:hover { background: #fef2f2; border-color: #fca5a5; }
   #calc-app .calc-header-controls {
     display: flex; flex-wrap: wrap; align-items: end; justify-content: flex-end; gap: .4rem;
   }
@@ -158,6 +160,10 @@
     </div>
     <div class="calc-header-controls panel-form">
       <label class="calc-field">
+        <span id="embarque-buscar-label">Buscar</span>
+        <input id="embarque-buscar" type="search" placeholder="Buscar embarque" autocomplete="off" title="Filtra la lista de embarques" />
+      </label>
+      <label class="calc-field">
         <span>Embarque</span>
         <select id="embarque-sel">
           {% for key, embarque in embarques_opciones %}
@@ -170,6 +176,8 @@
         <span>Nombre</span>
         <input id="embarque-nombre" type="text" maxlength="100" value="{{ embarque_nombre }}" placeholder="Nombre del embarque" />
       </label>
+      <button type="button" id="btn-renombrar" class="calc-btn calc-btn--ghost" title="Cambiar el nombre del embarque guardado">✎</button>
+      <button type="button" id="btn-eliminar" class="calc-btn calc-btn--ghost calc-btn--danger" title="Eliminar el embarque guardado">🗑</button>
       <button type="button" id="btn-guardar" class="calc-btn calc-btn--save">Guardar</button>
       <button type="button" id="btn-reporte" class="calc-btn calc-btn--report">⬇ Reporte</button>
       <span id="import-status" class="calc-header-status text-[10px] text-gray-500" role="status" aria-live="polite"></span>
@@ -233,15 +241,15 @@
   </div>
   <div id="calc-error" class="hidden text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-2 py-1 mb-1"></div>
   <div class="calc-metrics">
-    <div class="calc-metric"><span class="text-[9px] uppercase tracking-wide text-gray-400 font-bold">FOB productos</span><span class="calc-metric-value text-[11px] font-bold text-gray-800" id="r_fob">–</span></div>
-    <div class="calc-metric"><span class="text-[9px] uppercase tracking-wide text-gray-400 font-bold">Tributos importación</span><span class="calc-metric-value text-[11px] font-bold text-sky-800" id="r_trib">–</span></div>
-    <div class="calc-metric"><span class="text-[9px] uppercase tracking-wide text-gray-400 font-bold">Gastos locales</span><span class="calc-metric-value text-[11px] font-bold text-amber-800" id="r_locales">–</span></div>
+    <div class="calc-metric"><span class="text-[9px] uppercase tracking-wide text-black font-bold">FOB productos</span><span class="calc-metric-value text-[11px] font-bold text-gray-800" id="r_fob">–</span></div>
+    <div class="calc-metric"><span class="text-[9px] uppercase tracking-wide text-black font-bold">Tributos importación</span><span class="calc-metric-value text-[11px] font-bold text-sky-800" id="r_trib">–</span></div>
+    <div class="calc-metric"><span class="text-[9px] uppercase tracking-wide text-black font-bold">Gastos locales</span><span class="calc-metric-value text-[11px] font-bold text-amber-800" id="r_locales">–</span></div>
     <div class="calc-metric calc-metric-total"><span class="text-[9px] uppercase tracking-wide text-[#D4AF37] font-bold">Gran total</span><span class="calc-metric-value text-[11px] font-bold text-[#D4AF37]" id="r_gran">–</span></div>
-    <div class="calc-metric-detail"><span class="text-[9px] uppercase text-gray-400 font-bold">Flete internacional</span><span class="calc-metric-value text-[10px] font-semibold" id="r_flete">–</span></div>
-    <div class="calc-metric-detail"><span class="text-[9px] uppercase text-gray-400 font-bold">Seguro</span><span class="calc-metric-value text-[10px] font-semibold" id="r_seguro">–</span></div>
-    <div class="calc-metric-detail"><span class="text-[9px] uppercase text-gray-400 font-bold">Ad-Valorem</span><span class="calc-metric-value text-[10px] font-semibold" id="r_adval">–</span></div>
-    <div class="calc-metric-detail"><span class="text-[9px] uppercase text-gray-400 font-bold">Fodinfa</span><span class="calc-metric-value text-[10px] font-semibold" id="r_fond">–</span></div>
-    <div class="calc-metric-detail" title="IVA pagado en aduana"><span class="text-[9px] uppercase text-gray-400 font-bold">IVA importación</span><span class="calc-metric-value text-[10px] font-semibold" id="r_iva">–</span></div>
+    <div class="calc-metric-detail"><span class="text-[9px] uppercase text-black font-bold">Flete internacional</span><span class="calc-metric-value text-[10px] font-semibold" id="r_flete">–</span></div>
+    <div class="calc-metric-detail"><span class="text-[9px] uppercase text-black font-bold">Seguro</span><span class="calc-metric-value text-[10px] font-semibold" id="r_seguro">–</span></div>
+    <div class="calc-metric-detail"><span class="text-[9px] uppercase text-black font-bold">Ad-Valorem</span><span class="calc-metric-value text-[10px] font-semibold" id="r_adval">–</span></div>
+    <div class="calc-metric-detail"><span class="text-[9px] uppercase text-black font-bold">Fodinfa</span><span class="calc-metric-value text-[10px] font-semibold" id="r_fond">–</span></div>
+    <div class="calc-metric-detail" title="IVA pagado en aduana"><span class="text-[9px] uppercase text-black font-bold">IVA importación</span><span class="calc-metric-value text-[10px] font-semibold" id="r_iva">–</span></div>
     <div class="calc-metric-detail calc-metric-tax"><span class="text-[9px] uppercase text-amber-700 font-bold">Aranceles + IVA</span><span class="calc-metric-value text-[10px] font-semibold text-amber-900" id="r_imp">–</span></div>
   </div>
 </div>
@@ -278,7 +286,7 @@
       <th class="p-1 text-right" title="Recargo sobre el costo para cliente frecuente">Frec %</th>
       <th class="p-1 text-right" title="Precio frecuente: sin IVA / con IVA">Frec $</th>
       <th class="p-1 text-right" title="Recargo sobre el costo para cliente eventual">Eve %</th>
-      <th class="p-1 text-right" title="Precio eventual: sin IVA / con IVA">Event $</th>
+      <th class="p-1 text-right" title="Precio eventual: sin IVA / con IVA">PVP $</th>
       <th class="p-1"></th><th class="p-1"></th>
     </tr></thead>
     <tbody id="items-body" class="panel-form">
@@ -290,11 +298,11 @@
         <td class="p-1 text-right font-bold whitespace-nowrap text-sky-700" data-c="fob_total" title="FOB total = Cant × Precio">–</td>
         <td class="p-1 text-right font-bold whitespace-nowrap" data-c="valor_total">–</td>
         <td class="p-1 text-right whitespace-nowrap" data-c="costo_unit">–</td>
-        <td><input name="compet1" type="number" step="0.01" min="0" value="{{ it.compet1|default:'35' }}" title="Recargo porcentual sobre el costo para clientes mayoristas" /></td>
+        <td><input name="compet1" type="number" step="0.01" min="0" value="{{ it.compet1|default_if_none:'' }}" placeholder="%" title="Recargo porcentual sobre el costo para clientes mayoristas (vacío = 35% por defecto)" /></td>
         <td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="comp1_precios">–</td>
-        <td><input name="compet2" type="number" step="0.01" min="0" value="{{ it.compet2|default:'35' }}" title="Recargo porcentual sobre el costo para clientes frecuentes" /></td>
+        <td><input name="compet2" type="number" step="0.01" min="0" value="{{ it.compet2|default_if_none:'' }}" placeholder="%" title="Recargo porcentual sobre el costo para clientes frecuentes (vacío = 35% por defecto)" /></td>
         <td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="comp2_precios">–</td>
-        <td><input name="compet3" type="number" step="0.01" min="0" value="{{ it.compet3|default:'35' }}" title="Recargo porcentual sobre el costo para clientes eventuales" /></td>
+        <td><input name="compet3" type="number" step="0.01" min="0" value="{{ it.compet3|default_if_none:'' }}" placeholder="%" title="Recargo porcentual sobre el costo para clientes eventuales (vacío = 35% por defecto)" /></td>
         <td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="comp3_precios">–</td>
         <td class="p-1 whitespace-nowrap">
           <button type="button" class="tax-btn text-xs font-bold bg-gray-100 border rounded px-1.5 py-0.5 hover:bg-gray-200" title="Impuestos propios (vacío = general)">⚙</button>
@@ -467,11 +475,11 @@
       + '<td class="p-1 text-right font-bold whitespace-nowrap text-sky-700" data-c="fob_total" title="FOB total = Cant x Precio">–</td>'
       + '<td class="p-1 text-right font-bold whitespace-nowrap" data-c="valor_total">–</td>'
       + '<td class="p-1 text-right whitespace-nowrap" data-c="costo_unit">–</td>'
-      + '<td><input name="compet1" type="number" step="0.01" min="0" value="' + g('margen_pct', g('compet1', '35')) + '" title="Recargo porcentual sobre el costo para clientes mayoristas" /></td>'
+      + '<td><input name="compet1" type="number" step="0.01" min="0" value="' + g('margen_pct', g('compet1', '')) + '" placeholder="%" title="Recargo porcentual sobre el costo para clientes mayoristas (vacío = 35% por defecto)" /></td>'
       + '<td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="comp1_precios">–</td>'
-      + '<td><input name="compet2" type="number" step="0.01" min="0" value="' + g('margen_pct', g('compet2', '35')) + '" title="Recargo porcentual sobre el costo para clientes frecuentes" /></td>'
+      + '<td><input name="compet2" type="number" step="0.01" min="0" value="' + g('margen_pct', g('compet2', '')) + '" placeholder="%" title="Recargo porcentual sobre el costo para clientes frecuentes (vacío = 35% por defecto)" /></td>'
       + '<td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="comp2_precios">–</td>'
-      + '<td><input name="compet3" type="number" step="0.01" min="0" value="' + g('margen_pct', g('compet3', '35')) + '" title="Recargo porcentual sobre el costo para clientes eventuales" /></td>'
+      + '<td><input name="compet3" type="number" step="0.01" min="0" value="' + g('margen_pct', g('compet3', '')) + '" placeholder="%" title="Recargo porcentual sobre el costo para clientes eventuales (vacío = 35% por defecto)" /></td>'
       + '<td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="comp3_precios">–</td>'
       + '<td class="p-1 whitespace-nowrap"><button type="button" class="tax-btn text-xs font-bold bg-gray-100 border rounded px-1.5 py-0.5 hover:bg-gray-200" title="Impuestos propios (vacío = general)">⚙</button> <span class="tax-badge text-[9px] font-bold px-1 py-0.5 rounded bg-gray-100 text-gray-500">GEN</span></td>'
       + '<td class="p-1"><button type="button" class="rm-row text-red-400 font-bold px-1">×</button></td></tr>'
@@ -521,11 +529,164 @@
     syncPlaceholders(); render(); save();
   }
   document.getElementById('embarque-sel').addEventListener('change', function(){
+    if (!this.value) return;
     var url = new URL(window.location.href);
     url.searchParams.set('embarque', this.value);
     window.history.replaceState(null, '', url);
     cargarEmbarque(this.value);
+    actualizarBotonesEmbarque();
   });
+
+  // ── Lista de embarques: búsqueda y máximo de 6 a la vista ──
+  var MAX_EMBARQUES_VISIBLES = 6;
+  var selEmbarque = document.getElementById('embarque-sel');
+  var buscarEmbarque = document.getElementById('embarque-buscar');
+  var etiquetaBuscar = document.getElementById('embarque-buscar-label');
+  var OPCIONES_EMBARQUE = null;
+  function opcionesCompletas(){
+    // La lista completa se cachea: el <select> solo muestra una parte.
+    if (!OPCIONES_EMBARQUE){
+      OPCIONES_EMBARQUE = Array.prototype.slice.call(selEmbarque.options).map(function(o){
+        return {value: o.value, text: o.textContent};
+      });
+    }
+    return OPCIONES_EMBARQUE;
+  }
+  function aplicarFiltroEmbarques(valorForzado){
+    var texto = ((buscarEmbarque && buscarEmbarque.value) || '').trim().toLowerCase();
+    var opciones = opcionesCompletas();
+    var anterior = valorForzado || selEmbarque.value;
+    var opcionNuevo = opciones.filter(function(o){ return o.value === 'nuevo'; })[0];
+    var coincidencias = opciones.filter(function(o){
+      if (o.value === 'nuevo') return false;
+      return !texto || o.text.toLowerCase().indexOf(texto) >= 0;
+    });
+    // El embarque cargado siempre se mantiene a la vista: filtrar la lista
+    // nunca cambia los datos que hay en pantalla.
+    var visibles = coincidencias.slice(0, MAX_EMBARQUES_VISIBLES - 1);
+    var actual = coincidencias.filter(function(o){ return o.value === anterior; })[0];
+    if (!actual && anterior && anterior !== 'nuevo'){
+      actual = opciones.filter(function(o){ return o.value === anterior; })[0];
+    }
+    if (actual && visibles.indexOf(actual) === -1){
+      if (visibles.length >= MAX_EMBARQUES_VISIBLES - 1) visibles[visibles.length - 1] = actual;
+      else visibles.push(actual);
+    }
+    selEmbarque.innerHTML = '';
+    visibles.forEach(function(o){
+      var opcion = document.createElement('option');
+      opcion.value = o.value;
+      opcion.textContent = o.text;
+      selEmbarque.appendChild(opcion);
+    });
+    if (opcionNuevo){
+      var nuevo = document.createElement('option');
+      nuevo.value = opcionNuevo.value;
+      nuevo.textContent = opcionNuevo.text;
+      selEmbarque.appendChild(nuevo);
+    }
+    // La selección se conserva: solo cambia si se pide explícitamente.
+    if (anterior && selEmbarque.querySelector('option[value="' + anterior + '"]')){
+      selEmbarque.value = anterior;
+    }
+    if (etiquetaBuscar){
+      etiquetaBuscar.textContent = 'Buscar (' + (selEmbarque.options.length - 1) + ' de '
+        + (opciones.length - 1) + ')';
+    }
+    actualizarBotonesEmbarque();
+  }
+  if (buscarEmbarque){
+    // Sin argumentos: el evento se ignora, solo se refiltra la lista.
+    buscarEmbarque.addEventListener('input', function(){ aplicarFiltroEmbarques(); });
+    buscarEmbarque.addEventListener('search', function(){ aplicarFiltroEmbarques(); });
+  }
+
+  // ── Renombrar y eliminar embarques guardados ──
+  var btnRenombrar = document.getElementById('btn-renombrar');
+  var btnEliminar = document.getElementById('btn-eliminar');
+  function esEmbarqueGuardado(key){
+    return String(key || '').indexOf('guardado-') === 0;
+  }
+  function actualizarBotonesEmbarque(){
+    var guardado = esEmbarqueGuardado(selEmbarque.value);
+    if (btnRenombrar){
+      btnRenombrar.disabled = !guardado;
+      btnRenombrar.title = guardado ? 'Cambiar el nombre de este embarque'
+                                     : 'Solo disponible en embarques guardados';
+    }
+    if (btnEliminar){
+      btnEliminar.disabled = !guardado;
+      btnEliminar.title = guardado ? 'Eliminar este embarque'
+                                    : 'Solo disponible en embarques guardados';
+    }
+  }
+  function postJson(url, datos){
+    return fetch(url, {
+      method: 'POST', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+      body: JSON.stringify(datos)
+    }).then(function(response){
+      return response.text().then(function(texto){
+        var json = null;
+        try { json = JSON.parse(texto); } catch (e) { json = null; }
+        if (!response.ok){
+          if (json && json.error) throw new Error(json.error);
+          if (response.status === 403) throw new Error('Acceso denegado: recargue la página.');
+          if (response.status === 404) throw new Error('El embarque ya no existe.');
+          throw new Error('No se pudo completar la operación (HTTP ' + response.status + ').');
+        }
+        if (!json) throw new Error('El servidor devolvió una respuesta inesperada.');
+        return json;
+      });
+    });
+  }
+  if (btnRenombrar){
+    btnRenombrar.addEventListener('click', function(){
+      var key = selEmbarque.value;
+      if (!esEmbarqueGuardado(key)) return;
+      var actual = document.getElementById('embarque-nombre').value;
+      var nombre = prompt('Nuevo nombre del embarque:', actual);
+      if (nombre === null) return;
+      nombre = String(nombre).trim();
+      if (!nombre){ alert('Ingrese un nombre para el embarque.'); return; }
+      btnRenombrar.disabled = true;
+      postJson('{% url "panel:calculadora_renombrar" %}', {embarque_key: key, nombre: nombre})
+        .then(function(result){
+          document.getElementById('embarque-nombre').value = result.nombre;
+          var opcion = opcionesCompletas().filter(function(o){ return o.value === key; })[0];
+          if (opcion) opcion.text = result.nombre;
+          if (EMBARQUES[key]) EMBARQUES[key].nombre = result.nombre;
+          save();
+          aplicarFiltroEmbarques();
+          alert(result.message);
+        })
+        .catch(function(err){ alert(err && err.message ? err.message : 'No se pudo renombrar el embarque.'); })
+        .finally(function(){ actualizarBotonesEmbarque(); });
+    });
+  }
+  if (btnEliminar){
+    btnEliminar.addEventListener('click', function(){
+      var key = selEmbarque.value;
+      if (!esEmbarqueGuardado(key)) return;
+      var nombre = (EMBARQUES[key] && EMBARQUES[key].nombre) || document.getElementById('embarque-nombre').value;
+      if (!confirm('¿Eliminar el embarque «' + nombre + '»? Esta acción no se puede deshacer.')) return;
+      btnEliminar.disabled = true;
+      postJson('{% url "panel:calculadora_eliminar" %}', {embarque_key: key})
+        .then(function(result){
+          delete EMBARQUES[key];
+          OPCIONES_EMBARQUE = opcionesCompletas().filter(function(o){ return o.value !== key; });
+          var resto = opcionesCompletas().filter(function(o){ return o.value !== 'nuevo'; });
+          aplicarFiltroEmbarques(resto.length ? resto[0].value : 'nuevo');
+          var url = new URL(window.location.href);
+          url.searchParams.set('embarque', selEmbarque.value);
+          window.history.replaceState(null, '', url);
+          cargarEmbarque(selEmbarque.value);
+          alert(result.message);
+        })
+        .catch(function(err){ alert(err && err.message ? err.message : 'No se pudo eliminar el embarque.'); })
+        .finally(function(){ actualizarBotonesEmbarque(); });
+    });
+  }
 
   document.getElementById('add-row').addEventListener('click', function(){
     body.insertAdjacentHTML('beforeend', blankRow());
@@ -635,11 +796,12 @@
       });
       var result = await response.json();
       if (!response.ok) throw new Error(result.error || 'No se pudo guardar el embarque.');
-      var select = document.getElementById('embarque-sel');
-      var option = select.querySelector('option[value="' + result.key + '"]');
-      if (!option){ option = document.createElement('option'); option.value = result.key; select.insertBefore(option, select.lastElementChild); }
-      option.textContent = result.nombre;
-      select.value = result.key;
+      // El embarque recién guardado entra a la lista y queda visible.
+      var existente = opcionesCompletas().filter(function(o){ return o.value === result.key; })[0];
+      if (existente) existente.text = result.nombre;
+      else opcionesCompletas().push({value: result.key, text: result.nombre});
+      if (buscarEmbarque) buscarEmbarque.value = '';
+      aplicarFiltroEmbarques(result.key);
       var url = new URL(window.location.href);
       url.searchParams.set('embarque', result.key);
       window.history.replaceState(null, '', url);
@@ -731,6 +893,7 @@
   restore();
   syncPlaceholders();
   render();
+  aplicarFiltroEmbarques();
 })();
 </script>
 {% endblock %}

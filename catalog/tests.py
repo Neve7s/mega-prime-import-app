@@ -47,12 +47,40 @@ class ProductTest(TestCase):
         resp = self.client.get("/catalogo/", {"categoria": "porcelanato"})
         self.assertContains(resp, "MPG-CALA-120")
 
+    def test_la_tarjeta_muestra_solo_3_datos_de_la_ficha(self):
+        """En la rejilla: 3 filas de la ficha y "…"; en el detalle: todo."""
+        ficha = {"Ancho": "1050mm", "Marca": "MG 1050.", "Espesor": "2.5mm.",
+                 "Longitud": "2.41, 3.07, 3.50", "Garantía": "10 años.",
+                 "Aplicación": "Residencial"}
+        producto = Product.objects.create(
+            categoria=self.cat, sku="MPG-FICHA", nombre="Teja con ficha larga",
+            slug="teja-ficha-larga", precio_mayor=Decimal("18.50"),
+            ficha_tecnica=ficha,
+        )
+        # La tarjeta: 3 filas y el enlace "…" al detalle
+        html = self.client.get("/catalogo/").content.decode()
+        tarjeta = html.split('class="product-item')[1]
+        self.assertEqual(tarjeta.count("text-on-surface-variant shrink-0"), 3)
+        self.assertIn("…", tarjeta)
+        # El detalle: la ficha completa
+        detalle = self.client.get(f"/catalogo/producto/{producto.slug}/").content.decode()
+        for clave in ficha:
+            self.assertIn(clave, detalle)
+        self.assertIn("2.41, 3.07, 3.50", detalle)
+
     def test_seed_lineas_y_tipos(self):
-        for slug in ("tejas", "accesorios"):
+        for slug in ("tejas-y-cubiertas", "accesorios-y-materiales"):
             self.assertTrue(Category.objects.filter(slug=slug).exists())
         for slug in ("teja-roma", "teja-espanola", "teja-pvc", "cumbreros",
                      "tornilleria", "perfiles", "selladores"):
             self.assertTrue(TipoProducto.objects.filter(slug=slug).exists())
+        # Cada tipo sabe en qué categoría cae
+        self.assertEqual(
+            TipoProducto.objects.get(slug="cumbreros").categoria.slug,
+            "accesorios-y-materiales")
+        self.assertEqual(
+            TipoProducto.objects.get(slug="teja-espanola").categoria.slug,
+            "tejas-y-cubiertas")
 
     def test_filtro_y_busqueda_por_tipo_y_badge(self):
         tipo = TipoProducto.objects.get(slug="teja-roma")
@@ -191,7 +219,6 @@ class ExcelProductosTest(TestCase):
         from catalog.excel_productos import read_productos_xlsx
 
         casos = [
-            (["", "Sin SKU", "Tejas Excel", None, 1, None, None, None, None, None, None], "SKU"),
             (["TEJ-3", "", "Tejas Excel", None, 1, None, None, None, None, None, None], "nombre"),
             (["TEJ-4", "Cat mala", "No Existe", None, 1, None, None, None, None, None, None], "No Existe"),
             (["TEJ-5", "Precio malo", "Tejas Excel", None, "abc", None, None, None, None, None, None], "precio"),
@@ -203,6 +230,16 @@ class ExcelProductosTest(TestCase):
                     read_productos_xlsx(self._libro_con_filas([fila]))
                 self.assertIn(esperado, str(ctx.exception))
                 self.assertIn("fila 2", str(ctx.exception))
+
+    def test_sku_vacio_se_genera_solo(self):
+        """Sin SKU en el Excel: la fila se lee igual y el importador asigna el correlativo."""
+        from catalog.excel_productos import read_productos_xlsx
+
+        filas = read_productos_xlsx(self._libro_con_filas([
+            ["", "Sin SKU", "Tejas Excel", None, 1, None, None, None, None, None, None],
+        ]))
+        self.assertEqual(filas[0]["sku"], "")
+        self.assertEqual(filas[0]["nombre"], "Sin SKU")
 
     def test_sku_duplicado_en_el_archivo_es_error(self):
         from catalog.excel_productos import read_productos_xlsx
@@ -299,3 +336,122 @@ class CalidadProductosTest(TestCase):
             self.assertEqual({p.categoria_id for p in grupo}, {self.cat.pk})
         skus = sorted(p.sku for grupo in grupos for p in grupo)
         self.assertEqual(skus, ["DUP-1", "DUP-2", "DUP-3", "DUP-4"])
+
+class SkuIncrementalTest(TestCase):
+    """El SKU de los productos se genera solo: COD-0001, COD-0002…"""
+
+    def setUp(self):
+        self.cat = Category.objects.create(nombre="Tejas", slug="tejas-sku")
+
+    def test_primer_sku_arranca_en_001(self):
+        from catalog.sku import siguiente_sku
+
+        self.assertEqual(siguiente_sku(), "COD-0001")
+
+    def test_el_siguiente_es_incremental(self):
+        from catalog.sku import siguiente_sku
+
+        Product.objects.create(categoria=self.cat, sku="COD-0001", nombre="A",
+                               slug="a", precio_mayor="10")
+        Product.objects.create(categoria=self.cat, sku="COD-0002", nombre="B",
+                               slug="b", precio_mayor="10")
+        self.assertEqual(siguiente_sku(), "COD-0003")
+
+    def test_no_reutiliza_el_numero_de_un_borrado(self):
+        from catalog.sku import siguiente_sku
+
+        Product.objects.create(categoria=self.cat, sku="COD-0001", nombre="A",
+                               slug="a", precio_mayor="10")
+        Product.objects.create(categoria=self.cat, sku="COD-0003", nombre="C",
+                               slug="c", precio_mayor="10")
+        self.assertEqual(siguiente_sku(), "COD-0004")
+
+    def test_el_formulario_prellena_el_sku_al_alta(self):
+        from django.contrib.auth.models import User
+
+        from panel.forms import ProductForm
+
+        User.objects.create_user("sku-staff", password="x", is_staff=True)
+        form = ProductForm()
+        self.assertEqual(form.fields["sku"].initial, "COD-0001")
+
+    def test_el_formulario_asigna_sku_si_viene_vacio(self):
+        from panel.forms import ProductForm
+
+        form = ProductForm(data={"categoria": self.cat.pk, "nombre": "Teja demo",
+                                 "slug": "teja-demo", "precio_mayor": "10",
+                                 "unidad": "m2", "stock_cantidad": "0"})
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["sku"], "COD-0001")
+
+    def test_editar_no_cambia_el_sku(self):
+        from panel.forms import ProductForm
+
+        producto = Product.objects.create(categoria=self.cat, sku="COD-0007",
+                                           nombre="Teja", slug="teja", precio_mayor="10")
+        form = ProductForm(data={"categoria": self.cat.pk, "nombre": "Teja",
+                                 "slug": "teja", "precio_mayor": "10",
+                                 "unidad": "m2", "stock_cantidad": "0"},
+                            instance=producto)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["sku"], "COD-0007")
+
+
+class MismoModeloTest(TestCase):
+    """Fichas que son el mismo modelo en distinto color."""
+
+    def setUp(self):
+        self.cat = Category.objects.create(nombre="Cubiertas", slug="cubiertas-m")
+
+    def _producto(self, nombre, sku, slug):
+        return Product.objects.create(categoria=self.cat, sku=sku, nombre=nombre,
+                                      slug=slug, precio_mayor="10")
+
+    def test_agrupa_fichas_que_solo_difieren_en_color(self):
+        from catalog.calidad import grupos_mismo_modelo
+
+        self._producto("Teja Español PVC Negro/Blanco 2.5 mm", "M1", "m1")
+        self._producto("Teja Español PVC Verde/Blanco 2.5 mm", "M2", "m2")
+        self._producto("Teja Español PVC Azul/Blanco 2.5 mm", "M3", "m3")
+        self._producto("Teja Trapezoidal UPVC 2.2 mm", "M4", "m4")
+        grupos = grupos_mismo_modelo()
+        self.assertEqual(len(grupos), 1)
+        self.assertEqual({p.sku for p in grupos[0]}, {"M1", "M2", "M3"})
+
+    def test_no_agrupa_productos_de_modelos_distintos(self):
+        from catalog.calidad import grupos_mismo_modelo
+
+        self._producto("Cielo Razo PVC maderados ranurados", "C1", "c1")
+        self._producto("Cielo Razo PVC Blanco llanos", "C2", "c2")
+        self.assertEqual(grupos_mismo_modelo(), [])
+
+    def test_la_paleta_ayuda_a_detectar_el_color(self):
+        from catalog.calidad import clave_modelo
+
+        self.assertEqual(clave_modelo("Teja Español PVC Negro/Blanco 2.5 mm"),
+                         "teja espanol pvc 2 5 mm")
+        self.assertEqual(clave_modelo("Teja Español PVC Terracota 2.5 mm"),
+                         "teja espanol pvc 2 5 mm")
+
+    def test_fusionar_reune_colores_y_fotos(self):
+        from catalog.calidad import fusionar_variantes
+        from catalog.models import Color, ProductColor, ProductImage
+
+        rojo = Color.objects.get(slug="rojo")
+        verde = Color.objects.get(slug="verde")
+        principal = self._producto("Teja Español PVC 2.5 mm", "F1", "f1")
+        variante = self._producto("Teja Español PVC Verde 2.5 mm", "F2", "f2")
+        ProductColor.objects.create(producto=principal, color=rojo, orden=0)
+        ProductColor.objects.create(producto=variante, color=verde, orden=0)
+        ProductImage.objects.create(producto=variante,
+                                    imagen_url="https://ejemplo.com/v.jpg")
+        movidos = fusionar_variantes(principal, [variante])
+        self.assertEqual(movidos["colores"], 1)
+        self.assertEqual(movidos["fotos"], 1)
+        self.assertEqual(
+            [pc.color.slug for pc in principal.colores_producto.all()],
+            ["rojo", "verde"])
+        self.assertEqual(principal.imagenes.count(), 1)
+        variante.refresh_from_db()
+        self.assertFalse(variante.activo)
+

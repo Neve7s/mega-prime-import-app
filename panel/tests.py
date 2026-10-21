@@ -100,7 +100,7 @@ class PanelTest(TestCase):
             shutil.rmtree(tmp, ignore_errors=True)
 
     def test_categorias_crud_y_filtro_automatico(self):
-        from catalog.models import Category
+        from catalog.models import Category, Product
 
         self.client.force_login(self.staff)
         # Crear
@@ -110,7 +110,9 @@ class PanelTest(TestCase):
         })
         self.assertEqual(r.status_code, 302)
         cat = Category.objects.get(slug="griferia")
-        # Aparece sola en el filtro del catálogo público
+        # Aparece sola en el filtro del catálogo público (con productos)
+        producto = Product.objects.create(categoria=cat, sku="GR-T", nombre="Grifo test",
+                                          slug="grifo-test", precio_mayor="10.00")
         html = self.client.get("/catalogo/").content.decode()
         self.assertIn('value="griferia"', html)
         self.assertIn("Grifería", html)
@@ -126,36 +128,133 @@ class PanelTest(TestCase):
         cat.refresh_from_db()
         self.assertEqual(cat.nombre, "Griferías Finas")
         # Eliminar vacía
+        producto.delete()
         r = self.client.post(f"/webadmin/categorias/{cat.pk}/eliminar/")
         self.assertEqual(r.status_code, 302)
         self.assertFalse(Category.objects.filter(slug="griferia").exists())
 
+    def test_el_tipo_define_la_categoria(self):
+        """Una sola decisión: al elegir el tipo, la categoría se pone sola."""
+        from catalog.models import Category, Product, TipoProducto
+
+        self.client.force_login(self.staff)
+        tejas = Category.objects.create(nombre="Tejas", slug="tejas-td")
+        tipo = TipoProducto.objects.create(nombre="Teja Española", slug="teja-esp-td",
+                                           categoria=tejas)
+        r = self.client.post("/webadmin/productos/nuevo/", data={
+            "tipo": tipo.pk, "nombre": "Teja sin categoría", "descripcion": "",
+            "precio_mayor": "12.50", "unidad": "m2", "stock_cantidad": "10",
+            "en_stock": "on", "activo": "on",
+            "colores_json": "[]", "caracteristicas_json": "[]",
+        })
+        self.assertEqual(r.status_code, 302)
+        p = Product.objects.get(nombre="Teja sin categoría")
+        self.assertEqual(p.categoria, tejas)
+        # El SKU y el slug se generan solos
+        self.assertTrue(p.sku.startswith("COD-"))
+        self.assertEqual(p.slug, "teja-sin-categoria")
+
+    def test_sin_tipo_hace_falta_la_categoria(self):
+        from catalog.models import Category
+
+        self.client.force_login(self.staff)
+        Category.objects.create(nombre="Tejas", slug="tejas-sc")
+        r = self.client.post("/webadmin/productos/nuevo/", data={
+            "nombre": "Producto sin nada", "descripcion": "",
+            "precio_mayor": "10", "unidad": "m2", "stock_cantidad": "0",
+            "activo": "on", "colores_json": "[]", "caracteristicas_json": "[]",
+        })
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Elige el tipo de producto o la categoría.")
+
     def test_producto_guarda_colores_y_caracteristicas(self):
         import json
 
-        from catalog.models import Category, Product
+        from catalog.models import Category, Color, Product
 
         self.client.force_login(self.staff)
         cat = Category.objects.create(nombre="Tejas", slug="tejas-t")
+        rojo = Color.objects.get(slug="rojo")  # viene de la paleta
         base = {"categoria": cat.pk, "sku": "MPG-COL", "nombre": "Con color",
                 "slug": "con-color", "descripcion": "", "precio_mayor": "10.00",
                 "unidad": "m2", "stock_cantidad": "1", "imagen_url": "",
                 "en_stock": "on", "activo": "on",
                 "colores_json": json.dumps([
-                    {"nombre": "Rojo Teja", "hex": "#8B2500"},
-                    {"nombre": "Malo", "hex": "zzz"},
-                    {"nombre": "", "hex": "#FFFFFF"}]),
+                    {"slug": "rojo", "nombre": "Rojo", "hex": "#8B2500", "rol": "exterior"},
+                    {"slug": "", "nombre": "Malo", "hex": "zzz", "rol": ""},
+                    {"slug": "", "nombre": "", "hex": "#FFFFFF", "rol": ""}]),
                 "caracteristicas_json": json.dumps(
                     ["Resistente UV", "  ", "Peso ligero"])}
         r = self.client.post("/webadmin/productos/nuevo/", data=base)
         self.assertEqual(r.status_code, 302)
         p = Product.objects.get(sku="MPG-COL")
-        self.assertEqual(p.colores, [{"nombre": "Rojo Teja", "hex": "#8B2500"}])
+        colores = list(p.colores_producto.all())
+        self.assertEqual(len(colores), 1)
+        self.assertEqual(colores[0].color, rojo)
+        self.assertEqual(colores[0].rol, "exterior")
         self.assertEqual(p.caracteristicas, ["Resistente UV", "Peso ligero"])
         det = self.client.get("/catalogo/producto/con-color/").content.decode()
-        self.assertIn("Rojo Teja", det)
+        self.assertIn("Rojo", det)
         self.assertIn("Resistente UV", det)
-        self.assertIn("#8B2500", det)
+        self.assertIn(rojo.hex, det)
+
+    def test_producto_guarda_galeria_por_url_y_archivo(self):
+        import shutil
+        import tempfile
+        from io import BytesIO
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.test import override_settings
+        from PIL import Image
+
+        from catalog.models import Category, Product, ProductImage
+
+        self.client.force_login(self.staff)
+        cat = Category.objects.create(nombre="Tejas", slug="tejas-gal")
+        buffer = BytesIO()
+        Image.new("RGB", (40, 40), "red").save(buffer, "PNG")
+        base = {"categoria": cat.pk, "sku": "MPG-GAL", "nombre": "Con galería",
+                "slug": "con-galeria", "descripcion": "", "precio_mayor": "10.00",
+                "unidad": "m2", "stock_cantidad": "1", "imagen_url": "",
+                "en_stock": "on", "activo": "on",
+                "colores_json": "[]", "caracteristicas_json": "[]",
+                "galeria_urls": "https://ejemplo.com/foto1.jpg\nno-es-url\nhttps://ejemplo.com/foto2.jpg",
+                "galeria_archivos": SimpleUploadedFile(
+                    "foto.png", buffer.getvalue(), content_type="image/png")}
+        destino = tempfile.mkdtemp()
+        try:
+            with override_settings(MEDIA_ROOT=destino):
+                r = self.client.post("/webadmin/productos/nuevo/", data=base)
+                self.assertEqual(r.status_code, 302)
+                p = Product.objects.get(sku="MPG-GAL")
+                fotos = list(p.imagenes.all())
+                self.assertEqual(len(fotos), 3)
+                self.assertEqual(fotos[0].imagen_url, "https://ejemplo.com/foto1.jpg")
+                self.assertEqual(fotos[1].imagen_url, "https://ejemplo.com/foto2.jpg")
+                self.assertTrue(fotos[2].imagen)
+                # La galería se ve en la ficha pública
+                det = self.client.get("/catalogo/producto/con-galeria/").content.decode()
+                self.assertIn("galeria-mini", det)
+                self.assertIn("https://ejemplo.com/foto1.jpg", det)
+        finally:
+            shutil.rmtree(destino, ignore_errors=True)
+
+    def test_producto_borra_fotos_marcadas(self):
+        from catalog.models import Category, Product, ProductImage
+
+        self.client.force_login(self.staff)
+        cat = Category.objects.create(nombre="Tejas", slug="tejas-bor")
+        p = Product.objects.create(categoria=cat, sku="MPG-BOR", nombre="A borrar",
+                                   slug="a-borrar", precio_mayor="10")
+        foto = ProductImage.objects.create(producto=p, imagen_url="https://ejemplo.com/x.jpg")
+        base = {"categoria": cat.pk, "sku": p.sku, "nombre": p.nombre, "slug": p.slug,
+                "descripcion": "", "precio_mayor": "10.00", "unidad": "m2",
+                "stock_cantidad": "0", "imagen_url": "", "activo": "on",
+                "colores_json": "[]", "caracteristicas_json": "[]",
+                "galeria_borrar": str(foto.pk)}
+        r = self.client.post(f"/webadmin/productos/{p.pk}/", data=base)
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(p.imagenes.count(), 0)
 
     def test_tipos_crud_y_proteccion(self):
         from catalog.models import TipoProducto
@@ -203,14 +302,14 @@ class PanelTest(TestCase):
         from catalog.models import Category, Product
 
         self.client.force_login(self.staff)
-        cat = Category.objects.create(nombre="Pisos", slug="pisos")
+        cat = Category.objects.create(nombre="Bebidas", slug="bebidas")
         Product.objects.create(
             categoria=cat, sku="P-1", nombre="Piso test", slug="piso-test",
             precio_mayor="10.00", stock_cantidad="5")
         r = self.client.post(f"/webadmin/categorias/{cat.pk}/eliminar/")
         self.assertEqual(r.status_code, 200)
         self.assertIn("No se puede eliminar", r.content.decode())
-        self.assertTrue(Category.objects.filter(slug="pisos").exists())
+        self.assertTrue(Category.objects.filter(slug="bebidas").exists())
 
     def test_staff_crea_producto_desde_panel(self):
         from catalog.models import Category, Product
@@ -423,6 +522,146 @@ class PanelTest(TestCase):
         self.assertEqual(actualizado.nombre, "Renombrado")
         self.assertEqual(str(actualizado.precio_mayor), "3.50")
         self.assertEqual(Product.objects.get(sku="IMP-3").categoria, cat)
+
+    def test_importar_excel_sin_sku_asigna_el_correlativo(self):
+        """Si el Excel deja el SKU vacío, el importador genera COD-0001…"""
+        from catalog.models import Category, Product
+
+        cat = Category.objects.create(nombre="Tejas SKU", slug="tejas-sku")
+        Product.objects.create(categoria=cat, sku="COD-0001", nombre="Existente",
+                               slug="existente", precio_mayor="1.00", unidad="m2")
+        self.client.force_login(self.staff)
+
+        contenido = self._excel_productos([
+            ["", "Sin SKU A", "Tejas SKU", None, 20, "unid", 5, "", "", "", ""],
+            ["", "Sin SKU B", "Tejas SKU", None, 30, "unid", 5, "", "", "", ""],
+        ])
+        r = self._subir(contenido, categoria="tejas-sku")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("2 creados", r.content.decode())
+        self.assertTrue(Product.objects.filter(sku="COD-0002").exists())
+        self.assertTrue(Product.objects.filter(sku="COD-0003").exists())
+        self.assertEqual(Product.objects.get(sku="COD-0002").nombre, "Sin SKU A")
+
+    def test_importar_excel_con_colores_y_galeria(self):
+        """El Excel puede traer los colores del modelo y las fotos de la galería."""
+        from catalog.models import Category, Product
+
+        cat = Category.objects.create(nombre="Tejas Col", slug="tejas-col")
+        self.client.force_login(self.staff)
+
+        contenido = self._excel_productos([
+            ["EXC-1", "Teja con colores", "Tejas Col", None, 20, "m2", 5, "", "",
+             "https://ejemplo.com/portada.jpg", "Descripción",
+             "Terracota, Negro (exterior), Blanco (interior)",
+             "https://ejemplo.com/f1.jpg;https://ejemplo.com/f2.jpg"],
+        ])
+        r = self._subir(contenido, categoria="tejas-col")
+        self.assertEqual(r.status_code, 200)
+        p = Product.objects.get(sku="EXC-1")
+        colores = list(p.colores_producto.all())
+        self.assertEqual([c.color.nombre for c in colores],
+                         ["Terracota", "Negro", "Blanco"])
+        self.assertEqual([c.rol for c in colores], ["", "exterior", "interior"])
+        urls = [f.imagen_url for f in p.imagenes.all()]
+        self.assertEqual(urls, ["https://ejemplo.com/f1.jpg",
+                                "https://ejemplo.com/f2.jpg"])
+
+    def test_importar_excel_no_pisa_productos_con_sku_generado(self):
+        """Un SKU autogenerado no puede pisar el SKU que trae otra fila."""
+        from catalog.models import Category, Product
+
+        cat = Category.objects.create(nombre="Tejas SKU2", slug="tejas-sku2")
+        self.client.force_login(self.staff)
+        contenido = self._excel_productos([
+            ["", "Sin SKU A", "Tejas SKU2", None, 20, "m2", 5, "", "", "", ""],
+            ["COD-0001", "Con SKU B", "Tejas SKU2", None, 30, "m2", 5, "", "", "", ""],
+        ])
+        r = self._subir(contenido, categoria="tejas-sku2")
+        self.assertEqual(r.status_code, 200)
+        # Ambos productos existen: el generado toma un número libre.
+        self.assertTrue(Product.objects.filter(nombre="Sin SKU A").exists())
+        self.assertTrue(Product.objects.filter(sku="COD-0001",
+                                               nombre="Con SKU B").exists())
+
+    def test_importar_excel_con_color_repetido_no_rompe(self):
+        from catalog.models import Category, Product
+
+        cat = Category.objects.create(nombre="Tejas Dup", slug="tejas-dup")
+        self.client.force_login(self.staff)
+        contenido = self._excel_productos([
+            ["DUP-COL", "Teja colores repetidos", "Tejas Dup", None, 20, "m2", 5,
+             "", "", "", "", "Negro, Negro, negro", ""],
+        ])
+        r = self._subir(contenido, categoria="tejas-dup")
+        self.assertEqual(r.status_code, 200)
+        p = Product.objects.get(sku="DUP-COL")
+        self.assertEqual(p.colores_producto.count(), 1)
+
+    def test_galeria_rechaza_archivos_que_no_son_imagenes(self):
+        from io import BytesIO
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from catalog.models import Category, Product
+
+        self.client.force_login(self.staff)
+        cat = Category.objects.create(nombre="Tejas Mal", slug="tejas-mal")
+        archivo = SimpleUploadedFile("x.html", b"<script>alert(1)</script>",
+                                     content_type="text/html")
+        base = {"categoria": cat.pk, "sku": "MPG-MAL", "nombre": "No imagen",
+                "slug": "no-imagen", "descripcion": "", "precio_mayor": "10.00",
+                "unidad": "m2", "stock_cantidad": "0", "imagen_url": "",
+                "en_stock": "on", "activo": "on",
+                "colores_json": "[]", "caracteristicas_json": "[]",
+                "galeria_archivos": archivo}
+        r = self.client.post("/webadmin/productos/nuevo/", data=base)
+        self.assertEqual(r.status_code, 302)
+        p = Product.objects.get(sku="MPG-MAL")
+        self.assertEqual(p.imagenes.count(), 0)
+
+    def test_fusionar_solo_acepta_el_mismo_grupo(self):
+        """No se puede fusionar un producto de otra categoría."""
+        from catalog.models import Category, Product
+
+        cat = Category.objects.create(nombre="Cubiertas F", slug="cubiertas-f")
+        otra = Category.objects.create(nombre="Pisos F", slug="pisos-f")
+        principal = Product.objects.create(categoria=cat, sku="FUS-1",
+                                           nombre="Teja F Negro/Blanco 2.5 mm",
+                                           slug="fus-1", precio_mayor="10")
+        Product.objects.create(categoria=cat, sku="FUS-2",
+                               nombre="Teja F Verde/Blanco 2.5 mm", slug="fus-2",
+                               precio_mayor="10")
+        intruso = Product.objects.create(categoria=otra, sku="FUS-3", nombre="Piso F",
+                                         slug="fus-3", precio_mayor="10")
+        self.client.force_login(self.staff)
+        r = self.client.post("/webadmin/productos/fusionar/", {
+            "principal": principal.pk, "variantes": [intruso.pk]})
+        self.assertEqual(r.status_code, 302)
+        intruso.refresh_from_db()
+        self.assertTrue(intruso.activo)  # no se toca lo que no es del grupo
+
+    def test_fusionar_junta_el_grupo_del_mismo_modelo(self):
+        from catalog.models import Category, Color, Product, ProductColor
+
+        cat = Category.objects.create(nombre="Cubiertas G", slug="cubiertas-g")
+        verde = Color.objects.get(slug="verde")
+        principal = Product.objects.create(categoria=cat, sku="FUS-10",
+                                           nombre="Teja G Negro/Blanco 2.5 mm",
+                                           slug="fus-10", precio_mayor="10")
+        variante = Product.objects.create(categoria=cat, sku="FUS-11",
+                                          nombre="Teja G Verde/Blanco 2.5 mm",
+                                          slug="fus-11", precio_mayor="10")
+        ProductColor.objects.create(producto=variante, color=verde, orden=0)
+        self.client.force_login(self.staff)
+        r = self.client.post("/webadmin/productos/fusionar/", {
+            "principal": principal.pk, "variantes": [variante.pk]})
+        self.assertEqual(r.status_code, 302)
+        variante.refresh_from_db()
+        self.assertFalse(variante.activo)
+        # El color de la variante pasa al principal.
+        self.assertEqual([pc.color.slug for pc in principal.colores_producto.all()],
+                         ["verde"])
 
     def test_importar_excel_errores_y_permiso(self):
         from catalog.models import Product

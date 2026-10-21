@@ -163,6 +163,54 @@ class SiteSettings(models.Model):
         return f"https://fonts.googleapis.com/css2?family={qs}&display=swap"
 
 
+class HeroMedia(models.Model):
+    """Fondos del hero: hasta 3 imágenes, GIF o videos.
+
+    Se administran desde el panel (Ajustes → Portada). Si no hay ninguno,
+    el hero usa su fondo por defecto.
+    """
+
+    TIPO_IMAGEN = "imagen"
+    TIPO_VIDEO = "video"
+    TIPOS = [(TIPO_IMAGEN, "Imagen o GIF"), (TIPO_VIDEO, "Video (mp4)")]
+
+    MAX_MEDIOS = 3
+
+    tipo = models.CharField(max_length=10, choices=TIPOS, default=TIPO_IMAGEN)
+    imagen = models.ImageField(
+        upload_to="branding/hero/", blank=True, null=True,
+        help_text="Sube la foto o el GIF (se optimiza a 1920px).")
+    url = models.CharField(
+        max_length=300, blank=True, default="",
+        help_text="Enlace externo (video mp4 o GIF). Si subes archivo, gana el archivo.")
+    alt = models.CharField(max_length=160, blank=True)
+    orden = models.PositiveIntegerField(default=0)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["orden", "id"]
+        verbose_name = "Fondo del hero"
+        verbose_name_plural = "Fondos del hero"
+
+    def __str__(self) -> str:
+        return self.alt or f"Fondo {self.pk}"
+
+    @property
+    def src(self) -> str:
+        return self.imagen.url if self.imagen else (self.url or "")
+
+    @property
+    def tiene_fuente(self) -> bool:
+        return bool(self.src)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from .image_utils import optimize_field_file
+
+        if optimize_field_file(self.imagen, max_dim=1920):
+            super().save(update_fields=["imagen"])
+
+
 class HeroStat(models.Model):
     """Cifras del hero (+15 años, 48h, stock, B2B). Ordenables y activables."""
 

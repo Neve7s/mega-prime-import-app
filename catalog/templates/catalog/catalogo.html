@@ -5,54 +5,87 @@
 <div class="max-w-[1440px] mx-auto px-margin md:px-margin-md lg:px-margin-lg">
   <div class="font-label-sm text-label-sm uppercase tracking-widest text-secondary font-bold">Catálogo mayorista</div>
   <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Catálogo completo</h1>
-  <p class="font-body-md text-body-md text-on-surface-variant mt-1">Filtra por línea y tipo, busca por nombre, SKU o familia y agrega a tu cotización.</p>
+  <p class="font-body-md text-body-md text-on-surface-variant mt-1">Filtra por línea y tipo, busca por nombre y agrega a tu cotización.</p>
 
   <form hx-get="{% url 'catalog:catalogo' %}" hx-target="#catalogo-grid" hx-swap="innerHTML" hx-trigger="change, keyup changed delay:300ms from:#filtro-q" hx-push-url="true"
-        class="mt-6 bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-space-md shadow-sm grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1.4fr_2fr_auto_auto] gap-space-md items-end">
-    <div class="flex flex-col gap-1.5">
-      <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold" for="filtro-q">Buscar</label>
-      <input id="filtro-q" name="q" value="{{ q }}" placeholder="Nombre o SKU..." class="h-11 bg-surface border border-outline-variant rounded-lg px-space-md font-body-sm" />
-    </div>
-    <div class="flex flex-col gap-1.5">
-      <span class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Línea</span>
-      <div class="flex flex-wrap items-center gap-2 h-11">
-        <label class="cursor-pointer"><input type="radio" name="categoria" value="" class="peer sr-only" {% if not categoria %}checked{% endif %} /><span class="inline-block px-space-md py-2 rounded-lg font-label-sm text-label-sm uppercase tracking-wider bg-surface border border-outline-variant peer-checked:bg-primary peer-checked:text-on-primary transition-colors">Todas</span></label>
-        {% for cat in categorias %}
-        <label class="cursor-pointer"><input type="radio" name="categoria" value="{{ cat.slug }}" class="peer sr-only" {% if categoria == cat.slug %}checked{% endif %} /><span class="inline-block px-space-md py-2 rounded-lg font-label-sm text-label-sm uppercase tracking-wider bg-surface border border-outline-variant peer-checked:bg-primary peer-checked:text-on-primary transition-colors">{{ cat.nombre }}</span></label>
-        {% endfor %}
+        class="mt-6 bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-space-md shadow-sm">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[minmax(0,2.2fr)_repeat(4,minmax(0,1fr))] gap-space-md items-end">
+      <div class="flex flex-col gap-1.5">
+        <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold" for="filtro-q">Buscar</label>
+        <input id="filtro-q" name="q" value="{{ q }}" placeholder="Nombre, tipo o ficha…" class="h-11 bg-surface border border-outline-variant rounded-lg px-space-md font-body-sm w-full" />
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold" for="filtro-categoria">Línea</label>
+        <select id="filtro-categoria" name="categoria" class="h-11 bg-surface border border-outline-variant rounded-lg px-space-md font-body-sm w-full">
+          <option value="">Todas</option>
+          {% for cat in categorias %}
+          <option value="{{ cat.slug }}" {% if categoria == cat.slug %}selected{% endif %}>{{ cat.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold" for="filtro-tipo">Tipo</label>
+        <select id="filtro-tipo" name="tipo" class="h-11 bg-surface border border-outline-variant rounded-lg px-space-md font-body-sm w-full">
+          <option value="">Todos</option>
+          {% for grupo in tipos_agrupados %}
+          <optgroup label="{{ grupo.etiqueta }}">
+            {% for slug_tipo, nombre_tipo in grupo.tipos %}
+            <option value="{{ slug_tipo }}" data-categoria="{{ grupo.slug }}" {% if tipo == slug_tipo %}selected{% endif %}>{{ nombre_tipo }}</option>
+            {% endfor %}
+          </optgroup>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold" for="filtro-stock">Stock</label>
+        <select id="filtro-stock" name="stock" class="h-11 bg-surface border border-outline-variant rounded-lg px-space-md font-body-sm w-full">
+          <option value="">Todo</option>
+          <option value="si" {% if stock == "si" %}selected{% endif %}>En stock</option>
+        </select>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold" for="filtro-orden">Orden</label>
+        <select id="filtro-orden" name="orden" class="h-11 bg-surface border border-outline-variant rounded-lg px-space-md font-body-sm w-full">
+          <option value="">Destacados</option>
+          <option value="precio_asc" {% if orden == "precio_asc" %}selected{% endif %}>Precio menor</option>
+          <option value="precio_desc" {% if orden == "precio_desc" %}selected{% endif %}>Precio mayor</option>
+          <option value="nombre" {% if orden == "nombre" %}selected{% endif %}>Nombre A–Z</option>
+        </select>
       </div>
     </div>
-    <div class="flex flex-col gap-1.5">
-      <span class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Tipo</span>
-      <div class="flex flex-wrap items-center gap-2 h-11">
-        <label class="cursor-pointer"><input type="radio" name="tipo" value="" class="peer sr-only" {% if not tipo %}checked{% endif %} /><span class="inline-block px-space-md py-2 rounded-lg font-label-sm text-label-sm uppercase tracking-wider bg-surface border border-outline-variant peer-checked:bg-primary peer-checked:text-on-primary transition-colors">Todos</span></label>
-        {% for t in tipos %}
-        <label class="cursor-pointer"><input type="radio" name="tipo" value="{{ t.slug }}" class="peer sr-only" {% if tipo == t.slug %}checked{% endif %} /><span class="inline-block px-space-md py-2 rounded-lg font-label-sm text-label-sm uppercase tracking-wider bg-surface border border-outline-variant peer-checked:bg-primary peer-checked:text-on-primary transition-colors">{{ t.nombre }}</span></label>
-        {% endfor %}
-      </div>
-    </div>
-    <div class="flex flex-col gap-1.5">
-      <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold" for="filtro-stock">Stock</label>
-      <select id="filtro-stock" name="stock" class="h-11 bg-surface border border-outline-variant rounded-lg px-space-md font-body-sm">
-        <option value="">Todo</option>
-        <option value="si" {% if stock == "si" %}selected{% endif %}>En stock</option>
-      </select>
-    </div>
-    <div class="flex flex-col gap-1.5">
-      <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold" for="filtro-orden">Orden</label>
-      <select id="filtro-orden" name="orden" class="h-11 bg-surface border border-outline-variant rounded-lg px-space-md font-body-sm">
-        <option value="">Destacados</option>
-        <option value="precio_asc" {% if orden == "precio_asc" %}selected{% endif %}>Precio menor</option>
-        <option value="precio_desc" {% if orden == "precio_desc" %}selected{% endif %}>Precio mayor</option>
-        <option value="nombre" {% if orden == "nombre" %}selected{% endif %}>Nombre A–Z</option>
-      </select>
+    <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+      <p class="font-body-sm text-body-sm text-on-surface-variant"><span id="catalogo-count">{{ productos|length }}</span> producto(s)</p>
+      {% if q or categoria or tipo or stock or orden %}
+      <a href="{% url 'catalog:catalogo' %}" class="inline-flex items-center gap-1 font-label-sm text-label-sm uppercase tracking-wider text-secondary hover:underline">
+        <span class="material-symbols-outlined text-[16px]">close</span> Quitar filtros
+      </a>
+      {% endif %}
     </div>
   </form>
-  <p class="font-body-sm text-body-sm text-on-surface-variant mt-4"><span id="catalogo-count">{{ productos|length }}</span> producto(s)</p>
 
   <div id="catalogo-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mt-4">
     {% include "catalog/_grid.html" with productos=productos %}
   </div>
 </div>
 </section>
+<script>
+(function(){
+  // Al cambiar la línea, el selector de tipo se queda con los de esa línea.
+  var linea = document.getElementById('filtro-categoria');
+  var tipo = document.getElementById('filtro-tipo');
+  if (!linea || !tipo) return;
+  linea.addEventListener('change', function(){
+    var valor = linea.value;
+    Array.prototype.slice.call(tipo.options).forEach(function(op){
+      if (!op.value) return;
+      var cat = op.getAttribute('data-categoria') || '';
+      var fuera = valor && cat !== valor;
+      op.hidden = fuera;
+      op.disabled = fuera;
+    });
+    var elegido = tipo.selectedOptions[0];
+    if (elegido && elegido.hidden) tipo.value = '';
+  });
+})();
+</script>
 {% endblock %}

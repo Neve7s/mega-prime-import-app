@@ -20,26 +20,38 @@
     return Number.isFinite(n) ? n : 0;
   }
   function totalMoney(items) { return items.reduce((a, i) => a + i.cantidad * toNumber(i.precio), 0); }
+  function precioTexto(precio) {
+    // Sin precio cargado (producto a cotizar) no se muestra "USD 0.00".
+    return toNumber(precio) > 0 ? money(precio) : "precio a cotizar";
+  }
 
   window.MpiCart = {
     items: load,
-    add(sku, nombre, precio) {
+    add(sku, nombre, precio, color) {
       const items = load();
       precio = toNumber(precio);
-      const found = items.find((i) => i.sku === sku);
+      color = (color || "").trim();
+      // La línea se identifica por producto + color: el mismo producto en dos
+      // colores son dos líneas.
+      const found = items.find((i) => i.sku === sku && (i.color || "") === color);
       if (found) found.cantidad = Math.min(9999, found.cantidad + 1);
-      else items.push({ sku, nombre, precio, cantidad: 1 });
+      else items.push({ sku, nombre, precio, cantidad: 1, color });
       save(items);
-      toast(nombre + " agregado ✓");
+      toast(nombre + (color ? " (" + color + ")" : "") + " agregado ✓");
     },
-    setQty(sku, qty) {
+    setQty(sku, qty, color) {
       let items = load();
       qty = parseInt(qty, 10) || 0;
-      if (qty < 1) items = items.filter((i) => i.sku !== sku);
-      else items = items.map((i) => (i.sku === sku ? { ...i, cantidad: Math.min(9999, qty) } : i));
+      color = color || "";
+      const same = (i) => i.sku === sku && (i.color || "") === color;
+      if (qty < 1) items = items.filter((i) => !same(i));
+      else items = items.map((i) => (same(i) ? { ...i, cantidad: Math.min(9999, qty) } : i));
       save(items);
     },
-    remove(sku) { save(load().filter((i) => i.sku !== sku)); },
+    remove(sku, color) {
+      color = color || "";
+      save(load().filter((i) => !(i.sku === sku && (i.color || "") === color)));
+    },
     clear() { save([]); },
     money,
   };
@@ -78,12 +90,12 @@
       box.innerHTML = items.map((i) => `
         <div class="flex items-center justify-between gap-3 border rounded p-3 bg-white">
           <div><div class="font-bold text-sm">${i.nombre}</div>
-          <div class="text-xs text-gray-500">${i.sku} · ${money(i.precio)}</div></div>
+          <div class="text-xs text-gray-500">${i.sku}${i.color ? " · " + i.color : ""} · ${precioTexto(i.precio)}</div></div>
           <div class="flex items-center gap-2">
-            <button class="border rounded px-2" data-dec="${i.sku}">−</button>
+            <button class="border rounded px-2" data-dec="${i.sku}" data-color="${i.color || ""}">−</button>
             <span class="text-sm font-bold">${i.cantidad}</span>
-            <button class="border rounded px-2" data-inc="${i.sku}">+</button>
-            <button class="text-red-600 text-sm" data-del="${i.sku}">Quitar</button>
+            <button class="border rounded px-2" data-inc="${i.sku}" data-color="${i.color || ""}">+</button>
+            <button class="text-red-600 text-sm" data-del="${i.sku}" data-color="${i.color || ""}">Quitar</button>
           </div>
         </div>`).join("");
     }
@@ -94,15 +106,19 @@
   document.addEventListener("click", (e) => {
     const add = e.target.closest("[data-add-sku]");
     if (add) {
-      window.MpiCart.add(add.dataset.addSku, add.dataset.addNombre, add.dataset.addPrecio);
+      // El color elegido en la ficha del producto (si tiene).
+      let color = add.dataset.addColor || "";
+      const elegido = document.querySelector('input[name="color-producto"]:checked');
+      if (elegido) color = elegido.value;
+      window.MpiCart.add(add.dataset.addSku, add.dataset.addNombre, add.dataset.addPrecio, color);
       return;
     }
     const inc = e.target.closest("[data-inc]");
-    if (inc) { const it = load().find((i) => i.sku === inc.dataset.inc); if (it) window.MpiCart.setQty(it.sku, it.cantidad + 1); return; }
+    if (inc) { const it = load().find((i) => i.sku === inc.dataset.inc && (i.color || "") === (inc.dataset.color || "")); if (it) window.MpiCart.setQty(it.sku, it.cantidad + 1, it.color); return; }
     const dec = e.target.closest("[data-dec]");
-    if (dec) { const it = load().find((i) => i.sku === dec.dataset.dec); if (it) window.MpiCart.setQty(it.sku, it.cantidad - 1); return; }
+    if (dec) { const it = load().find((i) => i.sku === dec.dataset.dec && (i.color || "") === (dec.dataset.color || "")); if (it) window.MpiCart.setQty(it.sku, it.cantidad - 1, it.color); return; }
     const del = e.target.closest("[data-del]");
-    if (del) window.MpiCart.remove(del.dataset.del);
+    if (del) window.MpiCart.remove(del.dataset.del, del.dataset.color);
   });
 
   document.addEventListener("DOMContentLoaded", () => { renderBadge(); renderCart(); });

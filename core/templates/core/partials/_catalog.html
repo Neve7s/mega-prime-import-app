@@ -8,6 +8,9 @@
           </div>
 <h2 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Colección Insignia &amp; Especificaciones</h2>
 <p class="font-body-md text-body-md text-on-surface-variant mt-space-xs">Materiales listos para despacho mayorista con fichas técnicas descargables para memorias descriptivas.</p>
+<div class="flex items-center gap-space-sm">
+  <span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">{{ productos|length }} de {{ productos_total }} productos</span>
+  <a class="inline-flex items-center gap-1 font-label-sm text-label-sm uppercase tracking-wider text-secondary hover:underline" href="{% url 'catalog:catalogo' %}">Ver todo el catálogo <span class="material-symbols-outlined text-[16px]">arrow_forward</span></a>
 </div>
 </div>
 
@@ -16,9 +19,15 @@
 {% for product in productos %}
 {% include "catalog/_card.html" with product=product %}
 {% empty %}<p class="font-body-md">Sin productos publicados.</p>{% endfor %}
-
-<script>{% load l10n %}window.MPI_PRODUCTS = window.MPI_PRODUCTS || {};{% for product in productos %}window.MPI_PRODUCTS["{{ product.sku }}"] = {nombre: "{{ product.nombre|escapejs }}", precio: {{ product.precio_mayor|unlocalize }}};{% endfor %}</script>
-
 </div>
+{% if productos_total > productos|length %}
+<div class="flex justify-center">
+  <a class="inline-flex items-center gap-space-sm bg-secondary-container hover:bg-secondary text-primary font-label-lg text-label-lg uppercase tracking-wider px-space-lg py-3 rounded-lg shadow-md transition-all duration-200" href="{% url 'catalog:catalogo' %}">
+    <span class="material-symbols-outlined text-[20px]">grid_view</span>
+    Ver los {{ productos_total }} productos del catálogo
+  </a>
+</div>
+{% endif %}
+<script>{% load l10n %}window.MPI_PRODUCTS = window.MPI_PRODUCTS || {};{% for product in productos %}window.MPI_PRODUCTS["{{ product.sku }}"] = {nombre: "{{ product.nombre|escapejs }}", precio: {{ product.precio_mayor|unlocalize }}};{% endfor %}</script>
 </div>
 </section>

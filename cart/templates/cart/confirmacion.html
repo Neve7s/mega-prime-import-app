@@ -8,7 +8,7 @@
   <p class="font-body-md text-body-md text-on-surface-variant mt-3">Gracias {{ pedido.nombre_completo }}. Coordinamos pago y entrega por WhatsApp al {{ pedido.telefono }}.</p>
   <div class="mt-6 bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-space-lg text-left shadow-sm">
     {% for it in pedido.items.all %}
-    <div class="flex justify-between py-2 border-b border-outline-variant/20 font-body-sm text-body-sm"><span>{{ it.nombre_snapshot }} x{{ it.cantidad }}</span><span class="font-bold">USD {{ it.precio_snapshot }}</span></div>
+    <div class="flex justify-between py-2 border-b border-outline-variant/20 font-body-sm text-body-sm"><span>{{ it.nombre_snapshot }}{% if it.color_snapshot %} <span class="text-on-surface-variant">({{ it.color_snapshot }})</span>{% endif %} x{{ it.cantidad }}</span><span class="font-bold">{% if it.precio_snapshot %}{{ it.precio_snapshot|floatformat:2 }} USD{% else %}<span class="text-on-surface-variant font-normal">a cotizar</span>{% endif %}</span></div>
     {% endfor %}
     <div class="flex justify-between py-3 font-headline-sm text-headline-sm font-bold text-primary"><span>Total</span><span>USD {{ pedido.total }}</span></div>
   </div>

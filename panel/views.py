@@ -786,7 +786,7 @@ AJUSTES_TABS = [
     {"key": "contacto", "icon": "📞", "title": "Contacto",
      "desc": "WhatsApp, teléfono, correo, dirección, ciudades y horario de atención.",
      "fields": ["whatsapp_number", "whatsapp_default_message", "phone_display",
-                "email", "address", "cities", "schedule"],
+                "email", "address", "direccion_fisica", "enlace_maps", "cities", "schedule"],
      "full": ["whatsapp_default_message", "address"]},
     {"key": "redes", "icon": "🔗", "title": "Redes",
      "desc": "Enlaces de los iconos de redes sociales del pie de página.",

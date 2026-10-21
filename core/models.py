@@ -1,5 +1,6 @@
 from django.core.validators import RegexValidator
 from django.db import models
+from urllib.parse import quote
 
 COLOR_HEX = RegexValidator(
     regex=r"^#[0-9a-fA-F]{6}$",
@@ -66,6 +67,14 @@ class SiteSettings(models.Model):
     phone_display = models.CharField(max_length=40, default="+593 96 379 6222", blank=True)
     email = models.EmailField(default="ventas@megaprimeimport.com", blank=True)
     address = models.CharField(max_length=255, default="Bodega Ambato — Ambato, Ecuador", blank=True)
+    direccion_fisica = models.CharField(
+        max_length=255, blank=True, default="",
+        help_text="Dirección de la bodega/oficina. Aparece en el pie con un enlace a Google Maps.",
+    )
+    enlace_maps = models.URLField(
+        max_length=300, blank=True, default="",
+        help_text="Enlace a Google Maps. Si lo dejas vacío se arma con la dirección física.",
+    )
     cities = models.CharField(max_length=120, default="Ambato, Ecuador", blank=True)
     schedule = models.CharField(
         max_length=120, default="Lunes a Sábado 8:00 AM – 6:30 PM (Ambato, Ecuador)", blank=True
@@ -149,6 +158,21 @@ class SiteSettings(models.Model):
     @property
     def whatsapp_link(self) -> str:
         return f"https://wa.me/{self.whatsapp_number}"
+
+    @property
+    def direccion_mostrada(self) -> str:
+        """Dirección física que se muestra (con su enlace a Maps)."""
+        return (self.direccion_fisica or self.address or "").strip()
+
+    @property
+    def maps_link(self) -> str:
+        """Enlace a Google Maps: el configurado o el que se arma con la dirección."""
+        if (self.enlace_maps or "").strip():
+            return self.enlace_maps.strip()
+        direccion = self.direccion_mostrada
+        if not direccion:
+            return ""
+        return "https://www.google.com/maps/search/?api=1&query=" + quote(direccion)
 
     @property
     def fuentes_google_href(self) -> str:

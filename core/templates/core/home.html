@@ -1,4 +1,6 @@
 {% extends "base_landing.html" %}
+{% block title %}{{ site_settings.site_name|default:"MEGA PRIME IMPORT" }} | Acabados, Interiorismo y Maquinaria Pro{% endblock %}
+{% block seo_jsonld %}{{ jsonld_negocio|json_script:"jsonld-negocio" }}{% endblock %}
 {% block content %}
 {% include "core/partials/_hero.html" %}
 {% include "core/partials/_pillars.html" %}

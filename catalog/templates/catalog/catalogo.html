@@ -1,5 +1,6 @@
 {% extends "base_landing.html" %}
-{% block title %}Catálogo completo — {{ site_settings.site_name|default:"MEGA PRIME" }}{% endblock %}
+{% block title %}Catálogo mayorista | {{ site_settings.site_name }}{% endblock %}
+{% block seo_jsonld %}{{ jsonld_catalogo|json_script:"jsonld-catalogo" }}{{ jsonld_migas|json_script:"jsonld-migas" }}{% endblock %}
 {% block content %}
 <section class="w-full pt-32 lg:pt-36 pb-space-xl bg-surface min-h-screen">
 <div class="max-w-[1440px] mx-auto px-margin md:px-margin-md lg:px-margin-lg">

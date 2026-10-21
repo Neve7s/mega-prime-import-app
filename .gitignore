@@ -22,3 +22,6 @@ __pycache__/
 *.pyc
 .venv/
 .playwright-mcp/
+
+# Dump de datos del catalogo (se carga a mano con psql; no va al repo)
+datos_catalogo.sql

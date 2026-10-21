@@ -75,7 +75,92 @@ class HeroMediaTest(TestCase):
         self.assertIn("https://ejemplo.com/fondo.mp4", html)
 
 
-class PortadaTest(TestCase):
+class SeoTest(TestCase):
+    """SEO por template: canonical, Open Graph, JSON-LD, sitemap y robots."""
+
+    def setUp(self):
+        self.cat = Category.objects.create(nombre="Tejas", slug="tejas-seo")
+        self.producto = Product.objects.create(
+            categoria=self.cat, sku="SEO-1", nombre="Teja SEO", slug="teja-seo",
+            precio_mayor=Decimal("18.50"), imagen_url="https://ejemplo.com/teja.jpg",
+            descripcion="Teja de prueba para el SEO.", activo=True)
+
+    def test_el_portal_declara_canonical_y_open_graph(self):
+        html = self.client.get("/").content.decode()
+        self.assertIn('<link rel="canonical" href="https://megaprimeimport.com/"', html)
+        self.assertIn('property="og:title"', html)
+        self.assertIn('property="og:description"', html)
+        self.assertIn('name="twitter:card"', html)
+        self.assertIn("jsonld-negocio", html)
+        # El JSON-LD del negocio es LocalBusiness
+        self.assertIn('"@type": "LocalBusiness"', html)
+
+    def test_el_producto_declara_product_con_sku_y_precio(self):
+        html = self.client.get("/catalogo/producto/teja-seo/").content.decode()
+        self.assertIn('property="og:type" content="product"', html)
+        self.assertIn('"@type": "Product"', html)
+        self.assertIn('"sku": "SEO-1"', html)
+        self.assertIn('"price": "18.50"', html)
+        self.assertIn('"@type": "BreadcrumbList"', html)
+
+    def test_el_catalogo_declara_la_coleccion(self):
+        html = self.client.get("/catalogo/").content.decode()
+        self.assertIn('"@type": "CollectionPage"', html)
+        self.assertIn('"@type": "ItemList"', html)
+
+    def test_el_carrito_no_se_indexa(self):
+        html = self.client.get("/carrito/").content.decode()
+        self.assertIn('name="robots" content="noindex, nofollow"', html)
+
+    def test_el_panel_no_se_indexa(self):
+        from django.contrib.auth.models import User
+
+        User.objects.create_user("seo-staff", password="x", is_staff=True)
+        self.client.login(username="seo-staff", password="x")
+        html = self.client.get("/webadmin/").content.decode()
+        self.assertIn('name="robots" content="noindex, nofollow"', html)
+
+    def test_sitemap_y_robots(self):
+        xml = self.client.get("/sitemap.xml").content.decode()
+        self.assertIn("<urlset", xml)
+        self.assertIn("https://megaprimeimport.com/", xml)
+        self.assertIn("https://megaprimeimport.com/catalogo/producto/teja-seo/", xml)
+        robots = self.client.get("/robots.txt").content.decode()
+        self.assertIn("Disallow: /webadmin/", robots)
+        self.assertIn("Sitemap: https://megaprimeimport.com/sitemap.xml", robots)
+
+
+class DireccionFisicaTest(TestCase):
+    """La dirección del panel sale en el pie con su enlace a Maps."""
+
+    def test_se_arma_el_enlace_a_maps_con_la_direccion(self):
+        from core.models import SiteSettings
+
+        site = SiteSettings.get_solo()
+        site.direccion_fisica = "Av. Principal 123, Ambato"
+        site.save()
+        self.assertIn("maps/search", site.maps_link)
+        self.assertIn("Ambato", site.maps_link)
+
+    def test_el_enlace_configurado_gana(self):
+        from core.models import SiteSettings
+
+        site = SiteSettings.get_solo()
+        site.direccion_fisica = "Av. Principal 123"
+        site.enlace_maps = "https://maps.app.goo.gl/ejemplo"
+        site.save()
+        self.assertEqual(site.maps_link, "https://maps.app.goo.gl/ejemplo")
+
+    def test_el_pie_muestra_la_direccion_y_el_boton_de_maps(self):
+        from core.models import SiteSettings
+
+        site = SiteSettings.get_solo()
+        site.direccion_fisica = "Av. Principal 123, Ambato"
+        site.save()
+        html = self.client.get("/").content.decode()
+        self.assertIn("Av. Principal 123, Ambato", html)
+        self.assertIn("Ver en Google Maps", html)
+        self.assertIn("maps/search", html)
     """El hero muestra productos del catálogo y la colección es una muestra."""
 
     def setUp(self):

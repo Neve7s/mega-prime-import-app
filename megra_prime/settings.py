@@ -16,6 +16,8 @@ if _env_file.exists():
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-dev-only-megra-prime")
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
+# Dominio público del sitio: se usa en canonical, og:url, sitemap y JSON-LD.
+SITE_URL = os.environ.get("DJANGO_SITE_URL", "https://megaprimeimport.com").rstrip("/")
 ALLOWED_HOSTS = [h for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h]
 # Loopback siempre permitido: lo usa el healthcheck interno del contenedor.
 # .sslip.io: links temporales de Coolify (preview). Inofensivo.

@@ -1,16 +1,19 @@
 <!-- SECTION 3: PRODUCT CATALOG 2025 WITH LIVE FILTER & SPEC MATRIX -->
 <section class="w-full py-space-xl bg-surface-container-low" id="catalogo-2025">
 <div class="max-w-[1440px] mx-auto px-margin md:px-margin-md lg:px-margin-lg flex flex-col gap-space-xl">
-<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md">
+<div class="flex flex-col gap-space-md">
 <div>
 <div class="inline-flex items-center gap-space-xs bg-surface-container-high px-space-sm py-1 rounded font-label-sm text-label-sm uppercase tracking-wider text-secondary font-bold mb-space-xs">
             Ingresos Trimestre I / 2025
           </div>
-<h2 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Colección Insignia &amp; Especificaciones</h2>
-<p class="font-body-md text-body-md text-on-surface-variant mt-space-xs">Materiales listos para despacho mayorista con fichas técnicas descargables para memorias descriptivas.</p>
-<div class="flex items-center gap-space-sm">
+<div class="flex flex-col lg:flex-row lg:items-baseline lg:justify-between gap-space-xs lg:gap-space-lg">
+<h2 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight min-w-0">Colección Insignia &amp; Especificaciones</h2>
+<div class="flex flex-wrap items-center gap-space-sm shrink-0">
   <span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">{{ productos|length }} de {{ productos_total }} productos</span>
   <a class="inline-flex items-center gap-1 font-label-sm text-label-sm uppercase tracking-wider text-secondary hover:underline" href="{% url 'catalog:catalogo' %}">Ver todo el catálogo <span class="material-symbols-outlined text-[16px]">arrow_forward</span></a>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-space-xs">Materiales listos para despacho mayorista con fichas técnicas descargables para memorias descriptivas.</p>
 </div>
 </div>
 

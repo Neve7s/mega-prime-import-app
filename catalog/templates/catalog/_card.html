@@ -12,8 +12,8 @@
 <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">USD {{ product.precio_mayor }} / {{ product.get_unidad_display }}</p>
 {% with colores=product.colores_producto.all %}{% if colores %}<p class="flex items-center gap-1.5 mt-1.5">{% for pc in colores %}<span title="{{ pc.color.nombre }}{% if pc.rol %} ({{ pc.rol }}){% endif %}" class="inline-block w-4 h-4 rounded-full border border-outline-variant" style="background:{{ pc.color.hex }}"></span>{% endfor %}</p>{% endif %}{% endwith %}
 </div>
-<div class="bg-surface-container-low p-space-sm rounded flex flex-col gap-1 text-body-sm font-body-sm text-on-surface">
-{% for k, v in product.ficha_tecnica.items %}{% if forloop.counter <= 3 %}<div class="flex justify-between gap-2"><span class="text-on-surface-variant shrink-0">{{ k }}:</span><span class="font-semibold text-right">{{ v|truncatechars:46 }}</span></div>{% endif %}{% endfor %}
+<div class="bg-surface-container-low p-space-sm rounded flex flex-col gap-1 text-body-sm font-body-sm text-on-surface min-w-0">
+{% for k, v in product.ficha_tecnica.items %}{% if forloop.counter <= 3 %}<div class="flex justify-between gap-2 min-w-0"><span class="text-on-surface-variant shrink-0">{{ k }}:</span><span class="font-semibold text-right min-w-0 truncate" title="{{ v }}">{{ v|truncatechars:34 }}</span></div>{% endif %}{% endfor %}
 {% if product.ficha_tecnica|length > 3 %}<a href="{% url 'catalog:detalle' product.slug %}" class="text-on-surface-variant hover:text-secondary font-semibold leading-none" title="Ver la ficha técnica completa">…</a>{% endif %}
 </div>
 </div>

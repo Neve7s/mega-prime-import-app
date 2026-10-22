@@ -29,10 +29,27 @@
       <p class="font-headline-md text-headline-md font-bold text-secondary mt-2">{% if product.precio_mayor %}{{ product.precio_mayor|floatformat:2 }} USD / {{ product.get_unidad_display }}{% else %}<span class="text-on-surface-variant">Precio a cotizar</span>{% endif %}</p>
       <p class="font-body-sm text-body-sm {% if product.en_stock %}text-green-700{% else %}text-error{% endif %} font-bold mt-1">{% if product.en_stock %}Stock: {{ product.stock_cantidad|floatformat:0 }} {{ product.get_unidad_display }}{% else %}Sin stock — cotizar disponibilidad{% endif %}</p>
     </div>
-    {% if product.descripcion or product.caracteristicas %}
-    <div class="max-h-80 overflow-y-auto pr-1 scroll-thin">
-      {% if product.descripcion %}<p class="font-body-md text-body-md text-on-surface-variant">{{ product.descripcion }}</p>{% endif %}
-      {% if product.caracteristicas %}<ul class="flex flex-col gap-1 mt-2">{% for t in product.caracteristicas %}<li class="font-body-sm text-body-sm text-on-surface flex items-start gap-2"><span class="text-secondary font-bold">✓</span>{{ t }}</li>{% endfor %}</ul>{% endif %}
+    {% if product.descripcion or product.caracteristicas or product.ficha_tecnica %}
+    <div id="ficha-tabs">
+      {% if product.descripcion or product.caracteristicas %}
+      {% if product.ficha_tecnica %}
+      <div class="flex gap-1 border-b border-outline-variant/20" role="tablist" aria-label="Datos del producto">
+        <button type="button" role="tab" data-tab="detalle" aria-selected="true" class="ficha-tab font-label-sm text-label-sm uppercase tracking-wider px-3 py-2 border-b-2 border-secondary text-primary font-bold">Descripción</button>
+        <button type="button" role="tab" data-tab="ficha" aria-selected="false" class="ficha-tab font-label-sm text-label-sm uppercase tracking-wider px-3 py-2 border-b-2 border-transparent text-on-surface-variant hover:text-primary">Ficha técnica</button>
+      </div>
+      {% endif %}
+      <div data-tab-panel="detalle" class="max-h-80 overflow-y-auto pr-1 scroll-thin {% if product.ficha_tecnica %}mt-2{% endif %}">
+        {% if product.descripcion %}<p class="font-body-md text-body-md text-on-surface-variant">{{ product.descripcion }}</p>{% endif %}
+        {% if product.caracteristicas %}<ul class="flex flex-col gap-1 mt-2">{% for t in product.caracteristicas %}<li class="font-body-sm text-body-sm text-on-surface flex items-start gap-2"><span class="text-secondary font-bold">✓</span><span class="min-w-0">{{ t }}</span></li>{% endfor %}</ul>{% endif %}
+      </div>
+      {% endif %}
+      {% if product.ficha_tecnica %}
+      <div data-tab-panel="ficha" class="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-space-md {% if product.descripcion or product.caracteristicas %}hidden{% endif %}">
+        <div class="max-h-72 overflow-y-auto pr-1 scroll-thin">
+          {% for k, v in product.ficha_tecnica.items %}<div class="flex justify-between gap-3 py-1.5 border-b border-outline-variant/20 font-body-sm text-body-sm"><span class="text-on-surface-variant shrink-0">{{ k }}</span><span class="font-semibold text-right flex-1 min-w-0 break-words">{{ v }}</span></div>{% endfor %}
+        </div>
+      </div>
+      {% endif %}
     </div>
     {% endif %}
     {% with colores=product.colores_producto.all %}{% if colores %}
@@ -48,14 +65,6 @@
       </div>
     </div>
     {% endif %}{% endwith %}
-    {% if product.ficha_tecnica %}
-    <div class="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-space-md">
-      <h2 class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Ficha técnica</h2>
-      <div class="max-h-56 overflow-y-auto pr-1 scroll-thin mt-1">
-        {% for k, v in product.ficha_tecnica.items %}<div class="flex justify-between gap-3 py-1.5 border-b border-outline-variant/20 font-body-sm text-body-sm"><span class="text-on-surface-variant shrink-0">{{ k }}</span><span class="font-semibold text-right">{{ v }}</span></div>{% endfor %}
-      </div>
-    </div>
-    {% endif %}
     <div class="flex flex-wrap gap-space-sm">
       <button class="bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg uppercase tracking-wider px-space-lg py-3 rounded-lg" data-add-sku="{{ product.sku }}" data-add-nombre="{{ product.nombre }}" data-add-precio="{{ product.precio_mayor }}">Agregar a cotización</button>
       <a class="bg-secondary-container hover:bg-secondary text-primary font-label-lg text-label-lg uppercase tracking-wider px-space-lg py-3 rounded-lg font-bold" href="{% url 'cart:carrito' %}">Ir al carrito</a>
@@ -80,6 +89,32 @@
   </div>
 </div>
 {% endif %}
+<script>
+(function(){
+  // Subtabs: Descripción / Ficha técnica (solo las que existan).
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.ficha-tab'));
+  var paneles = Array.prototype.slice.call(document.querySelectorAll('[data-tab-panel]'));
+  if (!tabs.length || !paneles.length) return;
+  function activa(clave){
+    tabs.forEach(function(t){
+      var on = t.getAttribute('data-tab') === clave;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.classList.toggle('border-secondary', on);
+      t.classList.toggle('text-primary', on);
+      t.classList.toggle('font-bold', on);
+      t.classList.toggle('border-transparent', !on);
+      t.classList.toggle('text-on-surface-variant', !on);
+    });
+    paneles.forEach(function(p){
+      p.classList.toggle('hidden', p.getAttribute('data-tab-panel') !== clave);
+    });
+  }
+  tabs.forEach(function(t){
+    t.addEventListener('click', function(){ activa(t.getAttribute('data-tab')); });
+  });
+  activa(tabs[0].getAttribute('data-tab'));
+})();
+</script>
 </section>
 <script>{% load l10n %}window.MPI_PRODUCTS = window.MPI_PRODUCTS || {}; window.MPI_PRODUCTS["{{ product.sku }}"] = {nombre: "{{ product.nombre|escapejs }}", precio: {{ product.precio_mayor|unlocalize }}};
 (function(){

@@ -1,0 +1,30 @@
+{% if site_settings.mision or site_settings.vision %}
+<section aria-labelledby="mission-vision-title" class="bg-surface-container-low px-margin py-space-xl md:px-margin-md md:py-space-xl lg:px-margin-lg">
+  <div class="mx-auto max-w-6xl">
+    <div class="mb-8 max-w-2xl">
+      <p class="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-secondary">Quiénes somos</p>
+      <h2 id="mission-vision-title" class="font-headline-lg text-2xl font-bold text-on-surface md:text-3xl">Nuestro propósito y visión</h2>
+    </div>
+    <div class="grid gap-5 md:grid-cols-2">
+      {% if site_settings.mision %}
+      <article class="rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-6 md:p-8">
+        <div class="mb-5 grid h-11 w-11 place-items-center rounded-lg bg-secondary-container/20 text-secondary">
+          <span class="material-symbols-outlined" aria-hidden="true">flag</span>
+        </div>
+        <h3 class="mb-3 font-headline-sm text-lg font-bold text-on-surface">Misión</h3>
+        <p class="max-w-prose text-sm leading-7 text-on-surface-variant">{{ site_settings.mision|linebreaksbr }}</p>
+      </article>
+      {% endif %}
+      {% if site_settings.vision %}
+      <article class="rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-6 md:p-8">
+        <div class="mb-5 grid h-11 w-11 place-items-center rounded-lg bg-secondary-container/20 text-secondary">
+          <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+        </div>
+        <h3 class="mb-3 font-headline-sm text-lg font-bold text-on-surface">Visión</h3>
+        <p class="max-w-prose text-sm leading-7 text-on-surface-variant">{{ site_settings.vision|linebreaksbr }}</p>
+      </article>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endif %}

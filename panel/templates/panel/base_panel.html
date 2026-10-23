@@ -7,6 +7,7 @@
   <meta name="robots" content="noindex, nofollow" />
   <meta name="googlebot" content="noindex, nofollow" />
   <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'IBM Plex Sans', sans-serif; -webkit-font-smoothing: antialiased; }
@@ -22,10 +23,18 @@
     .nav-section { font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.14em; color: #63636b; padding: 1rem 0.7rem 0.35rem; }
 
     .panel-form input[type="text"], .panel-form input[type="number"], .panel-form input[type="email"],
-    .panel-form input[type="url"], .panel-form input[type="date"], .panel-form select, .panel-form textarea {
-      width: 100%; border: 1px solid #d4d4d8; border-radius: 0.5rem; padding: 0.55rem 0.75rem; font-size: 0.9rem; background: #fff;
+    .panel-form input[type="url"], .panel-form input[type="date"], .panel-form input[type="tel"],
+    .panel-form input[type="password"], .panel-form input[type="search"], .panel-form select,
+    .panel-form textarea, .panel-form .form-control {
+      box-sizing: border-box; width: 100%; min-height: 2.65rem; border: 1px solid #d4d4d8;
+      border-radius: 0.65rem; padding: 0.65rem 0.8rem; color: #18181b; font-size: 0.9rem;
+      line-height: 1.45; background: #fff; transition: border-color .15s, box-shadow .15s, background .15s;
     }
-    .panel-form input:focus, .panel-form select:focus, .panel-form textarea:focus { outline: none; border-color: #D4AF37; box-shadow: 0 0 0 2px rgba(212,175,55,0.25); }
+    .panel-form textarea, .panel-form textarea.form-control { min-height: 7rem; resize: vertical; }
+    .panel-form input::placeholder, .panel-form textarea::placeholder { color: #a1a1aa; }
+    .panel-form input:focus, .panel-form select:focus, .panel-form textarea:focus {
+      outline: none; border-color: #a47c14; box-shadow: 0 0 0 3px rgba(212,175,55,0.18); background: #fffefa;
+    }
     .panel-form input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: #0A0A0B; }
     .panel-form input[type="file"] { font-size: 0.85rem; }
 

@@ -1,0 +1,17 @@
+{% extends "base_landing.html" %}
+{% block title %}Solicitud registrada | {{ site_settings.site_name }}{% endblock %}
+{% block content %}
+<section class="bg-surface px-5 py-16 md:px-8 md:py-24">
+  <div class="mx-auto max-w-2xl rounded-2xl border border-outline-variant/30 bg-surface-container-lowest p-8 text-center shadow-sm md:p-12">
+    <span class="material-symbols-outlined mx-auto mb-5 grid h-14 w-14 place-items-center rounded-full bg-green-50 text-3xl text-green-700" aria-hidden="true">task_alt</span>
+    <p class="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-secondary">Registro completado</p>
+    <h1 class="font-headline-lg text-3xl font-bold text-on-surface">Recibimos tu solicitud</h1>
+    <p class="mt-4 leading-7 text-on-surface-variant">Tu caso quedó registrado. Guarda este código y menciónalo si contactas a nuestro equipo para consultar sobre esta solicitud.</p>
+    <p class="my-6 rounded-xl bg-surface-container-low px-5 py-4 font-mono text-xl font-bold tracking-widest text-on-surface">{{ complaint_code }}</p>
+    <p class="text-sm text-on-surface-variant">Para seguimiento puedes escribir a <a class="font-semibold underline" href="mailto:{{ site_settings.email }}">{{ site_settings.email }}</a>.</p>
+    <a href="{% url 'core:home' %}" class="mt-8 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary">
+      <span class="material-symbols-outlined" aria-hidden="true">home</span>Volver al inicio
+    </a>
+  </div>
+</section>
+{% endblock %}

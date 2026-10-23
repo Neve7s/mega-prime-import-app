@@ -67,8 +67,8 @@
     <div class="relative w-full aspect-[4/5] rounded-xl overflow-hidden shadow-2xl">
       {% if hero_productos %}
       {% for p in hero_productos %}
-      <a href="{% url 'catalog:detalle' p.slug %}" class="absolute inset-0 block transition-opacity duration-1000 {% if not forloop.first %}opacity-0{% endif %}" data-hero-producto>
-        {% if p.imagen_src %}<img class="w-full h-full object-cover" src="{{ p.imagen_src }}" alt="{{ p.nombre }}" {% if not forloop.first %}loading="lazy"{% endif %}>{% else %}<span class="flex h-full w-full items-center justify-center p-6 text-center font-headline-sm text-headline-sm font-bold uppercase tracking-wider text-on-surface-variant opacity-70">{{ p.nombre }}</span>{% endif %}
+      <a href="{% url 'catalog:detalle' p.slug %}" class="absolute inset-0 block transition-opacity duration-1000 {% if not forloop.first %}opacity-0{% endif %}" data-hero-producto data-producto-nombre="{{ p.nombre }}" data-producto-spec="{{ p.tipo.nombre|default:site_settings.hero_spec_label }}" data-producto-categoria="{{ p.categoria.nombre }}">
+        {% if p.hero_image_src %}<img class="w-full h-full object-cover" src="{{ p.hero_image_src }}" alt="{{ p.nombre }}" {% if not forloop.first %}loading="lazy"{% endif %}>{% else %}<span class="flex h-full w-full items-center justify-center p-6 text-center font-headline-sm text-headline-sm font-bold uppercase tracking-wider text-on-surface-variant opacity-70">{{ p.nombre }}</span>{% endif %}
       </a>
       {% endfor %}
       {% else %}
@@ -88,7 +88,7 @@
       </div>
       <div>
         <div class="font-headline-sm text-headline-sm font-bold text-primary" data-hero-nombre>{% if hero_productos.0 %}{{ hero_productos.0.nombre }}{% else %}+1,200{% endif %}</div>
-        <div class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">{% if hero_productos.0 %}{{ hero_productos.0.categoria.nombre }}{% else %}Obras Suministradas{% endif %}</div>
+        <div class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant" data-hero-categoria>{% if hero_productos.0 %}{{ hero_productos.0.categoria.nombre }}{% else %}Obras Suministradas{% endif %}</div>
       </div>
       </div>
       <div class="h-8 w-px bg-surface-container-high"></div>
@@ -114,17 +114,24 @@
   var productos = Array.prototype.slice.call(document.querySelectorAll('[data-hero-producto]'));
   var spec = document.querySelector('[data-hero-spec]');
   var nombre = document.querySelector('[data-hero-nombre]');
-  var indice = 0;
+  var indiceFondos = 0;
+  var indiceProductos = 0;
   function rotar(){
     if (fondos.length > 1){
-      fondos[indice % fondos.length].classList.add('opacity-0');
-      fondos[(indice + 1) % fondos.length].classList.remove('opacity-0');
+      fondos[indiceFondos].classList.add('opacity-0');
+      indiceFondos = (indiceFondos + 1) % fondos.length;
+      fondos[indiceFondos].classList.remove('opacity-0');
     }
     if (productos.length > 1){
-      productos[indice % productos.length].classList.add('opacity-0');
-      productos[(indice + 1) % productos.length].classList.remove('opacity-0');
+      productos[indiceProductos].classList.add('opacity-0');
+      indiceProductos = (indiceProductos + 1) % productos.length;
+      var productoActivo = productos[indiceProductos];
+      productoActivo.classList.remove('opacity-0');
+      if (nombre) nombre.textContent = productoActivo.dataset.productoNombre || '';
+      if (spec) spec.textContent = productoActivo.dataset.productoSpec || '';
+      var categoria = document.querySelector('[data-hero-categoria]');
+      if (categoria) categoria.textContent = productoActivo.dataset.productoCategoria || '';
     }
-    indice = (indice + 1) % Math.max(fondos.length, productos.length);
   }
   if (fondos.length > 1 || productos.length > 1) setInterval(rotar, 6000);
 })();

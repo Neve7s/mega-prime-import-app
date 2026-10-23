@@ -1,15 +1,54 @@
 import random
 
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.views.decorators.http import require_http_methods
 
 from catalog.models import Category, Product
+from core.forms import ComplaintForm
 from core.models import HeroMedia, SiteSettings
 
 
 def health(request: HttpRequest) -> HttpResponse:
     return HttpResponse("ok")
+
+
+LEGAL_PAGES = {
+    "privacidad": {
+        "title": "Política de privacidad",
+        "description": "Cómo tratamos los datos personales que nos compartes al utilizar este sitio.",
+        "content_template": "core/legal/_privacy_content.html",
+    },
+    "terminos": {
+        "title": "Términos y condiciones",
+        "description": "Información sobre el uso del sitio, consultas, pedidos y atención comercial.",
+        "content_template": "core/legal/_terms_content.html",
+    },
+    "cookies": {
+        "title": "Política de cookies y tecnologías locales",
+        "description": "Conoce qué almacenamiento técnico utiliza este sitio y cómo administrarlo.",
+        "content_template": "core/legal/_cookies_content.html",
+    },
+}
+
+
+def legal_page(request: HttpRequest, page: str) -> HttpResponse:
+    content = LEGAL_PAGES[page]
+    return render(request, "core/legal/page.html", {"legal_page": content})
+
+
+@require_http_methods(["GET", "POST"])
+def libro_reclamaciones(request: HttpRequest) -> HttpResponse:
+    form = ComplaintForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        reclamo = form.save()
+        return render(
+            request,
+            "core/legal/complaint_received.html",
+            {"complaint_code": reclamo.codigo},
+        )
+    return render(request, "core/legal/complaint_form.html", {"form": form})
 
 
 # ── SEO: datos estructurados por página ──────────────────────────
@@ -149,10 +188,22 @@ def _productos_hero(cantidad: int = 3) -> list:
     qs = (Product.objects.filter(activo=True)
           .exclude(categoria__slug__in=CATEGORIAS_COMPLEMENTO)
           .select_related("categoria", "tipo")
+          .prefetch_related("imagenes")
           .order_by("-destacado", "-created_at", "-pk")[:40])
     # `imagen_src` resuelve archivo o URL; filtrar aquí evita los NULL de la
     # columna (exclude(imagen="") no los deja pasar).
-    candidatos = [p for p in qs if p.imagen_src]
+    candidatos = []
+    for producto in qs:
+        imagen = producto.imagen_src
+        if not imagen:
+            primera_imagen = next(
+                (foto.imagen_src for foto in producto.imagenes.all() if foto.imagen_src),
+                "",
+            )
+            imagen = primera_imagen
+        if imagen:
+            producto.hero_image_src = imagen
+            candidatos.append(producto)
     if not candidatos:
         return []
     return random.sample(candidatos, min(cantidad, len(candidatos)))
@@ -195,6 +246,14 @@ def sitemap(request: HttpRequest) -> HttpResponse:
          "priority": "1.0", "changefreq": "daily"},
         {"loc": _url_pagina(request, reverse("catalog:catalogo")),
          "priority": "0.9", "changefreq": "weekly"},
+        {"loc": _url_pagina(request, reverse("core:privacidad")),
+         "priority": "0.3", "changefreq": "yearly"},
+        {"loc": _url_pagina(request, reverse("core:terminos")),
+         "priority": "0.3", "changefreq": "yearly"},
+        {"loc": _url_pagina(request, reverse("core:cookies")),
+         "priority": "0.3", "changefreq": "yearly"},
+        {"loc": _url_pagina(request, reverse("core:libro_reclamaciones")),
+         "priority": "0.3", "changefreq": "yearly"},
     ]
     for producto in (Product.objects.filter(activo=True)
                      .select_related("categoria")

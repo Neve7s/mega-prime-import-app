@@ -1,0 +1,55 @@
+<div class="mt-2 space-y-4" data-location-formset>
+  {{ location_formset.management_form }}
+  {% if location_formset.non_form_errors %}
+  <div class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
+    {{ location_formset.non_form_errors }}
+  </div>
+  {% endif %}
+  <div class="space-y-3" data-location-list>
+    {% for location_form in location_formset %}
+    <fieldset class="rounded-xl border border-gray-200 bg-gray-50/60 p-4" data-location-row>
+      <legend class="px-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Sede {{ forloop.counter }}</legend>
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {% for field in location_form.visible_fields %}
+          {% if field.name != "DELETE" %}
+          <div class="flex min-w-0 flex-col gap-1 {% if field.name == 'direccion' or field.name == 'enlace_maps' %}md:col-span-2{% endif %}">
+            <label class="ajustes-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}<p class="ajustes-error">{{ error }}</p>{% endfor %}
+            {% if field.help_text %}<p class="ajustes-help">{{ field.help_text }}</p>{% endif %}
+          </div>
+          {% endif %}
+        {% endfor %}
+        {% if location_form.instance.pk %}
+        <label class="ajustes-clear md:col-span-2">{{ location_form.DELETE }} Eliminar esta sede</label>
+        {% else %}
+        {{ location_form.DELETE.as_hidden }}
+        {% endif %}
+      </div>
+      {% for hidden in location_form.hidden_fields %}{{ hidden }}{% endfor %}
+    </fieldset>
+    {% endfor %}
+  </div>
+  <template data-location-empty>
+    <fieldset class="rounded-xl border border-gray-200 bg-gray-50/60 p-4" data-location-row>
+      <legend class="px-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Nueva sede</legend>
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {% for field in location_formset.empty_form.visible_fields %}
+          {% if field.name != "DELETE" %}
+          <div class="flex min-w-0 flex-col gap-1 {% if field.name == 'direccion' or field.name == 'enlace_maps' %}md:col-span-2{% endif %}">
+            <label class="ajustes-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<p class="ajustes-help">{{ field.help_text }}</p>{% endif %}
+          </div>
+          {% endif %}
+        {% endfor %}
+        {{ location_formset.empty_form.DELETE.as_hidden }}
+      </div>
+      {% for hidden in location_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+    </fieldset>
+  </template>
+  <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:border-gray-400 hover:bg-gray-50" data-location-add>
+    <span class="material-symbols-outlined text-lg" aria-hidden="true">add_location_alt</span>Añadir ubicación
+  </button>
+  <p class="text-xs text-gray-500">Se mostrará un mapa independiente por cada ubicación guardada. Si no proporcionas un enlace, el mapa se genera con la dirección.</p>
+</div>

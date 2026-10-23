@@ -1,0 +1,40 @@
+<div class="ajustes-fields">
+  {% for field in form %}
+    {% if field.name in tab.fields %}
+    <div class="ajustes-field {% if field.name in tab.full %}ajustes-field--full{% endif %}">
+      <label class="ajustes-label" for="{{ field.id_for_label }}">
+        {{ field.label }}{% if field.field.required %}<span aria-hidden="true"> *</span>{% endif %}
+      </label>
+      {% if field.field.widget.input_type == "file" %}
+      <label class="img-drop" data-drop for="{{ field.id_for_label }}">
+        <span data-prev class="img-drop__preview">
+          {% if field.value %}<img src="/media/{{ field.value }}" alt="Imagen actual" class="max-h-20 w-auto object-contain" />
+          {% else %}<span class="material-symbols-outlined" aria-hidden="true">image</span>{% endif %}
+        </span>
+        <span>
+          <span class="block text-sm font-semibold">{% if field.value %}Cambiar imagen{% else %}Subir imagen{% endif %} <span class="font-normal text-gray-500">— arrastra aquí o haz clic</span></span>
+          <span class="block text-xs text-gray-500 mt-1">{% if field.name == "logo" %}PNG sin fondo · se optimiza a 800px{% elif field.name == "hero_image" %}Foto ancha · se optimiza a 1920px{% else %}JPG, PNG o WebP{% endif %}{% if field.value %} · actual: {{ field.value }}{% endif %}</span>
+          <span class="block text-xs file-name mt-1" data-fname></span>
+        </span>
+        <input type="file" name="{{ field.html_name }}" id="{{ field.id_for_label }}" accept="image/*" />
+      </label>
+      {% if field.value %}
+      <label class="ajustes-clear">
+        <input type="checkbox" name="{{ field.html_name }}-clear" /> Quitar imagen actual
+      </label>
+      {% endif %}
+      {% elif field.name|slice:":6" == "color_" %}
+      <div class="ajustes-color">
+        <input type="color" value="{{ field.value|default:'#000000' }}" data-color-for="{{ field.id_for_label }}" aria-label="Elegir {{ field.label }}" />
+        {{ field }}
+      </div>
+      {% else %}
+      {{ field }}
+      {% endif %}
+      {% for name, hint in hints.items %}{% if name == field.name %}<p class="ajustes-help"><span class="material-symbols-outlined" aria-hidden="true">info</span>{{ hint }}</p>{% endif %}{% endfor %}
+      {% if field.name not in hints and field.help_text %}<p class="ajustes-help">{{ field.help_text }}</p>{% endif %}
+      {% for error in field.errors %}<p class="ajustes-error">{{ error }}</p>{% endfor %}
+    </div>
+    {% endif %}
+  {% endfor %}
+</div>

@@ -1,0 +1,30 @@
+<div class="legal-copy">
+  <p class="legal-updated">Información del sitio y condiciones generales de uso</p>
+  <h2>1. Identificación del proveedor</h2>
+  <p>Este sitio es operado por <strong>{{ site_settings.company_legal|default:site_settings.site_name }}</strong>, con domicilio comercial en {{ site_settings.direccion_mostrada|default:site_settings.address|default:"Ecuador" }}.{% if site_settings.company_ruc %} RUC: <strong>{{ site_settings.company_ruc }}</strong>.{% else %} La información tributaria debe confirmarse directamente con el proveedor antes de emitir documentos comerciales.{% endif %} Contacto: <a href="mailto:{{ site_settings.email }}">{{ site_settings.email }}</a>{% if site_settings.phone_display %} · {{ site_settings.phone_display }}{% endif %}.</p>
+
+  <h2>2. Uso del sitio</h2>
+  <p>Al navegar por el sitio, la persona usuaria se compromete a proporcionar información veraz en los formularios, utilizar los canales de manera lícita y no intentar afectar la seguridad, disponibilidad o funcionamiento del servicio. El acceso podrá limitarse cuando sea necesario para proteger el sitio o cumplir obligaciones legales.</p>
+
+  <h2>3. Catálogo, disponibilidad y precios</h2>
+  <p>Las descripciones, fotografías, colores, medidas y especificaciones del catálogo son informativas y pueden variar por lote, fabricante o condiciones de visualización. La disponibilidad y el precio final se confirman al preparar la cotización o pedido. Una consulta, carrito o solicitud enviada desde el sitio no constituye por sí sola una confirmación de stock, una reserva ni la aceptación de una oferta.</p>
+  <p>Los precios, impuestos, cantidades mínimas, condiciones de venta y costos de entrega aplicables se detallarán en la propuesta o documento comercial correspondiente antes de confirmar la operación.</p>
+
+  <h2>4. Cotizaciones, pedidos y pagos</h2>
+  <p>La persona usuaria debe revisar cantidades, productos, datos de facturación y entrega antes de confirmar una compra. Las condiciones vinculantes de pago, facturación, despacho, instalación, cambios o garantías serán las aceptadas expresamente en la cotización, comprobante o contrato de la operación y las normas aplicables. No se entenderá ofrecida una garantía o plazo que no haya sido informado y confirmado para el producto concreto.</p>
+
+  <h2>5. Entregas y atención comercial</h2>
+  <p>Las zonas, disponibilidad, costos y tiempos estimados de entrega se confirmarán para cada pedido según destino, inventario y condiciones logísticas. Para consultas, utiliza el correo <a href="mailto:{{ site_settings.email }}">{{ site_settings.email }}</a> o el teléfono {{ site_settings.phone_display|default:site_settings.whatsapp_number }}.</p>
+
+  <h2>6. Propiedad intelectual y enlaces externos</h2>
+  <p>Los textos, marcas, fotografías, diseños y demás contenidos del sitio pertenecen a sus titulares y no pueden reproducirse o utilizarse comercialmente sin autorización, salvo los usos permitidos por la ley. Los enlaces y mapas de terceros se ofrecen como ayuda; sus servicios y políticas son responsabilidad de esos proveedores.</p>
+
+  <h2>7. Datos personales y reclamaciones</h2>
+  <p>Los datos enviados por formularios se utilizan para atender la finalidad indicada y se gestionan conforme al aviso de privacidad y la normativa aplicable. Puedes presentar una solicitud mediante el <a href="{% url 'core:libro_reclamaciones' %}">Libro de reclamaciones</a> y consultar las <a href="{% url 'core:cookies' %}">tecnologías locales y cookies</a> usadas por el sitio.</p>
+
+  <h2>8. Cambios y legislación aplicable</h2>
+  <p>Estas condiciones pueden actualizarse para reflejar cambios en el sitio, los servicios o las normas aplicables. La versión publicada en esta página será la vigente para el uso del sitio. Los derechos de las personas consumidoras no se limitan por estos términos; cualquier controversia se atenderá conforme a la legislación aplicable en Ecuador.</p>
+
+  <h2>9. Contacto</h2>
+  <p>Para consultas sobre estas condiciones, escribe a <a href="mailto:{{ site_settings.email }}">{{ site_settings.email }}</a> o comunícate al {{ site_settings.phone_display|default:site_settings.whatsapp_number }}.</p>
+</div>

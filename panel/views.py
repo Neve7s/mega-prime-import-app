@@ -18,7 +18,8 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from .auth import (SECCIONES_URL, es_dueno, primera_seccion,
                    seccion_requerida, staff_only, tiene_panel)
 from .forms import (CategoryForm, ColaboradorForm, HeroMediaForm, OrderEstadoForm,
-                    ProductForm, SaleCodeForm, SiteSettingsForm, TipoForm)
+                    ProductForm, SaleCodeForm, SiteLocationFormSet,
+                    SiteSettingsForm, TipoForm)
 from .models import AccesoPanel
 
 
@@ -773,31 +774,38 @@ def codigo_detalle(request, codigo):
 
 
 AJUSTES_TABS = [
-    {"key": "marca", "icon": "🏷", "title": "Marca",
+    {"key": "marca", "icon": "sell", "title": "Marca",
      "desc": "Nombre, slogan, logo y razón social. Aparecen en el header y el footer de toda la web.",
-     "fields": ["site_name", "tagline", "logo", "company_legal"], "full": ["logo"]},
-    {"key": "portada", "icon": "🖼", "title": "Portada",
+     "fields": ["site_name", "tagline", "logo", "company_legal", "company_ruc"], "full": ["logo"]},
+    {"key": "empresa", "icon": "domain", "title": "Misión y visión",
+     "desc": "Define el propósito y el rumbo de la empresa para mostrarlos en el sitio.",
+     "fields": ["mision", "vision"], "full": ["mision", "vision"]},
+    {"key": "portada", "icon": "imagesmode", "title": "Portada",
      "desc": "La pantalla principal: ciudad, titular, botones, foto y cifras destacadas.",
      "fields": ["hero_city", "hero_title", "hero_subtitle", "hero_cta_primary",
                 "hero_cta_secondary", "hero_spec_label", "hero_image",
                 "hero_telemetry_1_value", "hero_telemetry_1_label",
                 "hero_telemetry_2_value", "hero_telemetry_2_label"],
      "full": ["hero_subtitle", "hero_image"]},
-    {"key": "contacto", "icon": "📞", "title": "Contacto",
+    {"key": "contacto", "icon": "support_agent", "title": "Contacto",
      "desc": "WhatsApp, teléfono, correo, dirección, ciudades y horario de atención.",
      "fields": ["whatsapp_number", "whatsapp_default_message", "phone_display",
                 "email", "address", "direccion_fisica", "enlace_maps", "cities", "schedule"],
      "full": ["whatsapp_default_message", "address"]},
-    {"key": "redes", "icon": "🔗", "title": "Redes",
+    {"key": "sedes", "icon": "location_on", "title": "Ubicaciones",
+     "desc": "Añade las sedes que aparecerán con su propio mapa en el pie del sitio.",
+     "fields": [], "full": []},
+    {"key": "redes", "icon": "share", "title": "Redes sociales",
      "desc": "Enlaces de los iconos de redes sociales del pie de página.",
-     "fields": ["facebook_url", "instagram_url", "tiktok_url"], "full": []},
-    {"key": "seo", "icon": "🔍", "title": "SEO",
+     "fields": ["facebook_url", "instagram_url", "tiktok_url", "x_url",
+                "youtube_url", "pinterest_url", "linkedin_url"], "full": []},
+    {"key": "seo", "icon": "manage_search", "title": "SEO",
      "desc": "Título y descripción con los que la web aparece en Google.",
      "fields": ["meta_title", "meta_description"], "full": ["meta_description"]},
-    {"key": "pie", "icon": "🧾", "title": "Pie de página",
+    {"key": "pie", "icon": "vertical_align_bottom", "title": "Pie de página",
      "desc": "Texto descriptivo largo del footer.",
      "fields": ["footer_text"], "full": ["footer_text"]},
-    {"key": "tema", "icon": "🎨", "title": "Tema",
+    {"key": "tema", "icon": "palette", "title": "Tema",
      "desc": "Colores, fondos y fuentes de toda la página. Elige una paleta o personaliza.",
      "fields": ["color_primario", "color_secundario", "color_fondo",
                 "color_tarjetas", "color_texto", "color_acento",
@@ -842,6 +850,9 @@ AJUSTES_HINTS = {
     "tagline": "Slogan bajo el nombre, en el header.",
     "logo": "Logo del header y footer. Recomendado: PNG sin fondo. Vacío = emblema dorado.",
     "company_legal": "Línea “Empresa: …” del footer.",
+    "company_ruc": "RUC de la empresa. Aparece en las páginas legales si se completa.",
+    "mision": "Propósito principal de la empresa. Aparece en la sección institucional del sitio.",
+    "vision": "Aspiración a futuro de la empresa. Aparece junto a la misión en el sitio.",
     "hero_city": "Línea superior de la portada.",
     "hero_title": "Titular grande de la portada.",
     "hero_subtitle": "Párrafo bajo el titular de la portada.",
@@ -863,6 +874,10 @@ AJUSTES_HINTS = {
     "facebook_url": "Icono Facebook del footer. Vacío = se oculta.",
     "instagram_url": "Icono Instagram del footer. Vacío = se oculta.",
     "tiktok_url": "Icono TikTok del footer. Vacío = se oculta.",
+    "x_url": "Icono X del footer. Vacío = se oculta.",
+    "youtube_url": "Icono YouTube del footer. Vacío = se oculta.",
+    "pinterest_url": "Icono Pinterest del footer. Vacío = se oculta.",
+    "linkedin_url": "Icono LinkedIn del footer. Vacío = se oculta.",
     "meta_title": "Título azul en resultados de Google.",
     "meta_description": "Descripción gris bajo el título en Google.",
     "footer_text": "Párrafo descriptivo del pie de página.",
@@ -881,10 +896,22 @@ AJUSTES_HINTS = {
 def ajustes(request):
     site = SiteSettings.get_solo()
     form = SiteSettingsForm(request.POST or None, request.FILES or None, instance=site)
+    locations_sent = request.method == "POST" and "locations-TOTAL_FORMS" in request.POST
+    location_formset = SiteLocationFormSet(
+        request.POST if locations_sent else None,
+        instance=site,
+        prefix="locations",
+    )
     ok = False
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        ok = True
+    if request.method == "POST":
+        form_valid = form.is_valid()
+        locations_valid = not locations_sent or location_formset.is_valid()
+        if form_valid and locations_valid:
+            with transaction.atomic():
+                form.save()
+                if locations_sent:
+                    location_formset.save()
+            ok = True
     # Pesta��a activa: la pedida, o la primera con errores de validaci��n.
     active_tab = request.GET.get("tab", "marca")
     if form.errors:
@@ -892,10 +919,13 @@ def ajustes(request):
             if any(f in form.errors for f in tab["fields"]):
                 active_tab = tab["key"]
                 break
+    if locations_sent and location_formset.errors:
+        active_tab = "sedes"
     if active_tab not in [t["key"] for t in AJUSTES_TABS]:
         active_tab = "marca"
     return render(request, "panel/ajustes.html",
                   {"form": form, "ok": ok, "tabs": AJUSTES_TABS,
+                   "location_formset": location_formset,
                    "hints": AJUSTES_HINTS, "active_tab": active_tab,
                    "paletas": PALETAS_TEMA,
                    "hero_medias": HeroMedia.objects.all(),

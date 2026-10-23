@@ -1,1 +1,81 @@
-<footer class="w-full bg-primary-container text-on-primary border-t border-outline-variant/20"><div class="max-w-[1440px] mx-auto px-margin md:px-margin-md lg:px-margin-lg pt-space-xl pb-space-lg"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-gutter-lg pb-space-xl border-b border-outline-variant/15"><div class="lg:col-span-2 flex flex-col gap-space-md"><div class="flex items-center gap-space-md"><img alt="{{ site_settings.site_name|default:'MEGA PRIME IMPORT LGM' }} Logo" class="h-8 w-auto object-contain" src="{% if site_settings.logo %}{{ site_settings.logo.url }}{% else %}/media/branding/logo-lgm-sin-fondo.png{% endif %}"/><span class="flex flex-col leading-none"><span style="font-family:'Libre Franklin',sans-serif" class="text-[20px] font-extrabold tracking-tight text-on-primary">LGM</span><span class="text-[10px] font-bold tracking-[0.18em] text-on-primary">MEGA PRIME</span><span class="text-[10px] font-bold tracking-[0.18em] text-secondary-fixed">IMPORT</span></span></div><p class="font-body-sm text-body-sm text-on-primary-container max-w-md">{{ site_settings.footer_text }}</p><div class="flex items-center gap-space-sm pt-space-xs"><span class="font-label-sm text-label-sm uppercase tracking-widest text-secondary-fixed-dim">Empresa:</span><span class="font-body-sm text-body-sm font-semibold text-on-primary">{{ site_settings.company_legal|default:'Ecuatoriana | MEGA PRIME IMPORT' }}</span></div><div class="flex items-center gap-space-md pt-space-sm"><a aria-label="LinkedIn Industrial" class="w-9 h-9 rounded-lg bg-surface-container-high/10 hover:bg-surface-container-high/20 flex items-center justify-center text-on-primary transition-colors" href="#"><span class="material-symbols-outlined text-[20px]">apartment</span></a><a aria-label="WhatsApp Comercial" class="w-9 h-9 rounded-lg bg-surface-container-high/10 hover:bg-surface-container-high/20 flex items-center justify-center text-on-primary transition-colors" href="#"><span class="material-symbols-outlined text-[20px]">chat</span></a><a aria-label="Catálogo Digital" class="w-9 h-9 rounded-lg bg-surface-container-high/10 hover:bg-surface-container-high/20 flex items-center justify-center text-on-primary transition-colors" href="#"><span class="material-symbols-outlined text-[20px]">picture_as_pdf</span></a></div></div><div class="flex flex-col gap-space-sm"><h4 class="font-label-lg text-label-lg uppercase tracking-wider text-on-primary mb-space-xs">Líneas de Importación</h4><a class="font-body-sm text-body-sm text-on-primary-container hover:text-on-primary transition-colors" data-path="acabados-y-revestimientos" href="#">Pisos de Porcelanato &amp; Sinterizado</a><a class="font-body-sm text-body-sm text-on-primary-container hover:text-on-primary transition-colors" data-path="acabados-y-revestimientos" href="#">Mármol y Cuarcitas Técnicas</a><a class="font-body-sm text-body-sm text-on-primary-container hover:text-on-primary transition-colors" data-path="decoracion-y-interiorismo" href="#">Paneles Acústicos WPC y UV</a><a class="font-body-sm text-body-sm text-on-primary-container hover:text-on-primary transition-colors" data-path="herramientas-profesionales" href="#">Cortadoras Láser &amp; Discos Diamante</a><a class="font-body-sm text-body-sm text-on-primary-container hover:text-on-primary transition-colors" data-path="catalogo-2025" href="#">Nuevos Ingresos Colección 2025</a></div><div class="flex flex-col gap-space-sm"><h4 class="font-label-lg text-label-lg uppercase tracking-wider text-on-primary mb-space-xs">Sedes &amp; Distribución</h4><div class="font-body-sm text-body-sm text-on-primary-container"><p class="font-bold text-on-primary">Oficina Principal:</p><p>{{ site_settings.direccion_mostrada|default:'Ambato, Ecuador' }}</p>{% if site_settings.maps_link %}<a class="inline-flex items-center gap-1 text-secondary-fixed-dim hover:text-on-primary mt-1" href="{{ site_settings.maps_link }}" target="_blank" rel="noopener"><span class="material-symbols-outlined text-[16px]">location_on</span>Ver en Google Maps</a>{% endif %}</div><div class="font-body-sm text-body-sm text-on-primary-container mt-space-xs"><p class="font-bold text-on-primary">Showroom & Bodega:</p><p>Despachos a obra en todo el Ecuador</p></div><div class="font-body-sm text-body-sm text-on-primary-container mt-space-xs"><p class="font-bold text-on-primary">Cobertura:</p><p>Despachos a todo el Ecuador</p></div></div><div class="flex flex-col gap-space-sm"><h4 class="font-label-lg text-label-lg uppercase tracking-wider text-on-primary mb-space-xs">Certificaciones &amp; Soporte</h4><div class="flex flex-col gap-space-xs"><span class="inline-flex items-center gap-space-xs font-label-sm text-label-sm text-secondary-fixed-dim"><span class="material-symbols-outlined text-[16px]">verified_user</span>ISO 9001:2015 Gestión de Calidad</span><span class="inline-flex items-center gap-space-xs font-label-sm text-label-sm text-secondary-fixed-dim"><span class="material-symbols-outlined text-[16px]">shield</span>Norma Antideslizante DIN 51130</span><span class="inline-flex items-center gap-space-xs font-label-sm text-label-sm text-secondary-fixed-dim"><span class="material-symbols-outlined text-[16px]">local_shipping</span>Despacho a Obra a Nivel Nacional</span><span class="inline-flex items-center gap-space-xs font-label-sm text-label-sm text-secondary-fixed-dim"><span class="material-symbols-outlined text-[16px]">inventory</span>Garantía de Fábrica 10 Años</span></div></div></div><div class="pt-space-lg flex flex-col md:flex-row items-center justify-between gap-space-md text-on-primary-container font-body-sm text-body-sm"><div class="flex items-center gap-space-md flex-wrap"><p>© 2025 {{ site_settings.site_name|default:'MEGA PRIME IMPORT LGM' }} S.A.C. Todos los derechos reservados.</p><span class="hidden md:inline">•</span><a class="hover:text-on-primary transition-colors" href="#">Términos de Despacho Mayorista</a><span class="hidden md:inline">•</span><a class="hover:text-on-primary transition-colors" href="#">Libro de Reclamaciones</a><span class="hidden md:inline">•</span><a class="hover:text-on-primary transition-colors" href="#">Fichas Técnicas ASTM</a></div><div class="flex items-center gap-space-xs text-label-sm font-label-sm tracking-wider uppercase text-on-primary-fixed-variant"><span class="material-symbols-outlined text-[14px]">lock</span>Entorno B2B Seguro &amp; Encriptado</div></div></div></footer>
+<footer class="w-full border-t border-outline-variant/20 bg-primary-container text-on-primary">
+  <div class="mx-auto max-w-[1440px] px-margin pb-space-lg pt-space-xl md:px-margin-md lg:px-margin-lg">
+    <div class="border-b border-outline-variant/15 pb-space-lg">
+      <p class="mb-5 text-center text-xs font-bold uppercase tracking-[0.18em] text-on-primary-container">Síguenos en nuestras redes</p>
+      {% include "core/partials/_social_links.html" %}
+    </div>
+    {% include "core/partials/_location_maps.html" %}
+
+    <div class="grid grid-cols-1 gap-gutter-lg border-b border-outline-variant/15 py-space-xl md:grid-cols-2 lg:grid-cols-5">
+      <div class="flex flex-col gap-space-md lg:col-span-2">
+        <div class="flex items-center gap-space-md">
+          <img alt="{{ site_settings.site_name|default:'MEGA PRIME IMPORT LGM' }} Logo" class="h-8 w-auto object-contain" src="{% if site_settings.logo %}{{ site_settings.logo.url }}{% else %}/media/branding/logo-lgm-sin-fondo.png{% endif %}"/>
+          <span class="flex flex-col leading-none">
+            <span style="font-family:'Libre Franklin',sans-serif" class="text-[20px] font-extrabold tracking-tight text-on-primary">LGM</span>
+            <span class="text-[10px] font-bold tracking-[0.18em] text-on-primary">MEGA PRIME</span>
+            <span class="text-[10px] font-bold tracking-[0.18em] text-secondary-fixed">IMPORT</span>
+          </span>
+        </div>
+        <p class="max-w-md font-body-sm text-body-sm text-on-primary-container">{{ site_settings.footer_text }}</p>
+        <div class="flex items-center gap-space-sm pt-space-xs">
+          <span class="font-label-sm text-label-sm uppercase tracking-widest text-secondary-fixed-dim">Empresa:</span>
+          <span class="font-body-sm text-body-sm font-semibold text-on-primary">{{ site_settings.company_legal|default:'Ecuatoriana | MEGA PRIME IMPORT' }}</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-space-sm">
+        <h4 class="mb-space-xs font-label-lg text-label-lg uppercase tracking-wider text-on-primary">Líneas de Importación</h4>
+        <a class="font-body-sm text-body-sm text-on-primary-container transition-colors hover:text-on-primary" data-path="acabados-y-revestimientos" href="#">Pisos de Porcelanato &amp; Sinterizado</a>
+        <a class="font-body-sm text-body-sm text-on-primary-container transition-colors hover:text-on-primary" data-path="acabados-y-revestimientos" href="#">Mármol y Cuarcitas Técnicas</a>
+        <a class="font-body-sm text-body-sm text-on-primary-container transition-colors hover:text-on-primary" data-path="decoracion-y-interiorismo" href="#">Paneles Acústicos WPC y UV</a>
+        <a class="font-body-sm text-body-sm text-on-primary-container transition-colors hover:text-on-primary" data-path="herramientas-profesionales" href="#">Cortadoras Láser &amp; Discos Diamante</a>
+        <a class="font-body-sm text-body-sm text-on-primary-container transition-colors hover:text-on-primary" data-path="catalogo-2025" href="#">Nuevos Ingresos Colección 2025</a>
+      </div>
+
+      <div class="flex flex-col gap-space-sm">
+        <h4 class="mb-space-xs font-label-lg text-label-lg uppercase tracking-wider text-on-primary">Sedes &amp; Distribución</h4>
+        {% for location in site_locations %}
+        <div class="font-body-sm text-body-sm text-on-primary-container">
+          <p class="font-bold text-on-primary">{{ location.nombre }}</p>
+          <p>{{ location.direccion }}</p>
+          <a class="mt-1 inline-flex items-center gap-1 text-secondary-fixed-dim hover:text-on-primary" href="{{ location.maps_link }}" target="_blank" rel="noopener"><span class="material-symbols-outlined text-[16px]">location_on</span>Ver en Google Maps</a>
+        </div>
+        {% empty %}
+        <div class="font-body-sm text-body-sm text-on-primary-container">
+          <p class="font-bold text-on-primary">Oficina Principal:</p>
+          <p>{{ site_settings.direccion_mostrada|default:'Ambato, Ecuador' }}</p>
+          {% if site_settings.maps_link %}<a class="mt-1 inline-flex items-center gap-1 text-secondary-fixed-dim hover:text-on-primary" href="{{ site_settings.maps_link }}" target="_blank" rel="noopener"><span class="material-symbols-outlined text-[16px]">location_on</span>Ver en Google Maps</a>{% endif %}
+        </div>
+        {% endfor %}
+        <div class="mt-space-xs font-body-sm text-body-sm text-on-primary-container">
+          <p class="font-bold text-on-primary">Cobertura:</p>
+          <p>Despachos a todo el Ecuador</p>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-space-sm">
+        <h4 class="mb-space-xs font-label-lg text-label-lg uppercase tracking-wider text-on-primary">Certificaciones &amp; Soporte</h4>
+        <div class="flex flex-col gap-space-xs">
+          <span class="inline-flex items-center gap-space-xs font-label-sm text-label-sm text-secondary-fixed-dim"><span class="material-symbols-outlined text-[16px]">verified_user</span>ISO 9001:2015 Gestión de Calidad</span>
+          <span class="inline-flex items-center gap-space-xs font-label-sm text-label-sm text-secondary-fixed-dim"><span class="material-symbols-outlined text-[16px]">shield</span>Norma Antideslizante DIN 51130</span>
+          <span class="inline-flex items-center gap-space-xs font-label-sm text-label-sm text-secondary-fixed-dim"><span class="material-symbols-outlined text-[16px]">local_shipping</span>Despacho a Obra a Nivel Nacional</span>
+          <span class="inline-flex items-center gap-space-xs font-label-sm text-label-sm text-secondary-fixed-dim"><span class="material-symbols-outlined text-[16px]">inventory</span>Garantía de Fábrica 10 Años</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-col items-center justify-between gap-space-md pt-space-lg font-body-sm text-body-sm text-on-primary-container md:flex-row">
+      <div class="flex flex-wrap items-center gap-space-md">
+        <p>© 2025 {{ site_settings.site_name|default:'MEGA PRIME IMPORT LGM' }} S.A.C. Todos los derechos reservados.</p>
+        <span class="hidden md:inline">•</span><a class="transition-colors hover:text-on-primary" href="{% url 'core:terminos' %}">Términos y condiciones</a>
+        <span class="hidden md:inline">•</span><a class="transition-colors hover:text-on-primary" href="{% url 'core:privacidad' %}">Privacidad</a>
+        <span class="hidden md:inline">•</span><a class="transition-colors hover:text-on-primary" href="{% url 'core:libro_reclamaciones' %}">Libro de reclamaciones</a>
+        <span class="hidden md:inline">•</span><a class="transition-colors hover:text-on-primary" href="{% url 'core:cookies' %}">Política de cookies</a>
+        <span class="hidden md:inline">•</span><a class="transition-colors hover:text-on-primary" href="#">Fichas Técnicas ASTM</a>
+      </div>
+      <div class="flex items-center gap-space-xs font-label-sm text-label-sm uppercase tracking-wider text-on-primary-fixed-variant">
+        <span class="material-symbols-outlined text-[14px]">lock</span>Entorno B2B Seguro &amp; Encriptado
+      </div>
+    </div>
+  </div>
+</footer>

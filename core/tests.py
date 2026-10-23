@@ -1,6 +1,8 @@
 from decimal import Decimal
+from unittest.mock import patch
 
-from django.test import TestCase
+from django.db import OperationalError
+from django.test import RequestFactory, TestCase
 
 from catalog.models import Category, Product
 
@@ -13,10 +15,105 @@ class SiteSettingsTest(TestCase):
         self.assertEqual(s.pk, 1)
         self.assertIn("593", s.whatsapp_number)
         HeroStat.objects.create(value="+15 Años", label="Importación Directa", orden=0)
+        s.x_url = "https://x.com/megaprime"
+        s.youtube_url = "https://youtube.com/@megaprime"
+        s.save()
         resp = self.client.get("/")
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, s.site_name)
         self.assertContains(resp, s.whatsapp_number)
+        self.assertContains(resp, "Síguenos en nuestras redes")
+        self.assertContains(resp, "https://x.com/megaprime")
+        self.assertContains(resp, "https://youtube.com/@megaprime")
+        self.assertContains(resp, "Misión")
+        self.assertContains(resp, "Visión")
+        self.assertContains(resp, "Escríbenos por WhatsApp")
+
+
+class LegalPagesTest(TestCase):
+    def test_paginas_legales_publicas_y_enlazadas(self):
+        urls = (
+            ("/terminos-y-condiciones/", "Términos y condiciones"),
+            ("/privacidad/", "Política de privacidad"),
+            ("/cookies/", "Política de cookies"),
+            ("/libro-de-reclamaciones/", "Libro de reclamaciones"),
+        )
+        for url, title in urls:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, title)
+
+        claims = self.client.get("/libro-de-reclamaciones/")
+        for field in (
+            "tipo_identificacion", "identificacion", "correo", "telefono",
+            "direccion", "provincia", "producto_servicio", "numero_pedido",
+            "fecha_incidente", "monto_reclamado", "detalle", "solicitud",
+            "acepta_privacidad",
+        ):
+            self.assertContains(claims, f'name="{field}"')
+        self.assertContains(claims, 'href="/privacidad/"')
+
+        home = self.client.get("/").content.decode()
+        self.assertIn('href="/terminos-y-condiciones/"', home)
+        self.assertIn('href="/privacidad/"', home)
+        self.assertIn('href="/cookies/"', home)
+        self.assertIn('href="/libro-de-reclamaciones/"', home)
+
+    def test_libro_registra_reclamacion_y_devuelve_codigo(self):
+        from core.models import Complaint
+
+        response = self.client.post("/libro-de-reclamaciones/", {
+            "tipo": "reclamo",
+            "nombres": "Ana",
+            "apellidos": "Pérez",
+            "tipo_identificacion": "cedula",
+            "identificacion": "1800000000",
+            "empresa": "Constructora Ejemplo",
+            "correo": "ana@example.com",
+            "telefono": "0990000000",
+            "direccion": "Av. Central 123",
+            "provincia": "Tungurahua",
+            "producto_servicio": "Porcelanato",
+            "numero_pedido": "PED-1024",
+            "fecha_incidente": "2026-10-20",
+            "monto_reclamado": "120.50",
+            "detalle": "El producto recibido no coincide con la orden.",
+            "solicitud": "Solicito que revisen el pedido.",
+            "canal_respuesta": "correo",
+            "acepta_privacidad": "on",
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "core/legal/complaint_received.html")
+        self.assertEqual(Complaint.objects.count(), 1)
+        reclamo = Complaint.objects.get()
+        self.assertEqual(reclamo.identificacion, "1800000000")
+        self.assertEqual(reclamo.numero_pedido, "PED-1024")
+        self.assertContains(response, reclamo.codigo)
+
+    def test_libro_exige_privacidad_y_no_guarda_sin_aceptacion(self):
+        from core.models import Complaint
+
+        data = {
+            "tipo": "queja",
+            "nombres": "Ana",
+            "apellidos": "Pérez",
+            "tipo_identificacion": "cedula",
+            "identificacion": "1800000000",
+            "correo": "ana@example.com",
+            "telefono": "0990000000",
+            "direccion": "Av. Central 123",
+            "provincia": "Tungurahua",
+            "producto_servicio": "Atención",
+            "detalle": "Solicito revisar la atención.",
+            "solicitud": "Contactarme.",
+            "canal_respuesta": "correo",
+        }
+        response = self.client.post("/libro-de-reclamaciones/", data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Complaint.objects.count(), 0)
+        self.assertContains(response, "Debes aceptar el aviso de privacidad")
 
 
 class HeroMediaTest(TestCase):
@@ -161,6 +258,75 @@ class DireccionFisicaTest(TestCase):
         self.assertIn("Av. Principal 123, Ambato", html)
         self.assertIn("Ver en Google Maps", html)
         self.assertIn("maps/search", html)
+
+
+class SiteLocationMapsTest(TestCase):
+    def test_renderiza_un_mapa_por_cada_ubicacion(self):
+        from core.models import SiteLocation, SiteSettings
+
+        site = SiteSettings.get_solo()
+        SiteLocation.objects.create(
+            sitio=site, nombre="Sede Ambato", direccion="Av. Cevallos, Ambato"
+        )
+        SiteLocation.objects.create(
+            sitio=site, nombre="Showroom Quito", direccion="Av. Amazonas, Quito",
+            enlace_maps="https://maps.app.goo.gl/quito",
+        )
+
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'title="Mapa de Sede Ambato"')
+        self.assertContains(response, 'title="Mapa de Showroom Quito"')
+        self.assertContains(response, "maps?q=Av.%20Cevallos%2C%20Ambato&amp;output=embed")
+        self.assertContains(response, "https://maps.app.goo.gl/quito")
+        self.assertEqual(response.content.decode().count("<iframe"), 2)
+
+    def test_fallo_al_leer_sedes_no_invalida_los_ajustes_del_sitio(self):
+        from core.context_processors import site_settings
+        from core.models import SiteLocation
+
+        with patch.object(
+            SiteLocation.objects, "all", side_effect=OperationalError("tabla no disponible")
+        ), self.assertLogs("core.context_processors", level="ERROR"):
+            context = site_settings(RequestFactory().get("/"))
+
+        self.assertIsNotNone(context["site_settings"])
+        self.assertEqual(context["site_locations"], [])
+
+
+class HeroRotationTest(TestCase):
+    def setUp(self):
+        self.cat = Category.objects.create(nombre="Tejas", slug="tejas-rotacion")
+
+    def test_actualiza_nombre_y_muestra_solo_la_primera_foto(self):
+        from catalog.models import ProductImage
+
+        producto = Product.objects.create(
+            categoria=self.cat, sku="HERO-FOTOS", nombre="Producto galería",
+            slug="producto-galeria", precio_mayor=Decimal("10"),
+        )
+        ProductImage.objects.create(
+            producto=producto, imagen_url="https://ejemplo.com/primera.jpg", orden=0
+        )
+        ProductImage.objects.create(
+            producto=producto, imagen_url="https://ejemplo.com/segunda.jpg", orden=1
+        )
+
+        with patch("core.views.random.sample", side_effect=lambda items, count: items[:count]):
+            response = self.client.get("/")
+        html = response.content.decode()
+        self.assertEqual(response.context["hero_productos"][0].pk, producto.pk)
+        self.assertEqual(
+            response.context["hero_productos"][0].hero_image_src,
+            "https://ejemplo.com/primera.jpg",
+        )
+        self.assertIn('src="https://ejemplo.com/primera.jpg"', html)
+        self.assertNotIn("https://ejemplo.com/segunda.jpg", html)
+        self.assertIn('data-producto-nombre="Producto galería"', html)
+        self.assertIn("nombre.textContent = productoActivo.dataset.productoNombre", html)
+        self.assertIn("categoria.textContent = productoActivo.dataset.productoCategoria", html)
+
+
     """El hero muestra productos del catálogo y la colección es una muestra."""
 
     def setUp(self):
@@ -181,6 +347,8 @@ class DireccionFisicaTest(TestCase):
         html = self.client.get("/").content.decode()
         self.assertIn("data-hero-producto", html)
         self.assertIn("/catalogo/producto/producto-", html)
+        self.assertIn("data-producto-nombre=", html)
+        self.assertIn("nombre.textContent = productoActivo.dataset.productoNombre", html)
 
     def test_el_hero_cae_a_la_imagen_por_defecto_sin_productos(self):
         Product.objects.all().delete()

@@ -39,28 +39,51 @@ class PanelTest(TestCase):
     def test_ajustes_subtabs_y_guardado(self):
         self.client.force_login(self.staff)
         html = self.client.get("/webadmin/ajustes/").content.decode()
-        for tab in ("marca", "portada", "contacto", "redes", "seo", "pie", "tema"):
+        for tab in ("marca", "empresa", "portada", "contacto", "sedes", "redes", "seo", "pie", "tema"):
             self.assertIn('data-tab="%s"' % tab, html)
+        self.assertIn("Misión y visión", html)
+        self.assertIn("Pinterest", html)
         self.assertIn("Paletas predefinidas", html)
         self.assertIn('data-drop', html)  # dropzones de imagen
+        self.assertIn('name="locations-__prefix__-sitio" value="1"', html)
         resp = self.client.post("/webadmin/ajustes/", data={
             "site_name": "MP", "meta_title": "T", "tagline": "S",
             "company_legal": "E", "hero_city": "C", "hero_title": "HT",
+            "mision": "Misión de prueba", "vision": "Visión de prueba",
             "hero_cta_primary": "A", "hero_cta_secondary": "B",
             "whatsapp_number": "593900000000", "phone_display": "+593",
             "email": "v@v.com", "address": "D", "cities": "C",
             "schedule": "H", "footer_text": "F",
+            "x_url": "https://x.com/megaprime", "youtube_url": "https://youtube.com/@megaprime",
+            "pinterest_url": "https://pinterest.com/megaprime",
+            "linkedin_url": "https://linkedin.com/company/megaprime",
+            "locations-TOTAL_FORMS": "2", "locations-INITIAL_FORMS": "0",
+            "locations-MIN_NUM_FORMS": "0", "locations-MAX_NUM_FORMS": "20",
+            "locations-0-nombre": "Oficina Ambato",
+            "locations-0-direccion": "Av. Cevallos, Ambato",
+            "locations-0-enlace_maps": "https://maps.app.goo.gl/ambato",
+            "locations-0-orden": "0", "locations-0-sitio": "1",
+            "locations-1-nombre": "Showroom Quito",
+            "locations-1-direccion": "Av. Amazonas, Quito",
+            "locations-1-enlace_maps": "", "locations-1-orden": "1",
+            "locations-1-sitio": "1",
             "color_primario": "#D4AF37", "color_secundario": "#0A0A0B",
             "color_fondo": "#FAFAF8", "color_tarjetas": "#FFFFFF",
             "color_texto": "#131313", "color_acento": "#15803D",
             "fuente_cuerpo": "Inter", "fuente_titulos": "Montserrat",
         })
         self.assertEqual(resp.status_code, 200)
-        self.assertIn("Guardado", resp.content.decode())
+        self.assertIn("Cambios guardados", resp.content.decode())
         from core.models import SiteSettings
         site = SiteSettings.get_solo()
         self.assertEqual(site.fuente_titulos, "Montserrat")
         self.assertEqual(site.color_primario, "#D4AF37")
+        self.assertEqual(site.mision, "Misión de prueba")
+        self.assertEqual(site.x_url, "https://x.com/megaprime")
+        self.assertEqual(site.linkedin_url, "https://linkedin.com/company/megaprime")
+        from core.models import SiteLocation
+        self.assertEqual(SiteLocation.objects.count(), 2)
+        self.assertEqual(SiteLocation.objects.get(nombre="Showroom Quito").direccion, "Av. Amazonas, Quito")
 
     def test_ajustes_sube_logo(self):
         import io

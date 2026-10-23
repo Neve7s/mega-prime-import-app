@@ -1,0 +1,32 @@
+<div class="legal-copy">
+  <p class="legal-updated">Aviso de privacidad para el sitio web y el formulario de atención</p>
+  <h2>1. Responsable y contacto</h2>
+  <p>El responsable del tratamiento es <strong>{{ site_settings.company_legal|default:site_settings.site_name }}</strong>, con domicilio en {{ site_settings.direccion_mostrada|default:site_settings.address|default:"Ecuador" }}.{% if site_settings.company_ruc %} RUC: <strong>{{ site_settings.company_ruc }}</strong>.{% endif %} Puedes contactar al responsable en <a href="mailto:{{ site_settings.email }}">{{ site_settings.email }}</a> o en {{ site_settings.phone_display|default:site_settings.whatsapp_number }}.</p>
+
+  <h2>2. Datos que podemos tratar</h2>
+  <p>Según el servicio que solicites, podemos tratar datos de identificación y contacto; información de pedidos, productos, cotizaciones y pagos; comunicaciones que nos envíes; y datos técnicos necesarios para operar el sitio. El formulario del libro solicita identificación, nombres, dirección, provincia, correo, teléfono y detalles relacionados con el caso.</p>
+
+  <h2>3. Finalidades</h2>
+  <ul>
+    <li>Responder consultas, cotizaciones y solicitudes de atención.</li>
+    <li>Procesar pedidos y coordinar pagos, facturación, despacho o servicio posventa.</li>
+    <li>Registrar, revisar y responder reclamos o quejas, y mantener evidencia de su atención.</li>
+    <li>Proteger la seguridad del sitio, prevenir usos indebidos y cumplir obligaciones legales aplicables.</li>
+  </ul>
+  <p>Los datos del libro de reclamaciones se utilizarán para revisar y dar seguimiento al caso. No se publican en el sitio.</p>
+
+  <h2>4. Base y entrega de información</h2>
+  <p>El tratamiento se realizará de acuerdo con la finalidad solicitada y las bases permitidas por la legislación aplicable, como la atención de una relación precontractual o contractual, el cumplimiento de obligaciones legales y, cuando corresponda, tu consentimiento. Podemos compartir únicamente los datos necesarios con proveedores que apoyen la operación (por ejemplo, alojamiento, comunicación o logística) y con autoridades cuando exista obligación legal. Este sitio también incorpora enlaces y mapas de terceros que operan bajo sus propias políticas.</p>
+
+  <h2>5. Conservación y seguridad</h2>
+  <p>Conservaremos los datos durante el tiempo necesario para cumplir las finalidades informadas, atender la solicitud y cumplir los plazos de conservación exigidos por la normativa aplicable. Aplicamos medidas razonables para proteger la información; ningún medio de transmisión o almacenamiento puede garantizar seguridad absoluta.</p>
+
+  <h2>6. Tus derechos y solicitudes</h2>
+  <p>Puedes solicitar información sobre tus datos y ejercer los derechos que te reconozca la normativa ecuatoriana de protección de datos, incluidos los de acceso, rectificación, actualización, eliminación, oposición, portabilidad o suspensión, cuando resulten aplicables. Escribe a <a href="mailto:{{ site_settings.email }}">{{ site_settings.email }}</a> indicando tu nombre, un medio de contacto y el derecho que deseas ejercer. Podremos solicitar información razonable para verificar tu identidad y proteger tus datos.</p>
+
+  <h2>7. Datos de menores</h2>
+  <p>Este sitio y su oferta comercial no están dirigidos a menores de edad. Si consideras que un menor nos proporcionó datos personales sin la autorización que corresponda, contáctanos para revisar la situación.</p>
+
+  <h2>8. Cambios y reclamos</h2>
+  <p>Esta política puede actualizarse si cambian las operaciones o las normas aplicables. La versión vigente estará disponible en esta página. Para una queja sobre una compra o servicio, utiliza el <a href="{% url 'core:libro_reclamaciones' %}">Libro de reclamaciones</a>; para información sobre almacenamiento técnico, consulta la <a href="{% url 'core:cookies' %}">Política de cookies</a>.</p>
+</div>

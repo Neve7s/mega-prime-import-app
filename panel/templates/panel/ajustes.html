@@ -2,83 +2,69 @@
 {% block title %}Ajustes — Panel{% endblock %}
 {% block content %}
 <style>
-  .img-drop{display:flex;gap:12px;align-items:center;border:1.5px dashed #d4d4d8;border-radius:12px;padding:12px;background:#fafafa;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s;}
-  .img-drop:hover{border-color:#D4AF37;background:#fffdf5;}
-  .img-drop.dragging{border-color:#D4AF37;background:#fdf6e3;box-shadow:0 0 0 3px rgba(212,175,55,.25);}
+  .ajustes-tabs{display:flex;flex-wrap:wrap;gap:.55rem;margin-top:1.25rem;padding:.45rem;border:1px solid #e4e4e7;border-radius:.9rem;background:#f4f4f5;}
+  .aj-tab{display:inline-flex;align-items:center;gap:.5rem;padding:.65rem .9rem;border:1px solid transparent;border-radius:.65rem;background:transparent;color:#52525b;font-size:.84rem;font-weight:600;transition:background .15s,color .15s,border-color .15s,box-shadow .15s;}
+  .aj-tab:hover{background:#fff;color:#18181b;}
+  .aj-tab.is-active{background:#fff;color:#18181b;border-color:#e4e4e7;box-shadow:0 1px 3px rgba(24,24,27,.08);}
+  .aj-tab .material-symbols-outlined{font-size:1.1rem;color:#71717a;}
+  .aj-tab.is-active .material-symbols-outlined{color:#a47c14;}
+  .ajustes-panel{border:1px solid #e4e4e7;border-radius:1rem;background:#fff;padding:clamp(1rem,2vw,1.5rem);box-shadow:0 1px 2px rgba(24,24,27,.04);}
+  .ajustes-panel__heading{display:flex;align-items:flex-start;gap:.85rem;padding-bottom:1.15rem;margin-bottom:1.25rem;border-bottom:1px solid #f0f0f1;}
+  .ajustes-panel__icon{display:grid;place-items:center;width:2.5rem;height:2.5rem;flex:none;border-radius:.75rem;background:#faf6e9;color:#8b6911;}
+  .ajustes-panel__icon .material-symbols-outlined{font-size:1.3rem;}
+  .ajustes-panel__title{font-size:1rem;font-weight:700;color:#18181b;}
+  .ajustes-panel__desc{margin-top:.25rem;font-size:.85rem;line-height:1.5;color:#71717a;}
+  .ajustes-fields{display:grid;grid-template-columns:minmax(0,1fr);gap:1.15rem 1.25rem;}
+  @media(min-width:768px){.ajustes-fields{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  .ajustes-field{display:flex;min-width:0;flex-direction:column;gap:.45rem;}
+  .ajustes-field--full{grid-column:1/-1;}
+  .ajustes-label{color:#3f3f46;font-size:.78rem;font-weight:650;letter-spacing:.01em;}
+  .ajustes-help{display:flex;align-items:flex-start;gap:.35rem;color:#71717a;font-size:.75rem;line-height:1.45;}
+  .ajustes-help .material-symbols-outlined{font-size:.95rem;flex:none;}
+  .ajustes-error{color:#b91c1c;font-size:.78rem;font-weight:600;}
+  .ajustes-clear{display:flex;align-items:center;gap:.5rem;color:#71717a;font-size:.78rem;cursor:pointer;}
+  .ajustes-clear input{accent-color:#b91c1c;}
+  .ajustes-color{display:flex;align-items:center;gap:.65rem;}
+  .ajustes-color input[type="color"]{width:2.7rem;height:2.7rem;padding:.2rem;border:1px solid #d4d4d8;border-radius:.65rem;background:#fff;cursor:pointer;}
+  .img-drop{display:flex;gap:12px;align-items:center;border:1px dashed #cbd5e1;border-radius:.75rem;padding:14px;background:#fafafa;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s;}
+  .img-drop:hover{border-color:#b38b22;background:#fffdf5;}
+  .img-drop.dragging{border-color:#b38b22;background:#fdf6e3;box-shadow:0 0 0 3px rgba(179,139,34,.18);}
   .img-drop input[type="file"]{display:none;}
-  .img-drop .file-name{color:#0A0A0B;font-weight:600;}
+  .img-drop .file-name{color:#18181b;font-weight:600;}
+  .img-drop__preview{display:grid;flex:none;width:7rem;height:5rem;place-items:center;overflow:hidden;border:1px solid #e4e4e7;border-radius:.6rem;background:white;color:#a1a1aa;}
+  .img-drop__preview .material-symbols-outlined{font-size:1.7rem;}
+  .ajustes-savebar{position:sticky;bottom:0;z-index:10;display:flex;align-items:center;justify-content:flex-end;gap:.75rem;margin-top:1rem;padding:.8rem 0;background:rgba(244,244,245,.94);border-top:1px solid #e4e4e7;backdrop-filter:blur(10px);}
+  .ajustes-save{display:inline-flex;align-items:center;gap:.5rem;border-radius:.65rem;background:#18181b;padding:.7rem 1.25rem;color:#f5e7b2;font-size:.88rem;font-weight:700;transition:background .15s;}
+  .ajustes-save:hover{background:#27272a;}
+  .ajustes-save:focus-visible,.aj-tab:focus-visible{outline:2px solid #b38b22;outline-offset:2px;}
 </style>
 <div class="flex flex-wrap items-center gap-3">
   <div>
     <h1 class="text-2xl font-bold">Contenido del sitio</h1>
-    <p class="text-sm text-gray-500">Edita por secciones — los cambios se ven al instante en la web.</p>
+    <p class="text-sm text-gray-500">Gestiona la identidad y el contenido de tu sitio desde un solo lugar.</p>
   </div>
   <div class="ml-auto flex items-center gap-2">
     {% if form.instance.logo %}<img src="{{ form.instance.logo.url }}" alt="logo actual" class="h-10 w-auto rounded border bg-white px-2 py-1" title="Logo actual" />{% endif %}
-    {% if ok %}<p class="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-1">Guardado ✓</p>{% endif %}
-    <a target="_blank" href="{% url 'core:home' %}" class="text-sm font-bold bg-white border rounded-lg px-3 py-1.5 hover:bg-gray-50">🌐 Ver sitio</a>
+    {% if ok %}<p role="status" class="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-1">Cambios guardados</p>{% endif %}
+    <a target="_blank" rel="noopener" href="{% url 'core:home' %}" class="inline-flex items-center gap-2 text-sm font-semibold bg-white border rounded-lg px-3 py-2 hover:bg-gray-50"><span class="material-symbols-outlined text-lg" aria-hidden="true">open_in_new</span>Ver sitio</a>
   </div>
 </div>
 
-{# Subtabs #}
-<div class="flex flex-wrap gap-2 mt-4" role="tablist" aria-label="Secciones de ajustes">
-{% for tab in tabs %}
-  <button type="button" role="tab" data-tab="{{ tab.key }}"
-    class="aj-tab text-sm font-bold px-4 py-2 rounded-lg border transition-colors {% if tab.key == active_tab %}bg-[#0A0A0B] text-[#D4AF37] border-[#0A0A0B]{% else %}bg-white text-gray-600 border-gray-200 hover:border-[#D4AF37]{% endif %}"
-    aria-selected="{% if tab.key == active_tab %}true{% else %}false{% endif %}">{{ tab.icon }} {{ tab.title }}</button>
-{% endfor %}
-</div>
+{% include "panel/_ajustes_tablist.html" %}
 
 <form method="post" enctype="multipart/form-data" class="panel-form mt-4">{% csrf_token %}
 {% for tab in tabs %}
-  <section data-panel="{{ tab.key }}" role="tabpanel" class="{% if tab.key != active_tab %}hidden{% endif %} bg-white border rounded-xl p-5">
-    <h2 class="font-bold">{{ tab.icon }} {{ tab.title }}</h2>
-    <p class="text-sm text-gray-500 mb-4">{{ tab.desc }}</p>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    {% for field in form %}
-    {% if field.name in tab.fields %}
-      <div class="flex flex-col gap-1 {% if field.name in tab.full %}md:col-span-2{% endif %}">
-        <label class="text-xs font-bold uppercase tracking-wider text-gray-700" for="{{ field.id_for_label }}">
-          {{ field.label }}{% if field.field.required %} *{% endif %}
-        </label>
-        {% if field.field.widget.input_type == "file" %}
-        <label class="img-drop" data-drop for="{{ field.id_for_label }}">
-          <span data-prev class="shrink-0 w-28 h-20 flex items-center justify-center rounded-lg border bg-white overflow-hidden">
-            {% if field.value %}<img src="/media/{{ field.value }}" alt="actual" class="max-h-20 w-auto object-contain" />
-            {% else %}<span class="text-3xl">🖼</span>{% endif %}
-          </span>
-          <span>
-            <span class="block text-sm font-bold">{% if field.value %}Cambiar imagen{% else %}Subir imagen{% endif %} <span class="font-normal text-gray-400">— arrastra aquí o haz clic</span></span>
-            <span class="block text-xs text-gray-400 mt-0.5">{% if field.name == "logo" %}PNG sin fondo · se optimiza a 800px{% elif field.name == "hero_image" %}Foto ancha · se optimiza a 1920px{% else %}JPG, PNG o WebP{% endif %}{% if field.value %} · actual: {{ field.value }}{% endif %}</span>
-            <span class="block text-xs file-name mt-0.5" data-fname></span>
-          </span>
-          <input type="file" name="{{ field.html_name }}" id="{{ field.id_for_label }}" accept="image/*" />
-        </label>
-        {% if field.value %}
-        <label class="text-xs text-gray-500 flex items-center gap-1.5 mt-1 cursor-pointer w-fit">
-          <input type="checkbox" name="{{ field.html_name }}-clear" class="accent-red-600 w-3.5 h-3.5" /> 🗑 Quitar imagen actual
-        </label>
-        {% endif %}
-        {% endif %}
-        {% if field.field.widget.input_type != "file" %}
-        {% if field.name|slice:":6" == "color_" %}
-        <div class="flex items-center gap-2">
-          <input type="color" value="{{ field.value|default:'#000000' }}" data-color-for="{{ field.id_for_label }}" class="h-9 w-12 shrink-0 cursor-pointer rounded border border-gray-300 bg-white p-0.5" aria-label="Elegir {{ field.label }}" />
-          {{ field }}
-        </div>
-        {% else %}
-        {{ field }}
-        {% endif %}
-        {% endif %}
-        {% for name, hint in hints.items %}{% if name == field.name %}<p class="text-xs text-gray-400">📍 {{ hint }}</p>{% endif %}{% endfor %}
-        {% if field.name not in hints %}{% if field.help_text %}<p class="text-xs text-gray-400">{{ field.help_text }}</p>{% endif %}{% endif %}
-        {% for e in field.errors %}<p class="text-xs font-semibold text-red-700">{{ e }}</p>{% endfor %}
-      </div>
+  <section id="panel-{{ tab.key }}" data-panel="{{ tab.key }}" role="tabpanel" aria-labelledby="tab-{{ tab.key }}" tabindex="0" class="{% if tab.key != active_tab %}hidden{% endif %} ajustes-panel">
+    <header class="ajustes-panel__heading">
+      <span class="ajustes-panel__icon"><span class="material-symbols-outlined" aria-hidden="true">{{ tab.icon }}</span></span>
+      <div><h2 class="ajustes-panel__title">{{ tab.title }}</h2><p class="ajustes-panel__desc">{{ tab.desc }}</p></div>
+    </header>
+    {% include "panel/_ajustes_fields.html" with tab=tab %}
+    {% if tab.key == "sedes" %}
+    {% include "panel/_ajustes_locations.html" %}
     {% endif %}
-    {% endfor %}
-    </div>
     {% if tab.key == "tema" %}
-    <h3 class="font-bold text-sm mt-6 mb-1">🎨 Paletas predefinidas</h3>
+    <h3 class="font-bold text-sm mt-6 mb-1">Paletas predefinidas</h3>
     <p class="text-sm text-gray-500 mb-3">Un clic rellena los 6 colores y las 2 fuentes. Guarda cambios para aplicarla.</p>
     <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
       {% for p in paletas %}
@@ -143,9 +129,9 @@
 {% endfor %}
 {% for e in form.non_field_errors %}<p class="text-sm font-semibold text-red-700 bg-red-50 border border-red-200 rounded p-2 mt-3">{{ e }}</p>{% endfor %}
 
-<div class="sticky bottom-0 mt-4 bg-[#f4f4f5]/95 backdrop-blur border-t py-3 flex items-center justify-end gap-2">
-  <span class="text-xs text-gray-400 mr-auto">Se guardan todas las secciones juntas.</span>
-  <button class="bg-[#0A0A0B] text-[#D4AF37] px-8 py-2.5 rounded-lg font-bold">💾 Guardar cambios</button>
+<div class="ajustes-savebar">
+  <span class="text-xs text-gray-500 mr-auto">Los cambios se aplican al guardar.</span>
+  <button class="ajustes-save"><span class="material-symbols-outlined text-lg" aria-hidden="true">save</span>Guardar cambios</button>
 </div>
 </form>
 
@@ -157,7 +143,7 @@
     tabs.forEach(function(b){
       var on = b.dataset.tab === key;
       b.setAttribute('aria-selected', on ? 'true' : 'false');
-      b.className = 'aj-tab text-sm font-bold px-4 py-2 rounded-lg border transition-colors ' + (on ? 'bg-[#0A0A0B] text-[#D4AF37] border-[#0A0A0B]' : 'bg-white text-gray-600 border-gray-200 hover:border-[#D4AF37]');
+      b.classList.toggle('is-active', on);
     });
     panels.forEach(function(p){ p.classList.toggle('hidden', p.dataset.panel !== key); });
     if (push !== false) { try { history.replaceState(null, '', '#tab-' + key); } catch (e) {} }
@@ -165,6 +151,23 @@
   tabs.forEach(function(b){ b.addEventListener('click', function(){ activate(b.dataset.tab); }); });
   var h = (location.hash || '').replace('#tab-', '');
   if (h && document.querySelector('[data-panel="' + h + '"]')) activate(h, false);
+
+  var locationFormset = document.querySelector('[data-location-formset]');
+  if (locationFormset) {
+    var locationList = locationFormset.querySelector('[data-location-list]');
+    var locationTemplate = locationFormset.querySelector('[data-location-empty]');
+    var locationTotal = locationFormset.querySelector('input[name="locations-TOTAL_FORMS"]');
+    var locationAdd = locationFormset.querySelector('[data-location-add]');
+    if (locationList && locationTemplate && locationTotal && locationAdd) {
+      locationAdd.addEventListener('click', function(){
+        var index = parseInt(locationTotal.value, 10);
+        if (index >= 20) return;
+        var markup = locationTemplate.innerHTML.replace(/__prefix__/g, String(index));
+        locationList.insertAdjacentHTML('beforeend', markup);
+        locationTotal.value = String(index + 1);
+      });
+    }
+  }
 
   // Dropzones de imagen: preview inmediata + nombre del archivo
   document.querySelectorAll('[data-drop]').forEach(function(dz){

@@ -1,4 +1,4 @@
-from django.core.validators import RegexValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from urllib.parse import quote
 
@@ -82,10 +82,29 @@ class SiteSettings(models.Model):
     company_legal = models.CharField(
         max_length=160, default="Ecuatoriana | MEGA PRIME IMPORT", blank=True
     )
+    company_ruc = models.CharField(
+        max_length=13,
+        blank=True,
+        default="",
+        help_text="RUC de la empresa. Se muestra en la información legal pública si se completa.",
+    )
+
+    mision = models.TextField(
+        default="Ofrecer materiales, acabados y herramientas de calidad que impulsen proyectos de construcción e interiorismo en todo el Ecuador.",
+        blank=True,
+    )
+    vision = models.TextField(
+        default="Ser un aliado confiable para profesionales y empresas, reconocido por la calidad de sus productos y un servicio cercano.",
+        blank=True,
+    )
 
     facebook_url = models.URLField(blank=True, default="")
     instagram_url = models.URLField(blank=True, default="")
     tiktok_url = models.URLField(blank=True, default="")
+    x_url = models.URLField(blank=True, default="")
+    youtube_url = models.URLField(blank=True, default="")
+    pinterest_url = models.URLField(blank=True, default="")
+    linkedin_url = models.URLField(blank=True, default="")
 
     logo = models.ImageField(upload_to="branding/", blank=True, null=True)
     hero_image = models.ImageField(upload_to="branding/", blank=True, null=True)
@@ -185,6 +204,110 @@ class SiteSettings(models.Model):
             f.replace(" ", "+") + ":wght@400;500;600;700;800" for f in fams
         )
         return f"https://fonts.googleapis.com/css2?family={qs}&display=swap"
+
+
+class SiteLocation(models.Model):
+    sitio = models.ForeignKey(
+        SiteSettings, on_delete=models.CASCADE, related_name="ubicaciones"
+    )
+    nombre = models.CharField(max_length=100, default="Sede")
+    direccion = models.CharField(max_length=255)
+    enlace_maps = models.URLField(
+        max_length=500,
+        blank=True,
+        default="",
+        help_text="Enlace para abrir esta sede en Google Maps (opcional).",
+    )
+    orden = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["orden", "id"]
+        verbose_name = "Ubicación del sitio"
+        verbose_name_plural = "Ubicaciones del sitio"
+
+    def __str__(self) -> str:
+        return self.nombre
+
+    @property
+    def maps_link(self) -> str:
+        if self.enlace_maps.strip():
+            return self.enlace_maps.strip()
+        return "https://www.google.com/maps/search/?api=1&query=" + quote(self.direccion)
+
+    @property
+    def maps_embed_link(self) -> str:
+        return "https://www.google.com/maps?q=" + quote(self.direccion) + "&output=embed"
+
+
+class Complaint(models.Model):
+    RECLAMO = "reclamo"
+    QUEJA = "queja"
+    TIPOS = [(RECLAMO, "Reclamo"), (QUEJA, "Queja")]
+    IDENTIFICACIONES = [
+        ("cedula", "Cédula"),
+        ("ruc", "RUC"),
+        ("pasaporte", "Pasaporte"),
+        ("otro", "Otro"),
+    ]
+    CANALES_RESPUESTA = [
+        ("correo", "Correo electrónico"),
+        ("telefono", "Teléfono"),
+        ("whatsapp", "WhatsApp"),
+    ]
+
+    ESTADOS = [
+        ("recibido", "Recibido"),
+        ("revision", "En revisión"),
+        ("respondido", "Respondido"),
+        ("cerrado", "Cerrado"),
+    ]
+
+    codigo = models.CharField(max_length=14, unique=True, editable=False)
+    tipo = models.CharField(max_length=10, choices=TIPOS)
+    nombres = models.CharField(max_length=120)
+    apellidos = models.CharField(max_length=120)
+    tipo_identificacion = models.CharField(max_length=20, choices=IDENTIFICACIONES)
+    identificacion = models.CharField(max_length=30)
+    empresa = models.CharField(max_length=160, blank=True)
+    correo = models.EmailField()
+    telefono = models.CharField(max_length=30)
+    direccion = models.CharField(max_length=255)
+    provincia = models.CharField(max_length=80)
+    producto_servicio = models.CharField(max_length=180)
+    numero_pedido = models.CharField(max_length=60, blank=True)
+    fecha_incidente = models.DateField(null=True, blank=True)
+    monto_reclamado = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)],
+    )
+    detalle = models.TextField()
+    solicitud = models.TextField()
+    canal_respuesta = models.CharField(
+        max_length=20, choices=CANALES_RESPUESTA, default="correo"
+    )
+    acepta_privacidad = models.BooleanField(default=False)
+    estado = models.CharField(max_length=12, choices=ESTADOS, default="recibido")
+    respuesta_interna = models.TextField(blank=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-creado_en", "-id"]
+        verbose_name = "Reclamo o queja"
+        verbose_name_plural = "Reclamos y quejas"
+
+    def __str__(self) -> str:
+        return f"{self.codigo} — {self.get_tipo_display()}"
+
+    def save(self, *args, **kwargs):
+        if not self.codigo:
+            import secrets
+
+            self.codigo = f"MP-{secrets.token_hex(5).upper()}"
+        super().save(*args, **kwargs)
 
 
 class HeroMedia(models.Model):

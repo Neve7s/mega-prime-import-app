@@ -1,0 +1,11 @@
+<nav class="ajustes-tabs" role="tablist" aria-label="Secciones de ajustes">
+  {% for tab in tabs %}
+  <button type="button" role="tab" id="tab-{{ tab.key }}" data-tab="{{ tab.key }}"
+    aria-controls="panel-{{ tab.key }}"
+    aria-selected="{% if tab.key == active_tab %}true{% else %}false{% endif %}"
+    class="aj-tab {% if tab.key == active_tab %}is-active{% endif %}">
+    <span class="material-symbols-outlined" aria-hidden="true">{{ tab.icon }}</span>
+    <span>{{ tab.title }}</span>
+  </button>
+  {% endfor %}
+</nav>

@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model, password_validation
 from calculator.models import HSCode
 from cart.models import Order, SaleCode
 from catalog.models import Category, Product, TipoProducto
-from core.models import HeroMedia, SiteSettings
+from core.models import HeroMedia, SiteLocation, SiteSettings
 
 from .models import AccesoPanel
 
@@ -105,6 +105,35 @@ class HeroMediaForm(forms.ModelForm):
         return datos
 
 
+class SiteLocationForm(forms.ModelForm):
+    class Meta:
+        model = SiteLocation
+        fields = ["nombre", "direccion", "enlace_maps", "orden"]
+        labels = {
+            "nombre": "Nombre de la sede",
+            "direccion": "Dirección",
+            "enlace_maps": "Enlace de Google Maps",
+            "orden": "Orden",
+        }
+        widgets = {
+            "nombre": forms.TextInput(attrs={"placeholder": "Oficina principal"}),
+            "direccion": forms.TextInput(attrs={"placeholder": "Dirección completa, ciudad"}),
+            "enlace_maps": forms.URLInput(attrs={"placeholder": "https://maps.app.goo.gl/…"}),
+            "orden": forms.NumberInput(attrs={"min": 0}),
+        }
+
+
+SiteLocationFormSet = forms.inlineformset_factory(
+    SiteSettings,
+    SiteLocation,
+    form=SiteLocationForm,
+    extra=0,
+    can_delete=True,
+    max_num=20,
+    validate_max=True,
+)
+
+
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
@@ -139,6 +168,67 @@ class SiteSettingsForm(forms.ModelForm):
     class Meta:
         model = SiteSettings
         exclude = ["updated_at"]
+        labels = {
+            "site_name": "Nombre del sitio",
+            "meta_title": "Título para buscadores",
+            "meta_description": "Descripción para buscadores",
+            "tagline": "Eslogan",
+            "hero_city": "Ciudad destacada",
+            "hero_title": "Título principal",
+            "hero_subtitle": "Descripción de portada",
+            "hero_cta_primary": "Texto del botón principal",
+            "hero_cta_secondary": "Texto del botón secundario",
+            "hero_spec_label": "Etiqueta técnica",
+            "hero_telemetry_1_value": "Valor destacado 1",
+            "hero_telemetry_1_label": "Etiqueta destacada 1",
+            "hero_telemetry_2_value": "Valor destacado 2",
+            "hero_telemetry_2_label": "Etiqueta destacada 2",
+            "whatsapp_number": "Número de WhatsApp",
+            "whatsapp_default_message": "Mensaje inicial de WhatsApp",
+            "phone_display": "Teléfono visible",
+            "email": "Correo electrónico",
+            "address": "Dirección",
+            "direccion_fisica": "Dirección física",
+            "enlace_maps": "Enlace de Google Maps",
+            "cities": "Ciudades de cobertura",
+            "schedule": "Horario de atención",
+            "company_legal": "Nombre legal de la empresa",
+            "company_ruc": "RUC de la empresa",
+            "mision": "Misión",
+            "vision": "Visión",
+            "facebook_url": "Facebook",
+            "instagram_url": "Instagram",
+            "tiktok_url": "TikTok",
+            "x_url": "X",
+            "youtube_url": "YouTube",
+            "pinterest_url": "Pinterest",
+            "linkedin_url": "LinkedIn",
+            "logo": "Logo del sitio",
+            "hero_image": "Imagen de portada",
+            "footer_text": "Descripción del pie de página",
+            "color_primario": "Color principal",
+            "color_secundario": "Color secundario",
+            "color_fondo": "Color de fondo",
+            "color_tarjetas": "Color de tarjetas",
+            "color_texto": "Color del texto",
+            "color_acento": "Color de acento",
+            "fuente_cuerpo": "Tipografía de texto",
+            "fuente_titulos": "Tipografía de títulos",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            widget = field.widget
+            if getattr(widget, "input_type", None) not in (
+                "checkbox", "file", "hidden", "radio", "color"
+            ):
+                classes = widget.attrs.get("class", "").split()
+                if "form-control" not in classes:
+                    classes.append("form-control")
+                widget.attrs["class"] = " ".join(classes)
+            if isinstance(widget, forms.Textarea):
+                widget.attrs.setdefault("rows", 4)
 
 
 class CalculadoraForm(forms.Form):

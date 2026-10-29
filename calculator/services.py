@@ -78,8 +78,10 @@ def calculate_shipment(items, gastos, tasas) -> dict:
         fob = cant * valor_unit
         legacy_margin = it.get("margen_pct")
         def _client_margin(key):
-            value = legacy_margin if legacy_margin is not None else it.get(key)
-            return _to_pct(value, Decimal("35"))
+            value = legacy_margin if legacy_margin not in (None, "") else it.get(key)
+            if value in (None, ""):
+                return None
+            return Decimal(str(value))
         total_cant += cant
         total_fob += fob
         norm.append({
@@ -173,10 +175,15 @@ def calculate_shipment(items, gastos, tasas) -> dict:
         costo_unit = valor_total / it["cant"] if it["cant"] else Decimal("0")
         precios = {}
         for index in range(1, 4):
-            precio_sin = costo_unit * (Decimal("1") + it[f"compet{index}"] / Decimal("100"))
-            precios[f"comp{index}_sin"] = _q(precio_sin)
-            precios[f"comp{index}_con"] = _q(
-                precio_sin * (Decimal("1") + iva_pvp_pct / Decimal("100")))
+            margen = it[f"compet{index}"]
+            if margen is None:
+                precios[f"comp{index}_sin"] = None
+                precios[f"comp{index}_con"] = None
+            else:
+                precio_sin = costo_unit * (Decimal("1") + margen / Decimal("100"))
+                precios[f"comp{index}_sin"] = _q(precio_sin)
+                precios[f"comp{index}_con"] = _q(
+                    precio_sin * (Decimal("1") + iva_pvp_pct / Decimal("100")))
         out_items.append({
             **{k: v for k, v in it.items() if not k.startswith("_")},
             "seguro_pct_raw": None, "advalorem_pct_raw": None,

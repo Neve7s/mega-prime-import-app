@@ -205,9 +205,15 @@ def build_reporte_xlsx(calc, tasas, gastos, embarque_nombre="Embarque"):
             float(it["advalorem"]), float(it["flete"]), float(it["seguro"]),
             float(it["fondinfa"]), float(it["adicionales"]), float(it["valor_total"]),
             float(it["costo_unit"]),
-            float(it["compet1"]) / 100, float(it["comp1_sin"]), float(it["comp1_con"]),
-            float(it["compet2"]) / 100, float(it["comp2_sin"]), float(it["comp2_con"]),
-            float(it["compet3"]) / 100, float(it["comp3_sin"]), float(it["comp3_con"]),
+            (float(it["compet1"]) / 100 if it.get("compet1") is not None else None),
+            (float(it["comp1_sin"]) if it.get("comp1_sin") is not None else None),
+            (float(it["comp1_con"]) if it.get("comp1_con") is not None else None),
+            (float(it["compet2"]) / 100 if it.get("compet2") is not None else None),
+            (float(it["comp2_sin"]) if it.get("comp2_sin") is not None else None),
+            (float(it["comp2_con"]) if it.get("comp2_con") is not None else None),
+            (float(it["compet3"]) / 100 if it.get("compet3") is not None else None),
+            (float(it["comp3_sin"]) if it.get("comp3_sin") is not None else None),
+            (float(it["comp3_con"]) if it.get("comp3_con") is not None else None),
             "Especial" if esp else "General",
         ]
         banda = FILL_BANDA if (i % 2 == 0 and not esp) else None

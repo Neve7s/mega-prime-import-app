@@ -373,9 +373,9 @@
       items.push({row: row, taxRow: taxRow,
         nombre: cell(row, 'nombre').value.trim() || 'Producto',
         cant: cant, vu: vu, fob: fob,
-        c1: num(cell(row, 'compet1').value, 35),
-        c2: num(cell(row, 'compet2').value, 35),
-        c3: num(cell(row, 'compet3').value, 35),
+        c1: (function(v){ v = String(v || '').trim(); return v === '' ? null : num(v, 35); })(cell(row, 'compet1').value),
+        c2: (function(v){ v = String(v || '').trim(); return v === '' ? null : num(v, 35); })(cell(row, 'compet2').value),
+        c3: (function(v){ v = String(v || '').trim(); return v === '' ? null : num(v, 35); })(cell(row, 'compet3').value),
         sPct: ovNum(taxRow, 'ov_seguro_pct'),
         aPct: ovNum(taxRow, 'ov_advalorem_pct'),
         fPct: ovNum(taxRow, 'ov_fondinfa_pct'),
@@ -409,7 +409,8 @@
       it.vTotal = it.fob + it.adv + it.flete + it.seg + it.fon + it.iva + adic;
       it.cUnit = it.cant ? it.vTotal / it.cant : 0;
       [it.c1, it.c2, it.c3].forEach(function(margen, index){
-        var precioSin = it.cUnit * (1 + margen / 100);
+        if (margen === null) { it['comp' + (index + 1) + 'Sin'] = null; it['comp' + (index + 1) + 'Con'] = null; return; }
+         var precioSin = it.cUnit * (1 + margen / 100);
         it['comp' + (index + 1) + 'Sin'] = precioSin;
         it['comp' + (index + 1) + 'Con'] = precioSin * (1 + T.ivaPvp / 100);
       });
@@ -442,7 +443,7 @@
       for (var i = 1; i <= 3; i++){
         var priceCell = it.row.querySelector('[data-c="comp' + i + '_precios"]');
         if (priceCell) priceCell.textContent =
-          fmt(it['comp' + i + 'Sin']) + ' / ' + fmt(it['comp' + i + 'Con']);
+          (it['comp' + i + 'Sin'] === null || it['comp' + i + 'Con'] === null) ? '–' : (fmt(it['comp' + i + 'Sin']) + ' / ' + fmt(it['comp' + i + 'Con']));
       }
       var badge = it.row.querySelector('.tax-badge');
       if (badge){
@@ -475,11 +476,11 @@
       + '<td class="p-1 text-right font-bold whitespace-nowrap text-sky-700" data-c="fob_total" title="FOB total = Cant x Precio">–</td>'
       + '<td class="p-1 text-right font-bold whitespace-nowrap" data-c="valor_total">–</td>'
       + '<td class="p-1 text-right whitespace-nowrap" data-c="costo_unit">–</td>'
-      + '<td><input name="compet1" type="number" step="0.01" min="0" value="' + g('margen_pct', g('compet1', '')) + '" placeholder="%" title="Recargo porcentual sobre el costo para clientes mayoristas (vacío = 35% por defecto)" /></td>'
+      + '<td><input name="compet1" type="number" step="0.01" min="0" value="' + g('compet1', '') + '" placeholder="%" title="Recargo porcentual sobre el costo para clientes mayoristas (vacío = 35% por defecto)" /></td>'
       + '<td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="comp1_precios">–</td>'
-      + '<td><input name="compet2" type="number" step="0.01" min="0" value="' + g('margen_pct', g('compet2', '')) + '" placeholder="%" title="Recargo porcentual sobre el costo para clientes frecuentes (vacío = 35% por defecto)" /></td>'
+      + '<td><input name="compet2" type="number" step="0.01" min="0" value="' + g('compet2', '') + '" placeholder="%" title="Recargo porcentual sobre el costo para clientes frecuentes (vacío = 35% por defecto)" /></td>'
       + '<td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="comp2_precios">–</td>'
-      + '<td><input name="compet3" type="number" step="0.01" min="0" value="' + g('margen_pct', g('compet3', '')) + '" placeholder="%" title="Recargo porcentual sobre el costo para clientes eventuales (vacío = 35% por defecto)" /></td>'
+      + '<td><input name="compet3" type="number" step="0.01" min="0" value="' + g('compet3', '') + '" placeholder="%" title="Recargo porcentual sobre el costo para clientes eventuales (vacío = 35% por defecto)" /></td>'
       + '<td class="p-1 text-right font-bold text-emerald-700 whitespace-nowrap" data-c="comp3_precios">–</td>'
       + '<td class="p-1 whitespace-nowrap"><button type="button" class="tax-btn text-xs font-bold bg-gray-100 border rounded px-1.5 py-0.5 hover:bg-gray-200" title="Impuestos propios (vacío = general)">⚙</button> <span class="tax-badge text-[9px] font-bold px-1 py-0.5 rounded bg-gray-100 text-gray-500">GEN</span></td>'
       + '<td class="p-1"><button type="button" class="rm-row text-red-400 font-bold px-1">×</button></td></tr>'

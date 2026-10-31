@@ -1,13 +1,14 @@
 {% if site_settings.mision or site_settings.vision %}
-<section aria-labelledby="mission-vision-title" class="bg-surface-container-low px-margin py-space-xl md:px-margin-md md:py-space-xl lg:px-margin-lg">
+<section aria-labelledby="mission-vision-title" class="bg-surface-container-low px-margin py-space-xl md:px-margin-md md:py-space-xl lg:px-margin-lg relative overflow-hidden">
   <div class="mx-auto max-w-6xl">
     <div class="mb-8 max-w-2xl">
-      <p class="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-secondary">Quiénes somos</p>
-      <h2 id="mission-vision-title" class="font-headline-lg text-2xl font-bold text-on-surface md:text-3xl">Nuestro propósito y visión</h2>
+      <span data-laser-line class="mpi-laser-line mb-2"></span>
+      <p class="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-secondary">Quiénes somos · Importadores en Ecuador</p>
+      <h2 id="mission-vision-title" data-animate="title" class="font-headline-lg text-2xl font-bold text-on-surface md:text-3xl">Nuestro propósito y visión</h2>
     </div>
-    <div class="grid gap-5 md:grid-cols-2">
+    <div data-stagger-group class="grid gap-5 md:grid-cols-2">
       {% if site_settings.mision %}
-      <article class="rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-6 md:p-8">
+      <article data-stagger-item data-tilt-card class="rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-6 md:p-8 shadow-sm">
         <div class="mb-5 grid h-11 w-11 place-items-center rounded-lg bg-secondary-container/20 text-secondary">
           <span class="material-symbols-outlined" aria-hidden="true">flag</span>
         </div>
@@ -16,7 +17,7 @@
       </article>
       {% endif %}
       {% if site_settings.vision %}
-      <article class="rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-6 md:p-8">
+      <article data-stagger-item data-tilt-card class="rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-6 md:p-8 shadow-sm">
         <div class="mb-5 grid h-11 w-11 place-items-center rounded-lg bg-secondary-container/20 text-secondary">
           <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
         </div>

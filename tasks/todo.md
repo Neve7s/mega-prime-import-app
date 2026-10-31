@@ -207,3 +207,56 @@ Spec: `tasks/spec-productos-v2.md` · Plan: `tasks/plan.md` (sección v2).
 - [x] Flujo manual completo verificado con capturas/observaciones
 - [x] BD de desarrollo sin residuos de las pruebas manuales
 **Hallazgos del repaso manual (corregidos):** (1) `@staff_only` estaba en el helper `_ctx_productos` en vez de en la vista `productos`: anónimo/no-staff recibía 500 en lugar de redirigir a login — sin cobertura de test, se agregó `test_lista_productos_requiere_staff`; (2) con `LANGUAGE_CODE='es-ec'` los Decimal se renderizaban localizados (`68,50`) dentro de `<input type="number">`, y el navegador los vaciaba: guardar precios habría borrado los valores — se corrigió con `|unlocalize` + `{% load l10n %}` y se agregó `test_precios_y_stock_sin_localizar_en_inputs_number`; (3) el aviso de éxito y el de importación no se anunciaban a lectores de pantalla (`role="status"`); (4) el estado vacío decía "Sin productos en <categoría>" aunque hubiera una búsqueda activa. Verificado en navegador: badges, pills `⚠ N`, búsqueda global con `todas=1` y sin ella, acciones masivas (activar/desactivar/mover/eliminar + alta rápida de categoría destino), precios inline, página de duplicados y borrado con confirmación. **Verification:** comandos + navegador. **Dependencies:** E1–E6. **Files:** (ninguno). **Scope:** S
+
+---
+
+# Feature v4: Experiencia Interactiva 3D (Three.js) + GSAP ScrollTrigger + Didáctica Ecuador
+
+Spec: `tasks/spec-experiencia-3d-gsap.md` · Plan: `tasks/plan.md` (sección v4).
+
+## Task G1: Optimizar `base_landing.html` y utilidades CSS GPU
+**Description:** Eliminar carga duplicada de Google Fonts Material Symbols, añadir barra de progreso de lectura/scroll, clases utilitarias aceleradas por GPU (`will-change`, línea láser, perspectiva 3D, soporte `prefers-reduced-motion`) y scripts `defer` para GSAP, ScrollTrigger, Three.js y `mpi-experience.js`.
+**Acceptance criteria:**
+- [x] `Material+Symbols+Outlined` se carga una sola vez en `<head>`
+- [x] Scripts `gsap.min.js`, `ScrollTrigger.min.js`, `three.min.js` y `mpi-experience.js` cargan con `defer`
+**Verification:** `manage.py test core`. **Dependencies:** None. **Files:** `templates/base_landing.html`. **Scope:** S
+
+## Task G2: Motor `static/js/mpi-experience.js` (Three.js + GSAP + Didáctica + HTMX)
+**Description:** Implementar escena 3D interactiva del Hero en Three.js (perfiles/cubiertas/paneles con iluminación dorada, pausa con `IntersectionObserver` fuera del viewport, DPR máx 1.0 en mobile / 1.5 en desktop), animaciones GSAP ScrollTrigger bidireccionales (bajada y subida), revelar de títulos con línea láser, contadores animados, explorador interactivo de capas de materiales y re-animación tras `htmx:afterSwap`.
+**Acceptance criteria:**
+- [x] Pausado automático del loop WebGL cuando el Hero sale del viewport
+- [x] Separación mobile/desktop mediante `gsap.matchMedia()` y respeto a `prefers-reduced-motion`
+**Verification:** inspección y tests de integración en `core/tests.py`. **Dependencies:** G1. **Files:** `static/js/mpi-experience.js`. **Scope:** M
+
+## Task G3: Hero 3D y Header inteligente (`_hero.html`, `_header.html`)
+**Description:** Integrar `<canvas id="mpi-hero-3d">` en `_hero.html`, añadir capas `data-parallax` bidireccionales, animaciones de título y subtítulo, selectores interactivos en el showcase del hero (preservando la rotación automática y los selectores de test) y estado compacto en `_header.html` al hacer scroll.
+**Acceptance criteria:**
+- [x] El Hero incluye el canvas 3D, capas parallax y mantiene intactos todos los tests de `HeroRotationTest` y `HeroMediaTest`
+**Verification:** `manage.py test core`. **Dependencies:** G1, G2. **Files:** `core/templates/core/partials/_hero.html`, `core/templates/core/partials/_header.html`. **Scope:** M
+
+## Task G4: Pilares Mayoristas + Explorador Didáctico de Materiales (`_pillars.html`)
+**Description:** Actualizar `_pillars.html` reflejando las líneas reales que importan en Ecuador (Tejas PVC Roma/Española/Trapezoidal, Wall Panel WPC / Cielo Razo / Policarbonato, Pisos SPC / Porcelanato y Herramientas) e incorporar el laboratorio interactivo **"Anatomía Técnica del Material"** donde el cliente explora capa por capa por qué cada material rinde mejor en el clima de Costa, Sierra y Oriente del Ecuador.
+**Acceptance criteria:**
+- [x] Selector interactivo de materiales (`data-didactic-tab`) con visualización multicapa animada y beneficios técnicos reales
+- [x] Enlaces directos al catálogo filtrado por categoría real (`/catalogo/?categoria=...`)
+**Verification:** `manage.py test core`. **Dependencies:** G2. **Files:** `core/templates/core/partials/_pillars.html`. **Scope:** M
+
+## Task G5: Ruta Logística Ecuador, Calculadora Real y Secciones de Confianza (`_advantages.html`, `_calculator.html`, `_certs.html`, `_testimonials.html`, `_mission_vision.html`, `_cta.html`)
+**Description:** Incorporar la línea de tiempo interactiva de importación directa (Fábrica → Puerto Guayaquil/Posorja → Bodega Matriz Ambato → Despacho Nacional 24-48h) en `_advantages.html`, actualizar `_calculator.html` con cálculo técnico real por línea (Tejas PVC, Wall Panel WPC, Pisos SPC/Porcelanato, Cielo Razo, Policarbonato), contextualizar `_testimonials.html` a constructoras y proyectos en Ecuador, y añadir parallax bidireccional y revelación de títulos en todas las secciones.
+**Acceptance criteria:**
+- [x] Todas las secciones tienen `data-animate="title"` y `data-parallax` o `data-stagger-group`
+- [x] La calculadora calcula unidades/planchas/cajas reales según la línea elegida y anima el resultado
+**Verification:** `manage.py test core`. **Dependencies:** G2. **Files:** `core/templates/core/partials/_advantages.html`, `_calculator.html`, `_certs.html`, `_testimonials.html`, `_mission_vision.html`, `_cta.html`, `_footer.html`. **Scope:** M
+
+## Task G6: Animaciones en Catálogo, Tarjetas y Ficha de Producto (`catalogo.html`, `_card.html`, `detalle.html`)
+**Description:** Añadir animaciones de entrada y micro-interacción en `_card.html`, cabecera animada y transición suave con HTMX en `catalogo.html`, y animación de entrada + cambio fluido de imagen/color en `detalle.html` sin alterar las aserciones de `catalog/tests.py`.
+**Acceptance criteria:**
+- [x] `manage.py test catalog` pasa al 100% (incluyendo conteo exacto de clases en `_card.html` y respuesta parcial HTMX)
+**Verification:** `manage.py test catalog`. **Dependencies:** G2. **Files:** `catalog/templates/catalog/catalogo.html`, `catalog/templates/catalog/_card.html`, `catalog/templates/catalog/detalle.html`. **Scope:** M
+
+## Task G7: Suite de Tests y Verificación Integral
+**Description:** Escribir tests automatizados en `core/tests.py` para verificar la presencia del motor 3D/GSAP, el explorador didáctico, la ausencia de fuentes duplicadas y correr toda la suite de tests.
+**Acceptance criteria:**
+- [x] `manage.py check` sin errores
+- [x] `manage.py test core catalog` 100% en verde
+**Verification:** `& ".venv\Scripts\python.exe" manage.py test core catalog`. **Dependencies:** G1–G6. **Files:** `core/tests.py`. **Scope:** S

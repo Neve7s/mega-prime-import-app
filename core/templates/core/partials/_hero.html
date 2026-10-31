@@ -1,4 +1,4 @@
-<!-- SECTION 1: HERO INDUSTRIAL PRESTIGE -->
+<!-- SECTION 1: HERO INDUSTRIAL PRESTIGE + THREE.JS 3D STAGE -->
 <section class="relative w-full overflow-hidden bg-primary text-on-primary">
 <!-- Fondos del hero (hasta 3: imagen, GIF o video) -->
 {% if hero_medias %}
@@ -11,26 +11,48 @@
   <div class="absolute inset-0 bg-primary/85"></div>
 </div>
 {% endif %}
+<!-- Escena 3D Interactiva Three.js (Pausa automática fuera de pantalla para Cero Lag) -->
+<div class="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+  <canvas id="mpi-hero-3d" class="w-full h-full block opacity-80"></canvas>
+</div>
 <!-- Geometric Architecture Grid Overlay -->
 <div class="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none"></div>
-<div class="absolute -top-32 -right-32 w-96 h-96 bg-secondary-container/10 rounded-full blur-3xl pointer-events-none"></div>
-<div class="relative max-w-[1440px] mx-auto px-margin md:px-margin-md lg:px-margin-lg pt-space-xl pb-space-xl lg:pt-28 lg:pb-36 flex flex-col">
+<div data-parallax="-32" class="absolute -top-32 -right-32 w-96 h-96 bg-secondary-container/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="relative z-10 max-w-[1440px] mx-auto px-margin md:px-margin-md lg:px-margin-lg pt-space-xl pb-space-xl lg:pt-28 lg:pb-36 flex flex-col">
 <!-- High-Impact Overline Spec -->
-<div class="inline-flex items-center gap-space-sm self-start bg-primary-container px-space-md py-1.5 rounded mb-space-lg shadow-sm">
+<div data-parallax="-14" class="inline-flex flex-wrap items-center gap-space-sm self-start bg-primary-container/90 backdrop-blur-sm border border-white/10 px-space-md py-1.5 rounded mb-space-lg shadow-sm">
 <span class="w-2 h-2 rounded-full bg-secondary-container animate-pulse"></span>
-<span class="font-label-sm text-label-sm uppercase tracking-widest text-secondary-fixed">Hub Logístico &amp; Distribución Mayorista</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest text-secondary-fixed">Importadores Directos &amp; Distribución Mayorista</span>
 <span class="text-outline-variant">•</span>
-<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-primary-container">{{ site_settings.hero_city|default:'Ambato, Ecuador' }}</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-primary-container">{{ site_settings.hero_city|default:'Ambato, Ecuador' }} · Despachos a las 24 Provincias</span>
 </div>
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-lg items-center">
 <!-- Core Typography Column -->
-<div class="lg:col-span-7 flex flex-col gap-space-lg">
-<h1 class="font-display-lg text-display-lg font-bold tracking-tight text-on-primary leading-[1.08]">
+<div data-parallax="-18" class="lg:col-span-7 flex flex-col gap-space-lg">
+<div>
+<span data-laser-line class="mpi-laser-line mb-3"></span>
+<h1 data-animate="title" class="font-display-lg text-display-lg font-bold tracking-tight text-on-primary leading-[1.08]">
             {{ site_settings.hero_title|default:'Excelencia en Cada Acabado, Potencia en Cada Herramienta.' }}
 </h1>
+</div>
 <p class="font-body-lg text-body-lg text-surface-container-highest max-w-2xl leading-relaxed">
             {{ site_settings.hero_subtitle }}
           </p>
+<!-- Selector Didáctico de Líneas Importadas en Ecuador (Interactúa con el 3D y Catálogo) -->
+<div class="flex flex-wrap items-center gap-2 pt-1" role="group" aria-label="Líneas principales de importación en Ecuador">
+  <a href="{% url 'catalog:catalogo' %}?categoria=tejas-y-cubiertas" onmouseenter="window.MpiHero3D&&window.MpiHero3D.pulseProfile('tejas')" class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 hover:border-secondary-container hover:bg-white/10 px-3 py-1 text-xs font-semibold text-on-primary transition-colors">
+    <span class="material-symbols-outlined text-[15px] text-secondary-fixed">roofing</span>Tejas PVC Roma &amp; Española
+  </a>
+  <a href="{% url 'catalog:catalogo' %}?categoria=revestimientos-y-paneles" onmouseenter="window.MpiHero3D&&window.MpiHero3D.pulseProfile('wpc')" class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 hover:border-secondary-container hover:bg-white/10 px-3 py-1 text-xs font-semibold text-on-primary transition-colors">
+    <span class="material-symbols-outlined text-[15px] text-secondary-fixed">view_column</span>Wall Panel WPC
+  </a>
+  <a href="{% url 'catalog:catalogo' %}?categoria=cielorrasos-y-techos" onmouseenter="window.MpiHero3D&&window.MpiHero3D.pulseProfile('policarbonato')" class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 hover:border-secondary-container hover:bg-white/10 px-3 py-1 text-xs font-semibold text-on-primary transition-colors">
+    <span class="material-symbols-outlined text-[15px] text-secondary-fixed">wb_twilight</span>Cielo Razo &amp; Policarbonato
+  </a>
+  <a href="{% url 'catalog:catalogo' %}?categoria=pisos" onmouseenter="window.MpiHero3D&&window.MpiHero3D.pulseProfile('pisos')" class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 hover:border-secondary-container hover:bg-white/10 px-3 py-1 text-xs font-semibold text-on-primary transition-colors">
+    <span class="material-symbols-outlined text-[15px] text-secondary-fixed">grid_on</span>Pisos SPC &amp; Porcelanato
+  </a>
+</div>
 <!-- CTAs Industrial -->
 <div class="flex flex-wrap items-center gap-space-md pt-space-sm">
 <a class="inline-flex items-center gap-space-sm bg-secondary-container hover:bg-secondary text-primary font-label-lg text-label-lg uppercase tracking-wider px-space-lg py-3 rounded-lg shadow-md transition-all duration-200" href="{% url 'catalog:catalogo' %}">
@@ -43,28 +65,28 @@
             </a>
 </div>
 <!-- Trust Badges Bar -->
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-gutter-sm pt-space-md">
-<div class="flex flex-col gap-1">
+<div data-stagger-group class="grid grid-cols-2 sm:grid-cols-4 gap-gutter-sm pt-space-md">
+<div data-stagger-item class="flex flex-col gap-1 border-l-2 border-secondary-container/60 pl-3">
 <span class="font-headline-sm text-headline-sm text-on-primary font-bold">{{ hero_stats.0.value|default:'+15 Años' }}</span>
 <span class="font-label-sm text-label-sm text-surface-container-highest uppercase">{{ hero_stats.0.label|default:'Importación Directa' }}</span>
 </div>
-<div class="flex flex-col gap-1">
+<div data-stagger-item class="flex flex-col gap-1 border-l-2 border-secondary-container/60 pl-3">
 <span class="font-headline-sm text-headline-sm text-secondary-fixed font-bold">{{ hero_stats.1.value|default:'48 Horas' }}</span>
 <span class="font-label-sm text-label-sm text-surface-container-highest uppercase">{{ hero_stats.1.label|default:'Despacho a Obra' }}</span>
 </div>
-<div class="flex flex-col gap-1">
+<div data-stagger-item class="flex flex-col gap-1 border-l-2 border-secondary-container/60 pl-3">
 <span class="font-headline-sm text-headline-sm text-on-primary font-bold">{{ hero_stats.2.value|default:'Stock Real' }}</span>
 <span class="font-label-sm text-label-sm text-surface-container-highest uppercase">{{ hero_stats.2.label|default:'Garantizado en Planta' }}</span>
 </div>
-<div class="flex flex-col gap-1">
+<div data-stagger-item class="flex flex-col gap-1 border-l-2 border-secondary-container/60 pl-3">
 <span class="font-headline-sm text-headline-sm text-secondary-fixed font-bold">{{ hero_stats.3.value|default:'Precios B2B' }}</span>
 <span class="font-label-sm text-label-sm text-surface-container-highest uppercase">{{ hero_stats.3.label|default:'Fábrica Sin Retrasos' }}</span>
 </div>
 </div>
 </div>
   <!-- Visual Hero Showcase & Floating Telemetry Cards -->
-  <div class="lg:col-span-5 relative mt-space-lg lg:mt-0">
-    <div class="relative w-full aspect-[4/5] rounded-xl overflow-hidden shadow-2xl">
+  <div data-parallax="26" class="lg:col-span-5 relative mt-space-lg lg:mt-0">
+    <div data-tilt-card class="relative w-full aspect-[4/5] rounded-xl overflow-hidden shadow-2xl border border-white/10">
       {% if hero_productos %}
       {% for p in hero_productos %}
       <a href="{% url 'catalog:detalle' p.slug %}" class="absolute inset-0 block transition-opacity duration-1000 {% if not forloop.first %}opacity-0{% endif %}" data-hero-producto data-producto-nombre="{{ p.nombre }}" data-producto-spec="{{ p.tipo.nombre|default:site_settings.hero_spec_label }}" data-producto-categoria="{{ p.categoria.nombre }}">

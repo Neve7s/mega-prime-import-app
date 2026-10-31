@@ -356,3 +356,30 @@ class HeroRotationTest(TestCase):
         self.assertEqual(html.count("data-hero-producto"), 0)
         # Sin productos, el showcase muestra la imagen por defecto configurada.
         self.assertIn("data-alt=", html)
+
+
+class InteractiveExperienceTest(TestCase):
+    """Experiencia 3D (Three.js) + GSAP ScrollTrigger + Didáctica Ecuador."""
+
+    def test_base_landing_carga_gsap_three_y_mpi_experience_sin_fuentes_duplicadas(self):
+        html = self.client.get("/").content.decode()
+        # No debe cargar dos veces Material Symbols Outlined
+        self.assertEqual(html.count("family=Material+Symbols+Outlined"), 1)
+        # Carga diferida de GSAP, ScrollTrigger, Three.js y el motor propio
+        self.assertIn("gsap.min.js", html)
+        self.assertIn("ScrollTrigger.min.js", html)
+        self.assertIn("three.min.js", html)
+        self.assertIn("mpi-experience", html)
+
+    def test_home_incluye_canvas_3d_parallax_y_anatomia_didactica_ecuador(self):
+        html = self.client.get("/").content.decode()
+        self.assertIn('id="mpi-hero-3d"', html)
+        self.assertIn('data-animate="title"', html)
+        self.assertIn("data-parallax=", html)
+        self.assertIn("data-didactic-tab=", html)
+        self.assertIn("data-import-step=", html)
+        # Referencias reales a los productos y logística de importación en Ecuador
+        self.assertIn("Teja", html)
+        self.assertIn("Wall Panel WPC", html)
+        self.assertIn("Ambato", html)
+

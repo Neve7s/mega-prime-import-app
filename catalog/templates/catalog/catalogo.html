@@ -4,8 +4,9 @@
 {% block content %}
 <section class="w-full pt-32 lg:pt-36 pb-space-xl bg-surface min-h-screen">
 <div class="max-w-[1440px] mx-auto px-margin md:px-margin-md lg:px-margin-lg">
-  <div class="font-label-sm text-label-sm uppercase tracking-widest text-secondary font-bold">Catálogo mayorista</div>
-  <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Catálogo completo</h1>
+  <span data-laser-line class="mpi-laser-line mb-2"></span>
+  <div class="font-label-sm text-label-sm uppercase tracking-widest text-secondary font-bold">Catálogo mayorista · Importación Directa Ecuador</div>
+  <h1 data-animate="title" class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Catálogo completo</h1>
   <p class="font-body-md text-body-md text-on-surface-variant mt-1">Filtra por línea y tipo, busca por nombre y agrega a tu cotización.</p>
 
   <form hx-get="{% url 'catalog:catalogo' %}" hx-target="#catalogo-grid" hx-swap="innerHTML" hx-trigger="change, keyup changed delay:300ms from:#filtro-q" hx-push-url="true"
@@ -64,7 +65,7 @@
     </div>
   </form>
 
-  <div id="catalogo-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mt-4">
+  <div id="catalogo-grid" data-stagger-group class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mt-4">
     {% include "catalog/_grid.html" with productos=productos %}
   </div>
 </div>

@@ -238,3 +238,39 @@ Spec: `tasks/spec-productos-v2.md`. Todo vive dentro de `/webadmin/productos/`
 ## Open Questions
 - (resueltas) Búsqueda global con checkbox `todas=1`; edición inline con form + botón; duplicados por
   (categoría + nombre normalizado); "mover a categoría" permite crear categoría con el modal de alta rápida.
+
+---
+
+# Plan (v4): Experiencia Interactiva 3D (Three.js) + GSAP ScrollTrigger + Didáctica Ecuador
+
+Spec: `tasks/spec-experiencia-3d-gsap.md`.
+
+## Overview
+Elevar la experiencia visual y didáctica de `base_landing.html`, `core/home.html` (y sus parciales) y `catalog/` (`catalogo.html`, `_card.html`, `detalle.html`) mediante una arquitectura de animación acelerada por GPU con **GSAP + ScrollTrigger** y **Three.js**, referenciada a las 6 líneas reales de importación en Ecuador y optimizada para 60 FPS en mobile y desktop.
+
+## Architecture Decisions
+- **Progressive Enhancement (Cero FOUC):** El HTML es 100% visible por defecto si JS está deshabilitado o falla la red; `mpi-experience.js` añade la clase `js-mpi-ready` en `<html>` e inicializa GSAP / Three.js sin bloquear el LCP.
+- **Three.js con Pausa Inteligente:** `<canvas id="mpi-hero-3d">` en el Hero renderiza una composición arquitectónica 3D (ondas de teja Roma/Española, listones WPC y losas con luz dorada `#D4AF37`). Se detiene automáticamente con `IntersectionObserver` cuando sale de pantalla y con `visibilitychange`.
+- **GSAP `matchMedia()` para Mobile vs Desktop:** En desktop (`min-width: 1024px`) activa parallax multicapa profundo, tilt 3D sutil en tarjetas y respuesta al cursor; en mobile (`max-width: 1023px`) usa desplazamientos ligeros `translate3d` con `scrub: 0.5` y DPR 1.0 para cero lag.
+- **Didáctica Interactiva B2B Ecuador:** En `_pillars.html` y `_advantages.html` se incorpora el explorador interactivo de capas ("Anatomía del Material": Tejas Termoacústicas PVC, Wall Panel WPC, Piso SPC / Porcelanato, Policarbonato) y la línea de tiempo animada de importación directa a Ecuador (Fábrica → Puerto Guayaquil/Posorja → Bodega Matriz Ambato → Obra Nacional).
+
+## Task List
+
+### Phase 1: Base Optimizada + Motor Three.js & GSAP (`mpi-experience.js`)
+- [x] Task G1: Optimizar `templates/base_landing.html` (quitar fuente duplicada, añadir estilos GPU/laser-line/tilt, cargar GSAP + ScrollTrigger + Three.js + `static/js/mpi-experience.js` con `defer`, barra de progreso de scroll superior).
+- [x] Task G2: Crear `static/js/mpi-experience.js` con motor Three.js para el Hero (pausa por `IntersectionObserver`, DPR adaptativo), GSAP ScrollTrigger bidireccional (subida y bajada), animaciones de títulos, contadores numéricos, explorador didáctico de materiales y re-enganche con HTMX (`htmx:afterSwap`).
+
+### Checkpoint: Fase 1
+- [x] `manage.py check` y tests existentes en verde; `mpi-experience.js` sirve correctamente.
+
+### Phase 2: Hero 3D + Pilares Didácticos + Ruta Importadora Ecuador (`core` partials)
+- [x] Task G3: Mejorar `_hero.html` (integrar `<canvas id="mpi-hero-3d">`, capas `data-parallax`, títulos animados, controles manuales e indicadores del showcase de productos reales) y `_header.html` (transición suave al hacer scroll).
+- [x] Task G4: Mejorar `_pillars.html` con las 6 líneas reales de importación en Ecuador y el módulo interactivo didáctico **"Anatomía y Desempeño del Material"** (capas interactivas para Tejas PVC, Wall Panel WPC, Pisos SPC/Porcelanato y Policarbonato).
+- [x] Task G5: Mejorar `_advantages.html`, `_calculator.html`, `_certs.html`, `_testimonials.html`, `_mission_vision.html` y `_cta.html` con la Ruta Logística Interactiva en Ecuador, calculadora adaptada a los productos reales (Tejas PVC, Wall Panel WPC, Pisos SPC, Policarbonato), testimonios reales de Ecuador (Quito, Guayaquil, Ambato, Cuenca) y hooks de parallax bidireccional.
+
+### Checkpoint: Fase 2
+- [x] Todas las secciones del `home` cuentan con parallax bidireccional, títulos animados y contenido 100% alineado a Ecuador.
+
+### Phase 3: Catálogo, Tarjetas y Ficha de Producto + Tests
+- [x] Task G6: Mejorar `catalog/templates/catalog/catalogo.html`, `_card.html` y `detalle.html` con animaciones de entrada escalonadas, soporte post-swap HTMX y transiciones fluidas en galería/ficha.
+- [x] Task G7: Añadir tests en `core/tests.py` y `catalog/tests.py` validando la integración de `mpi-experience.js`, canvas 3D, atributos de animación/didáctica y cero regresiones.

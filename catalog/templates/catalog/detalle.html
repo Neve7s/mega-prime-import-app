@@ -6,9 +6,9 @@
 {% block content %}
 <section class="w-full pt-32 lg:pt-36 pb-space-xl bg-surface">
 <div class="max-w-[1200px] mx-auto px-margin md:px-margin-md grid grid-cols-1 lg:grid-cols-2 gap-gutter-lg">
-  <div class="flex flex-col gap-space-sm">
+  <div data-parallax="-12" class="flex flex-col gap-space-sm">
     <div class="relative w-[calc(100%-10px)] mx-auto aspect-square rounded-xl overflow-hidden bg-surface-container-low shadow-md">
-      {% if product.imagen_src %}<img id="galeria-principal" class="w-full h-full object-cover" alt="{{ product.nombre }}" src="{{ product.imagen_src }}" />{% else %}<span class="flex h-full w-full items-center justify-center p-6 text-center font-headline-sm text-headline-sm font-bold uppercase tracking-wider text-on-surface-variant opacity-60">{{ product.nombre }}</span>{% endif %}
+      {% if product.imagen_src %}<img id="galeria-principal" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105" alt="{{ product.nombre }}" src="{{ product.imagen_src }}" />{% else %}<span class="flex h-full w-full items-center justify-center p-6 text-center font-headline-sm text-headline-sm font-bold uppercase tracking-wider text-on-surface-variant opacity-60">{{ product.nombre }}</span>{% endif %}
       <span class="absolute top-3 left-3 bg-secondary text-on-secondary px-2 py-0.5 rounded font-label-sm text-label-sm font-bold uppercase">{{ product.origen|default:'' }}</span>
     </div>
     {% if galeria %}
@@ -23,9 +23,10 @@
   </div>
   <div class="flex flex-col gap-space-md">
     <div>
+      <span data-laser-line class="mpi-laser-line mb-2"></span>
       <span class="font-label-sm text-label-sm uppercase text-secondary font-bold tracking-wider">{{ product.categoria.nombre }}{% if product.tipo %} · {{ product.tipo.nombre }}{% endif %}</span>
       {% if product.badge %}<span class="inline-block mt-1 bg-secondary-container text-primary px-2 py-0.5 rounded font-label-sm text-label-sm font-bold uppercase">{{ product.badge }}</span>{% endif %}
-      <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight mt-1">{{ product.nombre }}</h1>
+      <h1 data-animate="title" class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight mt-1">{{ product.nombre }}</h1>
       <p class="font-headline-md text-headline-md font-bold text-secondary mt-2">{% if product.precio_mayor %}{{ product.precio_mayor|floatformat:2 }} USD / {{ product.get_unidad_display }}{% else %}<span class="text-on-surface-variant">Precio a cotizar</span>{% endif %}</p>
       <p class="font-body-sm text-body-sm {% if product.en_stock %}text-green-700{% else %}text-error{% endif %} font-bold mt-1">{% if product.en_stock %}Stock: {{ product.stock_cantidad|floatformat:0 }} {{ product.get_unidad_display }}{% else %}Sin stock — cotizar disponibilidad{% endif %}</p>
     </div>

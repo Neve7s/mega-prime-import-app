@@ -302,9 +302,12 @@ def producto_eliminar(request, pk):
 @seccion_requerida("productos")
 def productos_plantilla(request):
     from catalog.excel_productos import build_productos_xlsx
+    from catalog.models import Product
 
+    productos = Product.objects.select_related("categoria", "tipo").prefetch_related(
+        "colores_producto__color", "imagenes").all()
     resp = HttpResponse(
-        build_productos_xlsx(),
+        build_productos_xlsx(productos),
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     resp["Content-Disposition"] = 'attachment; filename="productos-plantilla.xlsx"'
     return resp

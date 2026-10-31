@@ -109,11 +109,56 @@ def _galeria(texto):
     return urls[:20]
 
 
-def build_productos_xlsx():
+def build_productos_xlsx(productos=None):
+    from .models import Product
+
+    if productos is None:
+        productos = (Product.objects.select_related("categoria", "tipo")
+                     .prefetch_related("colores_producto__color", "imagenes").all())
+
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = "Productos"
     sheet.append(HEADERS)
+
+    for producto in productos:
+        colores = []
+        try:
+            for pc in producto.colores_producto.all():
+                nombre = pc.color.nombre
+                colores.append(f"{nombre} ({pc.rol})" if pc.rol else nombre)
+        except Exception:
+            pass
+        galeria = []
+        try:
+            for foto in producto.imagenes.all():
+                url = getattr(foto, "imagen_src", "") or ""
+                if url:
+                    galeria.append(url)
+        except Exception:
+            pass
+        imagen_url = getattr(producto, "imagen_url", "") or ""
+        if not imagen_url and getattr(producto, "imagen", None):
+            try:
+                imagen_url = producto.imagen.url
+            except Exception:
+                imagen_url = ""
+        sheet.append([
+            producto.sku,
+            producto.nombre,
+            producto.categoria.nombre if getattr(producto, "categoria_id", None) else "",
+            producto.tipo.nombre if getattr(producto, "tipo_id", None) else "",
+            producto.precio_mayor,
+            producto.unidad,
+            producto.stock_cantidad,
+            producto.badge or "",
+            producto.origen or "",
+            imagen_url,
+            producto.descripcion or "",
+            ", ".join(colores),
+            "; ".join(galeria),
+        ])
+
     sheet.freeze_panes = "A2"
     sheet.auto_filter.ref = sheet.dimensions
     for columna, ancho in zip("ABCDEFGHIJKLM", ANCHOS):

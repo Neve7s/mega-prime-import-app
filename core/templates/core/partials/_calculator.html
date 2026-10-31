@@ -3,21 +3,22 @@
 <div class="max-w-[1440px] mx-auto px-margin md:px-margin-md lg:px-margin-lg relative z-10">
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-lg items-start">
 <!-- Explanatory Column -->
-<div class="lg:col-span-5 flex flex-col gap-space-md">
+<div data-parallax="-16" class="lg:col-span-5 flex flex-col gap-space-md">
+<span data-laser-line class="mpi-laser-line"></span>
 <div class="inline-flex items-center gap-space-xs bg-primary-container px-space-sm py-1 rounded font-label-sm text-label-sm uppercase tracking-wider text-secondary-container font-bold self-start">
-            Herramienta para Especificadores
+            Herramienta Didáctica de Obra · Ecuador
           </div>
-<h2 class="font-headline-lg text-headline-lg font-bold text-on-primary tracking-tight">Calculadora de Materiales &amp; Presupuesto Express</h2>
+<h2 data-animate="title" class="font-headline-lg text-headline-lg font-bold text-on-primary tracking-tight">Calculadora de Materiales &amp; Presupuesto Express</h2>
 <p class="font-body-md text-body-md text-surface-container-highest">
-            Configura las dimensiones estimadas de tu obra. Nuestro sistema integra mermas estándar recomendadas por norma técnica (+10% o +15% según formato) y calcula el metraje óptimo para evitar desabastecimientos en obra.
+            Configura el área estimada de tu cubierta, pared o piso. Nuestro sistema calcula automáticamente el traslape o merma técnica recomendada y estima la cantidad de planchas de Teja PVC, paneles WPC o cajas de Piso SPC.
           </p>
-<div class="bg-primary-container/80 p-space-md rounded-xl flex flex-col gap-space-sm">
+<div class="bg-primary-container/80 p-space-md rounded-xl flex flex-col gap-space-sm border border-white/10">
 <div class="flex items-center gap-space-sm">
 <span class="material-symbols-outlined text-secondary-fixed text-[24px]">timer</span>
-<span class="font-headline-sm text-headline-sm font-bold text-on-primary">Respuesta Formal en &lt; 2 Horas</span>
+<span class="font-headline-sm text-headline-sm font-bold text-on-primary">Proforma Mayorista en &lt; 2 Horas</span>
 </div>
 <p class="font-body-sm text-body-sm text-on-primary-container">
-              Recibirás por correo y WhatsApp la proforma técnica con detalle de embalaje, peso bruto en toneladas, número de caballetes y cronograma de flete.
+              Recibirás por WhatsApp y correo el desglose exacto de planchas, cumbreros, tornillería autoperforante, perfiles y flete hacia tu ciudad en Ecuador.
             </p>
 </div>
 <!-- Items in quote queue counter -->
@@ -30,28 +31,29 @@
 </div>
 </div>
 <!-- Interactive Calculator Module -->
-<div class="lg:col-span-7 bg-surface-container-lowest text-on-surface p-space-lg lg:p-space-xl rounded-xl shadow-2xl">
+<div data-parallax="16" class="lg:col-span-7 bg-surface-container-lowest text-on-surface p-space-lg lg:p-space-xl rounded-xl shadow-2xl">
 <form class="flex flex-col gap-space-md" id="calculator-form" onsubmit="handleQuoteSubmit(event)">
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-gutter">
 <!-- Field 1: Project Type -->
 <div class="flex flex-col gap-1">
 <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Tipo de Proyecto</label>
 <select class="bg-surface-container-low text-primary px-space-md py-2.5 rounded font-body-sm text-body-sm focus:outline-none focus:bg-surface-container" id="calc-project-type">
-<option value="Comercial / Retail">Edificio Comercial / Retail</option>
-<option value="Residencial Multifamiliar">Residencial Multifamiliar</option>
-<option value="Hotelero / Hospitalario">Hotelero / Hospitalario</option>
-<option value="Industrial / Logístico">Industrial / Plataforma Logística</option>
-<option value="Residencial Unifamiliar Lujo">Residencial Unifamiliar Premium</option>
+<option value="Ferretería / Distribuidor Mayorista">Ferretería / Distribuidor Mayorista</option>
+<option value="Residencial / Conjunto Habitacional">Residencial / Conjunto Habitacional</option>
+<option value="Galpón Industrial / Cubierta Comercial">Galpón Industrial / Cubierta Comercial</option>
+<option value="Comercial / Oficinas / Local">Edificio Comercial / Oficinas / Local</option>
+<option value="Hotelero / Remodelación Interior">Hotelero / Remodelación Interior</option>
 </select>
 </div>
 <!-- Field 2: Product Line -->
 <div class="flex flex-col gap-1">
 <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Línea Requerida</label>
 <select class="bg-surface-container-low text-primary px-space-md py-2.5 rounded font-body-sm text-body-sm focus:outline-none focus:bg-surface-container" id="calc-product-line" onchange="recalculateValues()">
-<option value="Porcelanato Gran Formato">Porcelanato Gran Formato (120x120 / 120x240)</option>
-<option value="Láminas Sinterizadas 12mm">Láminas Sinterizadas 12mm (Topes/Fachadas)</option>
-<option value="Paneles Acústicos WPC">Paneles Acústicos WPC e Interiores</option>
-<option value="Equipos de Corte y Maquinaria">Herramientas &amp; Maquinaria de Obra</option>
+<option value="Tejas PVC (Roma / Española / Trapezoidal)">Tejas PVC (Roma / Española / Trapezoidal)</option>
+<option value="Wall Panel WPC & Cielo Razo PVC">Wall Panel WPC &amp; Cielo Razo PVC</option>
+<option value="Pisos SPC Click & Porcelanato">Pisos SPC Click &amp; Porcelanato Gran Formato</option>
+<option value="Policarbonato Alveolar & Accesorios">Policarbonato Alveolar &amp; Perfiles</option>
+<option value="Herramientas y Equipos de Instalación">Herramientas &amp; Equipos de Corte</option>
 </select>
 </div>
 </div>
@@ -59,25 +61,25 @@
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-gutter items-end bg-surface-container-low p-space-md rounded-lg">
 <div class="sm:col-span-1 flex flex-col gap-1">
 <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Área Neta (m²)</label>
-<input class="bg-surface-container-lowest text-primary px-space-md py-2.5 rounded font-headline-sm text-headline-sm font-bold text-center focus:outline-none shadow-inner" id="calc-area" max="50000" min="20" oninput="recalculateValues()" type="number" value="250"/>
+<input class="bg-surface-container-lowest text-primary px-space-md py-2.5 rounded font-headline-sm text-headline-sm font-bold text-center focus:outline-none shadow-inner" id="calc-area" max="50000" min="10" oninput="recalculateValues()" type="number" value="250"/>
 </div>
 <div class="sm:col-span-2 flex flex-col justify-center gap-1">
 <div class="flex justify-between font-body-sm text-body-sm">
-<span class="text-on-surface-variant">Merma sugerida (+10%):</span>
-<span class="font-bold text-primary" id="calc-waste-label">+25.00 m²</span>
+<span class="text-on-surface-variant">Traslape / Merma técnica:</span>
+<span class="font-bold text-primary" id="calc-waste-label">+30.00 m² (12%)</span>
 </div>
 <div class="flex justify-between font-headline-sm text-headline-sm">
 <span class="text-primary font-bold">Total a Despachar:</span>
-<span class="text-secondary font-bold" id="calc-total-label">275.00 m²</span>
+<span class="text-secondary font-bold" id="calc-total-label">280.00 m²</span>
 </div>
-<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider" id="calc-boxes-label">Aprox. 96 Cajas / 4 Palets Reforzados</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider" id="calc-boxes-label">Aprox. 52 Planchas PVC + 1040 Tornillos con Capuchón</span>
 </div>
 </div>
 <!-- Contractor and Contact Data -->
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-gutter">
 <div class="flex flex-col gap-1">
 <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Razón Social o Contacto</label>
-<input class="bg-surface-container-low text-primary px-space-md py-2.5 rounded font-body-sm text-body-sm focus:outline-none focus:bg-surface-container" id="quote-name" placeholder="Constructora / Arq. Responsable" required="" type="text"/>
+<input class="bg-surface-container-low text-primary px-space-md py-2.5 rounded font-body-sm text-body-sm focus:outline-none focus:bg-surface-container" id="quote-name" placeholder="Constructora / Ferretería / Ing. Responsable" required="" type="text"/>
 </div>
 <div class="flex flex-col gap-1">
 <label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">WhatsApp Directo</label>
@@ -90,16 +92,16 @@
 <input class="bg-surface-container-low text-primary px-space-md py-2.5 rounded font-body-sm text-body-sm focus:outline-none focus:bg-surface-container" id="quote-email" placeholder="compras@tuempresa.ec" required="" type="email"/>
 </div>
 <div class="flex flex-col gap-1">
-<label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Lugar de Entrega / Región</label>
-<input class="bg-surface-container-low text-primary px-space-md py-2.5 rounded font-body-sm text-body-sm focus:outline-none focus:bg-surface-container" id="quote-location" placeholder="Ej. Ambato, Ecuador" required="" type="text"/>
+<label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Ciudad / Provincia de Entrega</label>
+<input class="bg-surface-container-low text-primary px-space-md py-2.5 rounded font-body-sm text-body-sm focus:outline-none focus:bg-surface-container" id="quote-location" placeholder="Ej. Ambato, Quito, Guayaquil, Cuenca…" required="" type="text"/>
 </div>
 </div>
 <!-- Plan / Blueprint Upload Mock -->
 <div class="flex flex-col gap-1">
-<label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Adjuntar Plano o Cuadro de Acabados (Opcional)</label>
+<label class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Adjuntar Plano o Lista de Materiales (Opcional)</label>
 <div class="border-2 border-dashed border-outline-variant/50 rounded-lg p-space-md flex items-center justify-center gap-space-sm bg-surface-container-low/50 cursor-pointer hover:bg-surface-container-low transition-colors">
 <span class="material-symbols-outlined text-secondary text-[24px]">upload_file</span>
-<span class="font-body-sm text-body-sm text-on-surface-variant">Arrastra tu PDF / DWG o haz clic para examinar (Máx. 25MB)</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Arrastra tu PDF / Excel o detállalo en WhatsApp (Máx. 25MB)</span>
 </div>
 </div>
 <!-- Submit Button -->
